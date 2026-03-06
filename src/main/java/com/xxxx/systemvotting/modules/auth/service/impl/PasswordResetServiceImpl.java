@@ -1,0 +1,85 @@
+package com.xxxx.systemvotting.modules.auth.service.impl;
+
+import com.xxxx.systemvotting.common.service.EmailService;
+import com.xxxx.systemvotting.exception.custom.BadRequestException;
+import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
+import com.xxxx.systemvotting.modules.auth.entity.PasswordResetToken;
+import com.xxxx.systemvotting.modules.auth.repository.PasswordResetTokenRepository;
+import com.xxxx.systemvotting.modules.auth.service.PasswordResetService;
+import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.modules.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Random;
+
+@Service
+@RequiredArgsConstructor
+public class PasswordResetServiceImpl implements PasswordResetService {
+
+    private final UserRepository userRepository;
+    private final PasswordResetTokenRepository tokenRepository;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
+
+    // Token valid for 10 minutes
+    private static final int EXPIRATION_MINUTES = 10;
+
+    @Override
+    @Transactional
+    public void processForgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        // Delete any existing OTP for this user
+        tokenRepository.findByUser(user).ifPresent(tokenRepository::delete);
+
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .otp(otp)
+                .user(user)
+                .expiryDate(Instant.now().plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES))
+                .build();
+
+        tokenRepository.save(resetToken);
+
+        // Send Email
+        String subject = "Password Reset Request";
+        String message = "Your OTP for password reset is: " + otp + "\nThis code will expire in " + EXPIRATION_MINUTES
+                + " minutes.";
+
+        emailService.sendSimpleMessage(user.getEmail(), subject, message);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        PasswordResetToken resetToken = tokenRepository.findByUser(user)
+                .orElseThrow(() -> new BadRequestException("No OTP requested for this user"));
+
+        if (!resetToken.getOtp().equals(otp)) {
+            throw new BadRequestException("Invalid OTP");
+        }
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            tokenRepository.delete(resetToken);
+            throw new BadRequestException("OTP has expired");
+        }
+
+        // OTP Valid - Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Delete token after successful reset
+        tokenRepository.delete(resetToken);
+    }
+}
