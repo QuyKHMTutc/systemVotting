@@ -45,10 +45,10 @@ const Login = () => {
 
     return (
         <div className="flex items-center justify-center min-h-screen">
-            <div className="glass-panel w-full max-w-md p-8 rounded-2xl shadow-2xl transition-all duration-300 hover:shadow-indigo-500/20">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                    <p className="text-indigo-200/80">Sign in to your account</p>
+            <div className="glass-panel w-full max-w-md p-10 rounded-3xl transition-all duration-500 hover:shadow-pink-500/20">
+                <div className="text-center mb-10">
+                    <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Welcome Back</h1>
+                    <p className="text-pink-100/70 font-medium">Sign in to your account</p>
                 </div>
 
                 {error && (
@@ -59,31 +59,31 @@ const Login = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-indigo-100 mb-2">Username</label>
+                        <label className="block text-sm font-semibold text-pink-50 mb-2 uppercase tracking-wide">Username</label>
                         <input
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                            className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all font-medium"
                             placeholder="Enter your username"
                             required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-indigo-100 mb-2">Password</label>
+                        <label className="block text-sm font-semibold text-pink-50 mb-2 uppercase tracking-wide">Password</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                            className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all font-medium"
                             placeholder="Enter your password"
                             required
                         />
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
-                        <Link to="/forgot-password" className="text-indigo-300 hover:text-indigo-200 transition-colors">
+                        <Link to="/forgot-password" className="text-pink-300 hover:text-pink-200 transition-colors font-medium">
                             Forgot password?
                         </Link>
                     </div>
@@ -91,15 +91,15 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="w-full py-3.5 px-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
 
-                <p className="mt-8 text-center text-indigo-200/60 text-sm">
+                <p className="mt-8 text-center text-pink-100/60 text-sm font-medium">
                     Don't have an account?{' '}
-                    <Link to="/register" className="text-white hover:text-indigo-300 font-medium transition-colors">
+                    <Link to="/register" className="text-white hover:text-pink-300 font-bold transition-colors">
                         Create account
                     </Link>
                 </p>

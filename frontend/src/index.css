@@ -2,23 +2,29 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --background: #f3f4f6;
-  --surface: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --text-main: #111827;
-  --text-muted: #6b7280;
+  --primary: #8b5cf6;
+  /* Violet 500 */
+  --primary-hover: #7c3aed;
+  /* Violet 600 */
+  --background: #0f0c29;
+  --surface: rgba(255, 255, 255, 0.05);
+  /* Very subtle white for glass */
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-main: #f8fafc;
+  /* Slate 50 */
+  --text-muted: #cbd5e1;
+  /* Slate 300 */
 }
 
 body {
   font-family: 'Inter', sans-serif;
   background-color: var(--background);
   color: var(--text-main);
+  /* Deep purple and neon pink blurred waves effect */
   background-image:
-    radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+    radial-gradient(ellipse at 15% 50%, rgba(120, 31, 164, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 30%, rgba(255, 20, 147, 0.35) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(75, 0, 130, 0.5) 0%, transparent 60%);
   background-attachment: fixed;
   background-size: cover;
   min-height: 100vh;
@@ -26,8 +32,9 @@ body {
 
 .glass-panel {
   background: var(--surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  /* Soft but deep shadow */
 }
