@@ -20,7 +20,7 @@ const Register = () => {
         try {
             const response = await authService.register({ username, email, password });
 
-            if (response.success) {
+            if (response.status === 200) {
                 setSuccess('Account created successfully! Redirecting to login...');
                 setTimeout(() => {
                     navigate('/login');

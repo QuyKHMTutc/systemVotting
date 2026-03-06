@@ -41,8 +41,8 @@ const CreatePoll = () => {
         try {
             const formattedEndTime = new Date(endTime).toISOString();
             const payload = {
-                question,
-                options: options.map(opt => ({ content: opt })),
+                title: question,
+                options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime
             };
 

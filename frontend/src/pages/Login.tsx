@@ -18,7 +18,7 @@ const Login = () => {
         try {
             const response = await authService.login({ username, password });
 
-            if (response.success && response.data) {
+            if (response.status === 200 && response.data) {
                 // Decode token to get user info if backend doesnt send user directly.
                 // Assuming backend token contains sub (which is id or username).
                 // For now, let's just make a mock user object based on username since the payload is just token
