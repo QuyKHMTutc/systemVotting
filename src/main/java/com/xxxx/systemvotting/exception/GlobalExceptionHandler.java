@@ -1,6 +1,6 @@
 package com.xxxx.systemvotting.exception;
 
-import com.xxxx.systemvotting.common.ApiResponse;
+import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.exception.custom.BadRequestException;
 import com.xxxx.systemvotting.exception.custom.DuplicateResourceException;
 import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;

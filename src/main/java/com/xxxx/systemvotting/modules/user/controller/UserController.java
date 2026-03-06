@@ -1,6 +1,6 @@
 package com.xxxx.systemvotting.modules.user.controller;
 
-import com.xxxx.systemvotting.common.ApiResponse;
+import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
 import com.xxxx.systemvotting.modules.user.service.UserService;

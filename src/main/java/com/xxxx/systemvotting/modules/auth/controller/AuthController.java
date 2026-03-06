@@ -1,6 +1,6 @@
 package com.xxxx.systemvotting.modules.auth.controller;
 
-import com.xxxx.systemvotting.common.ApiResponse;
+import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.auth.dto.request.AuthRequestDTO;
 import com.xxxx.systemvotting.modules.auth.dto.response.AuthResponseDTO;
 import com.xxxx.systemvotting.modules.auth.service.RefreshTokenService;

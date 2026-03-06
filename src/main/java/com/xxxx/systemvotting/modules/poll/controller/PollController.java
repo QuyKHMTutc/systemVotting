@@ -1,6 +1,6 @@
 package com.xxxx.systemvotting.modules.poll.controller;
 
-import com.xxxx.systemvotting.common.ApiResponse;
+import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.poll.service.PollService;

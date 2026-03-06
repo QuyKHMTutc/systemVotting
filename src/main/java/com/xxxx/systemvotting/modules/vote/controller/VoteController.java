@@ -1,6 +1,6 @@
 package com.xxxx.systemvotting.modules.vote.controller;
 
-import com.xxxx.systemvotting.common.ApiResponse;
+import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.vote.dto.request.VoteRequestDTO;
 import com.xxxx.systemvotting.modules.vote.dto.response.VoteResponseDTO;

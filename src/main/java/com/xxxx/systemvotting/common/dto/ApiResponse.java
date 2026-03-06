@@ -1,4 +1,4 @@
-package com.xxxx.systemvotting.common;
+package com.xxxx.systemvotting.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
