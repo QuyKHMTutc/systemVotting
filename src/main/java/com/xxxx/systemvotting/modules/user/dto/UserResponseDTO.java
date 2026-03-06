@@ -8,6 +8,9 @@ public class UserResponseDTO {
     private Long id;
     private String username;
     private String email;
+    private String avatarUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean locked;
+    private String role;
 }

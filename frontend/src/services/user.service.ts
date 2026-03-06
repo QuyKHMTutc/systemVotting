@@ -5,6 +5,7 @@ export interface UserDTO {
     username: string;
     email: string;
     role: string;
+    locked: boolean;
 }
 
 export const userService = {
@@ -15,11 +16,7 @@ export const userService = {
         return response.data.data; // Assuming BaseResponse wrapper
     },
 
-    promoteToAdmin: async (id: number): Promise<void> => {
-        await api.post(`/users/${id}/promote`);
-    },
-
-    deleteUser: async (id: number): Promise<void> => {
-        await api.delete(`/users/${id}`);
+    toggleLock: async (id: number): Promise<void> => {
+        await api.put(`/users/${id}/toggle-lock`);
     }
 };

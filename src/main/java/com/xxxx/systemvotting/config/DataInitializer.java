@@ -25,7 +25,7 @@ public class DataInitializer implements CommandLineRunner {
             log.info("No users found in database. Initializing default SuperAdmin account.");
             User admin = User.builder()
                     .username("admin")
-                    .email("admin@systemvotting.com")
+                    .email("admin@gmail.com")
                     .password(passwordEncoder.encode("admin"))
                     .role(Role.ADMIN)
                     .createdAt(LocalDateTime.now())

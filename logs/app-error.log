@@ -136,3 +136,125 @@ Caused by: java.lang.ClassNotFoundException: AuthRequestDTO
 2026-03-06 09:43:39,860 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-2] Cannot delete or update a parent row: a foreign key constraint fails (`systemvotting`.`refresh_tokens`, CONSTRAINT `FK1lih5y2npsf8u5o3vhdb9y0os` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`))
 2026-03-06 09:47:15,312 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-4] Table 'systemvotting.users' doesn't exist
 2026-03-06 09:47:15,318 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-4] Table 'systemvotting.users' doesn't exist
+2026-03-06 11:17:41,687 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-3] Cannot delete or update a parent row: a foreign key constraint fails (`systemvotting`.`votes`, CONSTRAINT `FKegm12kr5toym1nt7ndgr9isw9` FOREIGN KEY (`option_id`) REFERENCES `options` (`id`))
+2026-03-06 11:17:58,252 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-7] Cannot delete or update a parent row: a foreign key constraint fails (`systemvotting`.`votes`, CONSTRAINT `FKegm12kr5toym1nt7ndgr9isw9` FOREIGN KEY (`option_id`) REFERENCES `options` (`id`))
+2026-03-06 11:26:08,597 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-3] Cannot delete or update a parent row: a foreign key constraint fails (`systemvotting`.`votes`, CONSTRAINT `FKegm12kr5toym1nt7ndgr9isw9` FOREIGN KEY (`option_id`) REFERENCES `options` (`id`))
+2026-03-06 11:26:41,188 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-2] Cannot delete or update a parent row: a foreign key constraint fails (`systemvotting`.`votes`, CONSTRAINT `FKegm12kr5toym1nt7ndgr9isw9` FOREIGN KEY (`option_id`) REFERENCES `options` (`id`))
+2026-03-06 11:27:08,644 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-3] Cannot delete or update a parent row: a foreign key constraint fails (`systemvotting`.`votes`, CONSTRAINT `FKegm12kr5toym1nt7ndgr9isw9` FOREIGN KEY (`option_id`) REFERENCES `options` (`id`))
+2026-03-06 11:29:21,642 ERROR o.s.b.SpringApplication [restartedMain] Application run failed
+org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'pollController' defined in file [/home/guyguy/IdeaProjects/SystemVotting/target/classes/com/xxxx/systemvotting/modules/poll/controller/PollController.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'pollServiceImpl' defined in file [/home/guyguy/IdeaProjects/SystemVotting/target/classes/com/xxxx/systemvotting/modules/poll/service/impl/PollServiceImpl.class]: Failed to instantiate [com.xxxx.systemvotting.modules.poll.service.impl.PollServiceImpl]: Constructor threw exception
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
+	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1371)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1208)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:563)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:523)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:336)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:288)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:334)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:199)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1122)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1093)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1030)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
+	at com.xxxx.systemvotting.SystemVottingApplication.main(SystemVottingApplication.java:10)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.boot.devtools.restart.RestartLauncher.run(RestartLauncher.java:50)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'pollServiceImpl' defined in file [/home/guyguy/IdeaProjects/SystemVotting/target/classes/com/xxxx/systemvotting/modules/poll/service/impl/PollServiceImpl.class]: Failed to instantiate [com.xxxx.systemvotting.modules.poll.service.impl.PollServiceImpl]: Constructor threw exception
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:321)
+	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:309)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1371)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1208)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:563)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:523)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:336)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:288)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:334)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:199)
+	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1626)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1514)
+	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
+	... 24 common frames omitted
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [com.xxxx.systemvotting.modules.poll.service.impl.PollServiceImpl]: Constructor threw exception
+	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:222)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:145)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:318)
+	... 38 common frames omitted
+Caused by: java.lang.Error: Unresolved compilation problem: 
+
+	at com.xxxx.systemvotting.modules.poll.service.impl.PollServiceImpl.<init>(PollServiceImpl.java:22)
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:502)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:486)
+	at org.springframework.beans.BeanUtils.instantiateClass(BeanUtils.java:209)
+	... 40 common frames omitted
+2026-03-06 11:33:46,421 ERROR o.h.e.j.s.SqlExceptionHelper [http-nio-8080-exec-4] Cannot delete or update a parent row: a foreign key constraint fails (`systemvotting`.`votes`, CONSTRAINT `FKegm12kr5toym1nt7ndgr9isw9` FOREIGN KEY (`option_id`) REFERENCES `options` (`id`))
+2026-03-06 11:35:38,049 ERROR o.s.b.d.LoggingFailureAnalysisReporter [restartedMain] 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+2026-03-06 11:40:25,942 ERROR o.s.b.d.LoggingFailureAnalysisReporter [restartedMain] 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of constructor in com.xxxx.systemvotting.modules.auth.controller.AuthController required a bean of type 'com.xxxx.systemvotting.modules.user.service.UserService' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.xxxx.systemvotting.modules.user.service.UserService' in your configuration.
+
+2026-03-06 11:40:43,074 ERROR o.s.b.d.LoggingFailureAnalysisReporter [restartedMain] 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of constructor in com.xxxx.systemvotting.modules.auth.controller.AuthController required a bean of type 'com.xxxx.systemvotting.modules.user.service.UserService' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.xxxx.systemvotting.modules.user.service.UserService' in your configuration.
+
+2026-03-06 11:40:45,296 ERROR o.s.b.d.LoggingFailureAnalysisReporter [restartedMain] 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 1 of constructor in com.xxxx.systemvotting.modules.user.service.impl.UserServiceImpl required a bean of type 'com.xxxx.systemvotting.modules.user.mapper.UserMapper' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.xxxx.systemvotting.modules.user.mapper.UserMapper' in your configuration.
+

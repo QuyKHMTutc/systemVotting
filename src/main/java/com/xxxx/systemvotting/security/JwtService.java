@@ -43,10 +43,14 @@ public class JwtService {
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
+        String subject = userDetails.getUsername();
+        if (userDetails instanceof com.xxxx.systemvotting.modules.user.entity.User) {
+            subject = ((com.xxxx.systemvotting.modules.user.entity.User) userDetails).getEmail();
+        }
         return Jwts
                 .builder()
                 .claims(extraClaims)
-                .subject(userDetails.getUsername())
+                .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey(), Jwts.SIG.HS256)
@@ -55,7 +59,11 @@ public class JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        String expectedSubject = userDetails.getUsername();
+        if (userDetails instanceof com.xxxx.systemvotting.modules.user.entity.User) {
+            expectedSubject = ((com.xxxx.systemvotting.modules.user.entity.User) userDetails).getEmail();
+        }
+        return (username.equals(expectedSubject)) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {

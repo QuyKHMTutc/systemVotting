@@ -11,6 +11,7 @@ import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
+import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ public class PollServiceImpl implements PollService {
 
     private final PollRepository pollRepository;
     private final UserRepository userRepository;
+    private final VoteRepository voteRepository;
     private final PollMapper pollMapper;
 
     @Override
@@ -78,6 +80,10 @@ public class PollServiceImpl implements PollService {
             throw new org.springframework.security.access.AccessDeniedException(
                     "You do not have permission to delete this poll");
         }
+
+        // Delete all votes associated with this poll's options to satisfy FK
+        // constraints
+        poll.getOptions().forEach(option -> voteRepository.deleteByOptionId(option.getId()));
 
         pollRepository.delete(poll);
     }

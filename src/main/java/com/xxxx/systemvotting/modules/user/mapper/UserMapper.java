@@ -12,6 +12,7 @@ import java.util.List;
 public interface UserMapper {
     @org.mapstruct.Mapping(target = "id", ignore = true)
     @org.mapstruct.Mapping(target = "role", ignore = true)
+    @org.mapstruct.Mapping(target = "locked", ignore = true)
     @org.mapstruct.Mapping(target = "createdAt", ignore = true)
     @org.mapstruct.Mapping(target = "updatedAt", ignore = true)
     User toEntity(UserCreateRequestDTO dto);

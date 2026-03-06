@@ -43,17 +43,17 @@ public class PollController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PollResponseDTO>> getPoll(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<PollResponseDTO>> getPoll(@PathVariable("id") Long id) {
         PollResponseDTO poll = pollService.getPollById(id);
         return ResponseEntity.ok(ApiResponse.success(poll));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<PollResponseDTO>>> getAllPolls(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(name = "direction", defaultValue = "desc") String direction) {
 
         Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
@@ -65,7 +65,7 @@ public class PollController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deletePoll(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @AuthenticationPrincipal User user) {
         pollService.deletePoll(id, user);
         return ResponseEntity.ok(ApiResponse.success("Poll deleted successfully", null));

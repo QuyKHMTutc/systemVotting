@@ -153,7 +153,7 @@ const Dashboard = () => {
                                                 )}
                                             </div>
 
-                                            <h2 className="text-xl font-bold text-white mb-3 line-clamp-2 leading-tight">{poll.title}</h2>
+                                            <h2 className="text-2xl font-extrabold text-white mb-3 line-clamp-2 leading-tight">{poll.title}</h2>
 
                                             <div className="flex-grow">
                                                 <div className="flex items-center gap-2 mb-4 text-sm">

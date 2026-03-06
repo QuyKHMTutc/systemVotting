@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
 
 const Login = () => {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const response = await authService.login({ username, password });
+            const response = await authService.login({ email, password });
 
             if (response.status === 200 && response.data) {
                 // Decode token to get user info if backend doesnt send user directly.
@@ -27,8 +27,8 @@ const Login = () => {
                 const tokenPayload = JSON.parse(atob(response.data.accessToken.split('.')[1]));
                 const userData = {
                     id: tokenPayload.id || 0,
-                    username: tokenPayload.sub || username,
-                    email: '', // Not in token
+                    username: tokenPayload.sub || '',
+                    email: email,
                     role: tokenPayload.role || 'USER'
                 };
 
@@ -59,13 +59,13 @@ const Login = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-semibold text-pink-50 mb-2 uppercase tracking-wide">Username</label>
+                        <label className="block text-sm font-semibold text-pink-50 mb-2 uppercase tracking-wide">Email Address</label>
                         <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all font-medium"
-                            placeholder="Enter your username"
+                            placeholder="Enter your email address"
                             required
                         />
                     </div>

@@ -37,11 +37,16 @@ public class User implements UserDetails {
 
     private String email;
 
+    private String avatarUrl;
+
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private Role role = Role.USER;
+
+    @Builder.Default
+    private boolean locked = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -73,7 +78,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !locked;
     }
 
     @Override

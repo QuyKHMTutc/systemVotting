@@ -57,11 +57,12 @@ public class AuthController {
 
                 authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(
-                                                requestDTO.getUsername(),
+                                                requestDTO.getEmail(),
                                                 requestDTO.getPassword()));
 
-                User user = userRepository.findByUsername(requestDTO.getUsername())
-                                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                User user = userRepository.findByEmail(requestDTO.getEmail())
+                                .orElseThrow(() -> new UsernameNotFoundException(
+                                                "User not found: " + requestDTO.getEmail()));
 
                 Map<String, Object> extraClaims = new HashMap<>();
                 extraClaims.put("role", user.getRole().name());

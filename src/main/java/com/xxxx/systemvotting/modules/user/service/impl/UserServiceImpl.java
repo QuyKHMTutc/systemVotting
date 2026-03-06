@@ -1,6 +1,7 @@
 package com.xxxx.systemvotting.modules.user.service.impl;
 
 import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
+import com.xxxx.systemvotting.modules.user.dto.UserProfileUpdateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.mapper.UserMapper;
@@ -22,10 +23,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final com.xxxx.systemvotting.modules.vote.repository.VoteRepository voteRepository;
-    private final com.xxxx.systemvotting.modules.poll.repository.PollRepository pollRepository;
     private final com.xxxx.systemvotting.modules.auth.repository.RefreshTokenRepository refreshTokenRepository;
-    private final com.xxxx.systemvotting.modules.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Override
     @Transactional
@@ -74,16 +72,41 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(Long id) {
+    public UserResponseDTO toggleLock(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
-        // Manually delete associations to prevent Foreign Key Constraint errors
-        voteRepository.deleteByUser(user);
-        pollRepository.deleteByCreator(user);
-        refreshTokenRepository.deleteByUser(user);
-        passwordResetTokenRepository.deleteByUser(user);
+        user.setLocked(!user.isLocked());
 
-        userRepository.deleteById(id);
+        if (user.isLocked()) {
+            // Invalidate active sessions
+            refreshTokenRepository.deleteByUser(user);
+        }
+
+        User updatedUser = userRepository.save(user);
+        return userMapper.toDto(updatedUser);
+    }
+
+    @Override
+    @Transactional
+    public UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (requestDTO.getUsername() != null && !requestDTO.getUsername().trim().isEmpty()) {
+            String newUsername = requestDTO.getUsername().trim();
+            // Check if another user already has this username
+            if (!user.getUsername().equals(newUsername) && userRepository.existsByUsername(newUsername)) {
+                throw new com.xxxx.systemvotting.exception.custom.DuplicateResourceException("Username already taken");
+            }
+            user.setUsername(newUsername);
+        }
+
+        if (requestDTO.getAvatarUrl() != null) {
+            user.setAvatarUrl(requestDTO.getAvatarUrl().trim());
+        }
+
+        User updatedUser = userRepository.save(user);
+        return userMapper.toDto(updatedUser);
     }
 }
