@@ -10,15 +10,15 @@
 [INFO] 
 [INFO] --- resources:3.3.1:resources (default-resources) @ SystemVotting ---
 [INFO] Copying 1 resource from src/main/resources to target/classes
-[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] Copying 1 resource from src/main/resources to target/classes
 [INFO] 
 [INFO] --- compiler:3.13.0:compile (default-compile) @ SystemVotting ---
 [INFO] Recompiling the module because of changed source code.
-[INFO] Compiling 49 source files with javac [debug parameters release 21] to target/classes
-[WARNING] /home/guyguy/IdeaProjects/SystemVotting/src/main/java/com/xxxx/systemvotting/modules/user/mapper/UserMapper.java:[13,10] Unmapped target properties: "id, role, createdAt, updatedAt".
+[INFO] Compiling 56 source files with javac [debug parameters release 21] to target/classes
 [WARNING] /home/guyguy/IdeaProjects/SystemVotting/src/main/java/com/xxxx/systemvotting/modules/poll/mapper/PollMapper.java:[21,10] Unmapped target properties: "id, createdAt, updatedAt".
 [WARNING] /home/guyguy/IdeaProjects/SystemVotting/src/main/java/com/xxxx/systemvotting/modules/poll/mapper/PollMapper.java:[27,12] Unmapped target properties: "id, voteCount, poll".
 [WARNING] /home/guyguy/IdeaProjects/SystemVotting/src/main/java/com/xxxx/systemvotting/modules/vote/mapper/VoteMapper.java:[16,10] Unmapped target properties: "id, createdAt".
+[WARNING] /home/guyguy/IdeaProjects/SystemVotting/src/main/java/com/xxxx/systemvotting/modules/user/mapper/UserMapper.java:[13,10] Unmapped target properties: "id, role, createdAt, updatedAt".
 [INFO] 
 [INFO] --- resources:3.3.1:testResources (default-testResources) @ SystemVotting ---
 [INFO] skip non existing resourceDirectory /home/guyguy/IdeaProjects/SystemVotting/src/test/resources
@@ -39,6 +39,6 @@
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  3.487 s
-[INFO] Finished at: 2026-03-06T08:06:14+07:00
+[INFO] Total time:  5.787 s
+[INFO] Finished at: 2026-03-06T08:21:56+07:00
 [INFO] ------------------------------------------------------------------------
