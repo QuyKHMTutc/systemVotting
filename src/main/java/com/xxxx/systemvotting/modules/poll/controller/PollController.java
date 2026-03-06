@@ -1,0 +1,73 @@
+package com.xxxx.systemvotting.modules.poll.controller;
+
+import com.xxxx.systemvotting.common.ApiResponse;
+import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
+import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
+import com.xxxx.systemvotting.modules.poll.service.PollService;
+import com.xxxx.systemvotting.modules.user.entity.User;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/polls")
+@RequiredArgsConstructor
+public class PollController {
+
+    private final PollService pollService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<PollResponseDTO>> createPoll(
+            @Valid @RequestBody PollCreateRequestDTO requestDTO,
+            @AuthenticationPrincipal User user) {
+
+        requestDTO.setCreatorId(user.getId());
+
+        PollResponseDTO createdPoll = pollService.createPoll(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Poll created successfully", createdPoll));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<PollResponseDTO>> getPoll(@PathVariable Long id) {
+        PollResponseDTO poll = pollService.getPollById(id);
+        return ResponseEntity.ok(ApiResponse.success(poll));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<PollResponseDTO>>> getAllPolls(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+
+        Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<PollResponseDTO> polls = pollService.getAllPolls(pageable);
+        return ResponseEntity.ok(ApiResponse.success(polls));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deletePoll(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        pollService.deletePoll(id, user);
+        return ResponseEntity.ok(ApiResponse.success("Poll deleted successfully", null));
+    }
+}
