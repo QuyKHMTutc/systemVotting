@@ -9,7 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -28,8 +28,8 @@ public class DataInitializer implements CommandLineRunner {
                     .email("admin@systemvotting.com")
                     .password(passwordEncoder.encode("adminpassword"))
                     .role(Role.ADMIN)
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
                     .build();
 
             userRepository.save(admin);

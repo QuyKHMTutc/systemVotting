@@ -6,6 +6,7 @@ import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.mapper.UserMapper;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.user.service.UserService;
+import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
