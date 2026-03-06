@@ -16,7 +16,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
@@ -36,11 +39,16 @@ public class UserController {
                 .body(ApiResponse.success("User created successfully", createdUser));
     }
 
-    @PutMapping("/me")
+    @PutMapping(value = "/me", consumes = { "multipart/form-data" })
     public ResponseEntity<ApiResponse<UserResponseDTO>> updateProfile(
-            @Valid @RequestBody UserProfileUpdateRequestDTO requestDTO,
+            @RequestParam(required = false) String username,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatarFile,
             @AuthenticationPrincipal User user) {
-        UserResponseDTO updatedUser = userService.updateProfile(user.getId(), requestDTO);
+
+        UserProfileUpdateRequestDTO requestDTO = new UserProfileUpdateRequestDTO();
+        requestDTO.setUsername(username);
+
+        UserResponseDTO updatedUser = userService.updateProfile(user.getId(), requestDTO, avatarFile);
         return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", updatedUser));
     }
 

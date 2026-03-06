@@ -27,7 +27,7 @@ const Login = () => {
                 const tokenPayload = JSON.parse(atob(response.data.accessToken.split('.')[1]));
                 const userData = {
                     id: tokenPayload.id || 0,
-                    username: tokenPayload.sub || '',
+                    username: tokenPayload.username || tokenPayload.sub || '',
                     email: email,
                     role: tokenPayload.role || 'USER'
                 };

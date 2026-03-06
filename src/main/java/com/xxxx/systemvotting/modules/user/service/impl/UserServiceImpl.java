@@ -8,11 +8,13 @@ import com.xxxx.systemvotting.modules.user.mapper.UserMapper;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.user.service.UserService;
 import com.xxxx.systemvotting.modules.user.enums.Role;
+import com.xxxx.systemvotting.common.service.FileStorageService;
 import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,6 +26,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final com.xxxx.systemvotting.modules.auth.repository.RefreshTokenRepository refreshTokenRepository;
+    private final FileStorageService fileStorageService;
 
     @Override
     @Transactional
@@ -89,7 +92,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO) {
+    public UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO,
+            MultipartFile avatarFile) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -102,8 +106,9 @@ public class UserServiceImpl implements UserService {
             user.setUsername(newUsername);
         }
 
-        if (requestDTO.getAvatarUrl() != null) {
-            user.setAvatarUrl(requestDTO.getAvatarUrl().trim());
+        if (avatarFile != null && !avatarFile.isEmpty()) {
+            String avatarUrl = fileStorageService.storeFile(avatarFile);
+            user.setAvatarUrl(avatarUrl);
         }
 
         User updatedUser = userRepository.save(user);

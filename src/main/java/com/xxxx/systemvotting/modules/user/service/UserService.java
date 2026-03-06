@@ -4,6 +4,7 @@ import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
 
 import com.xxxx.systemvotting.modules.user.dto.UserProfileUpdateRequestDTO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,5 +19,5 @@ public interface UserService {
 
     UserResponseDTO toggleLock(Long id);
 
-    UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO);
+    UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO, MultipartFile avatarFile);
 }

@@ -79,7 +79,7 @@ const Dashboard = () => {
                             placeholder="Search polls by title..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-indigo-200/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-indigo-200/40 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all"
                         />
                     </div>
                     <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">

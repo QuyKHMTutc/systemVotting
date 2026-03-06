@@ -67,6 +67,7 @@ public class AuthController {
                 Map<String, Object> extraClaims = new HashMap<>();
                 extraClaims.put("role", user.getRole().name());
                 extraClaims.put("id", user.getId());
+                extraClaims.put("username", user.getUsername());
 
                 String jwtToken = jwtService.generateToken(extraClaims, user);
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
@@ -93,6 +94,7 @@ public class AuthController {
                                         Map<String, Object> extraClaims = new HashMap<>();
                                         extraClaims.put("role", user.getRole().name());
                                         extraClaims.put("id", user.getId());
+                                        extraClaims.put("username", user.getUsername());
                                         String token = jwtService.generateToken(extraClaims, user);
                                         return ResponseEntity.ok(ApiResponse.success(
                                                         AuthResponseDTO.builder()
