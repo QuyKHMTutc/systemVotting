@@ -1,5 +1,8 @@
 package com.xxxx.systemvotting.modules.auth.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.auth.dto.request.AuthRequestDTO;
 import com.xxxx.systemvotting.modules.auth.dto.response.AuthResponseDTO;
@@ -60,7 +63,11 @@ public class AuthController {
                 User user = userRepository.findByUsername(requestDTO.getUsername())
                                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-                String jwtToken = jwtService.generateToken(user);
+                Map<String, Object> extraClaims = new HashMap<>();
+                extraClaims.put("role", user.getRole().name());
+                extraClaims.put("id", user.getId());
+
+                String jwtToken = jwtService.generateToken(extraClaims, user);
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
                 return ResponseEntity.ok(ApiResponse.success(
@@ -82,7 +89,10 @@ public class AuthController {
                                 .map(refreshTokenService::verifyExpiration)
                                 .map(RefreshToken::getUser)
                                 .map(user -> {
-                                        String token = jwtService.generateToken(user);
+                                        Map<String, Object> extraClaims = new HashMap<>();
+                                        extraClaims.put("role", user.getRole().name());
+                                        extraClaims.put("id", user.getId());
+                                        String token = jwtService.generateToken(extraClaims, user);
                                         return ResponseEntity.ok(ApiResponse.success(
                                                         AuthResponseDTO.builder()
                                                                         .accessToken(token)

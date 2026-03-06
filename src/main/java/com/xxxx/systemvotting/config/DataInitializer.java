@@ -26,14 +26,14 @@ public class DataInitializer implements CommandLineRunner {
             User admin = User.builder()
                     .username("admin")
                     .email("admin@systemvotting.com")
-                    .password(passwordEncoder.encode("adminpassword"))
+                    .password(passwordEncoder.encode("admin"))
                     .role(Role.ADMIN)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
 
             userRepository.save(admin);
-            log.info("SuperAdmin account created: admin / adminpassword");
+            log.info("SuperAdmin account created: admin / admin");
         }
     }
 }

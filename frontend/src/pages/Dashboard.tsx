@@ -80,7 +80,7 @@ const Dashboard = () => {
                                                 {isActive ? 'Active' : 'Ended'}
                                             </span>
 
-                                            {(user?.role === 'ADMIN' || user?.id === poll.creatorId) && (
+                                            {(user?.role === 'ADMIN' || user?.id === poll.creator.id) && (
                                                 <button
                                                     onClick={() => handleDelete(poll.id)}
                                                     className="text-white/40 hover:text-red-400 transition-colors"
@@ -90,10 +90,10 @@ const Dashboard = () => {
                                             )}
                                         </div>
 
-                                        <h2 className="text-xl font-bold text-white mb-2 line-clamp-2">{poll.question}</h2>
+                                        <h2 className="text-xl font-bold text-white mb-2 line-clamp-2">{poll.title}</h2>
 
                                         <div className="text-sm text-indigo-200/60 mb-6 space-y-1 mt-4">
-                                            <p>Created by: <span className="text-indigo-200/90">{poll.creatorUsername}</span></p>
+                                            <p>Created by: <span className="text-indigo-200/90">{poll.creator.username}</span></p>
                                             <p>Ends: {new Date(poll.endTime).toLocaleDateString()}</p>
                                             <p>Options: {poll.options.length}</p>
                                         </div>

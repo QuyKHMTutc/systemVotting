@@ -17,4 +17,6 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     @EntityGraph(attributePaths = { "options", "creator" })
     Optional<Poll> findById(Long id);
+
+    void deleteByCreator(com.xxxx.systemvotting.modules.user.entity.User creator);
 }

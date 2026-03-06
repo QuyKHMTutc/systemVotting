@@ -10,18 +10,21 @@ export interface PollPageResponse {
 
 export interface Poll {
     id: number;
-    question: string;
-    creatorId: number;
-    creatorUsername: string;
+    title: string;
+    description: string;
     startTime: string;
     endTime: string;
+    creator: {
+        id: number;
+        username: string;
+    };
     options: PollOption[];
     createdAt: string;
 }
 
 export interface PollOption {
     id: number;
-    content: string;
+    text: string;
     voteCount: number;
 }
 

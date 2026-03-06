@@ -6,7 +6,6 @@ import lombok.Data;
 @Data
 public class VoteRequestDTO {
 
-    @NotNull(message = "User ID is required")
     private Long userId;
 
     @NotNull(message = "Poll ID is required")

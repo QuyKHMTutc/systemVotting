@@ -16,6 +16,9 @@ import java.util.List;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { UserMapper.class })
 public interface PollMapper {
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "creator", ignore = true) // Will be mapped in Service
     @Mapping(target = "options", ignore = true) // Custom handling to maintain bidirectional relation
     Poll toEntity(PollCreateRequestDTO dto);
@@ -24,6 +27,9 @@ public interface PollMapper {
 
     List<PollResponseDTO> toDtoList(List<Poll> entities);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "voteCount", ignore = true)
+    @Mapping(target = "poll", ignore = true)
     Option toOptionEntity(OptionRequestDTO dto);
 
     OptionResponseDTO toOptionDto(Option entity);

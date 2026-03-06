@@ -41,7 +41,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('user', JSON.stringify(userData));
         setToken(accessToken);
         setUser(userData);
-        navigate('/');
+        if (userData.role === 'ADMIN') {
+            navigate('/admin');
+        } else {
+            navigate('/');
+        }
     };
 
     const logout = () => {

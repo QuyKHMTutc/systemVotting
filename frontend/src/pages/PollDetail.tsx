@@ -4,6 +4,9 @@ import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+const COLORS = ['#818cf8', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#60a5fa'];
 
 const PollDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -11,11 +14,16 @@ const PollDetail = () => {
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [voting, setVoting] = useState(false);
+    const [hasVoted, setHasVoted] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
         if (id) {
+            const voted = JSON.parse(localStorage.getItem('votedPolls') || '[]');
+            if (voted.includes(Number(id))) {
+                setHasVoted(true);
+            }
             fetchPoll(Number(id));
         }
     }, [id]);
@@ -37,14 +45,33 @@ const PollDetail = () => {
         setError('');
 
         try {
-            await api.post(`/votes/poll/${poll?.id}/option/${selectedOption}`);
+            await api.post('/votes', {
+                pollId: poll?.id,
+                optionId: selectedOption
+            });
             // Refresh poll data to get updated vote counts
             if (poll) {
                 await fetchPoll(poll.id);
             }
+
+            const voted = JSON.parse(localStorage.getItem('votedPolls') || '[]');
+            if (poll?.id && !voted.includes(poll.id)) {
+                voted.push(poll.id);
+                localStorage.setItem('votedPolls', JSON.stringify(voted));
+            }
+            setHasVoted(true);
             setSelectedOption(null); // Reset selection
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to submit vote. You might have already voted.');
+            const errorMsg = err.response?.data?.message || 'Failed to submit vote. You might have already voted.';
+            setError(errorMsg);
+            if (err.response?.status === 400 || errorMsg.toLowerCase().includes('already voted')) {
+                const voted = JSON.parse(localStorage.getItem('votedPolls') || '[]');
+                if (poll?.id && !voted.includes(poll.id)) {
+                    voted.push(poll.id);
+                    localStorage.setItem('votedPolls', JSON.stringify(voted));
+                }
+                setHasVoted(true);
+            }
         } finally {
             setVoting(false);
         }
@@ -75,6 +102,26 @@ const PollDetail = () => {
 
     const isActive = new Date(poll.endTime) > new Date();
     const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
+    const showResults = hasVoted || !isActive;
+
+    const chartData = poll.options.map(opt => ({
+        name: opt.text.length > 15 ? opt.text.substring(0, 15) + '...' : opt.text,
+        votes: opt.voteCount,
+        fullText: opt.text
+    }));
+
+    // Custom Tooltip for the chart
+    const CustomTooltip = ({ active, payload }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-[#1e1e2f]/90 border border-white/10 p-3 rounded-lg shadow-xl backdrop-blur-md">
+                    <p className="text-white font-medium text-sm mb-1">{payload[0].payload.fullText}</p>
+                    <p className="text-indigo-300 font-bold">{payload[0].value} votes</p>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="min-h-screen pb-12">
@@ -95,9 +142,9 @@ const PollDetail = () => {
                             <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${isActive ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'} mb-4 inline-block`}>
                                 {isActive ? 'Active' : 'Ended'}
                             </span>
-                            <h1 className="text-3xl font-bold text-white mb-2">{poll.question}</h1>
+                            <h1 className="text-3xl font-bold text-white mb-2">{poll.title}</h1>
                             <p className="text-indigo-200/60 text-sm">
-                                Created by <span className="text-white">{poll.creatorUsername}</span> • Ends on {new Date(poll.endTime).toLocaleString()}
+                                Created by <span className="text-white">{poll.creator.username}</span> • Ends on {new Date(poll.endTime).toLocaleString()}
                             </p>
                         </div>
                     </div>
@@ -120,10 +167,12 @@ const PollDetail = () => {
                                     className={`relative overflow-hidden rounded-xl border transition-all duration-300 p-4 ${isActive ? 'cursor-pointer hover:border-indigo-400' : 'cursor-default'} ${isSelected ? 'border-indigo-400 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'border-white/10 bg-white/5'}`}
                                 >
                                     {/* Progress Bar Background */}
-                                    <div
-                                        className="absolute inset-0 bg-white/10"
-                                        style={{ width: `${percentage}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                                    ></div>
+                                    {showResults && (
+                                        <div
+                                            className="absolute inset-0 bg-white/10"
+                                            style={{ width: `${percentage}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                        ></div>
+                                    )}
 
                                     <div className="relative z-10 flex justify-between items-center">
                                         <div className="flex items-center gap-3">
@@ -132,12 +181,16 @@ const PollDetail = () => {
                                                     {isSelected && <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full"></div>}
                                                 </div>
                                             )}
-                                            <span className="text-white font-medium text-lg">{option.content}</span>
+                                            <span className="text-white font-medium text-lg">{option.text}</span>
                                         </div>
 
                                         <div className="text-right">
-                                            <span className="text-white font-bold block">{percentage}%</span>
-                                            <span className="text-indigo-200/60 text-xs">{option.voteCount} votes</span>
+                                            {showResults && (
+                                                <>
+                                                    <span className="text-white font-bold block">{percentage}%</span>
+                                                    <span className="text-indigo-200/60 text-xs">{option.voteCount} votes</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -145,12 +198,53 @@ const PollDetail = () => {
                         })}
                     </div>
 
+                    {/* Chart Visualization */}
+                    {totalVotes > 0 && showResults && (
+                        <div className="mt-10 mb-8 p-6 bg-white/5 border border-white/10 rounded-2xl">
+                            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                                </svg>
+                                Live Visualization
+                            </h3>
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        data={chartData}
+                                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                                    >
+                                        <XAxis
+                                            dataKey="name"
+                                            stroke="#818cf8"
+                                            tick={{ fill: '#a5b4fc', fontSize: 12 }}
+                                            axisLine={{ stroke: '#4f46e5', opacity: 0.3 }}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            stroke="#818cf8"
+                                            tick={{ fill: '#a5b4fc', fontSize: 12 }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            allowDecimals={false}
+                                        />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                                        <Bar dataKey="votes" radius={[6, 6, 0, 0]} animationDuration={1500}>
+                                            {chartData.map((_, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex justify-between items-center pt-6 border-t border-white/10">
                         <div className="text-indigo-200/80">
-                            Total Votes: <span className="text-white font-bold">{totalVotes}</span>
+                            Total Votes: <span className="text-white font-bold">{showResults ? totalVotes : '?'}</span>
                         </div>
 
-                        {isActive && (
+                        {isActive && !hasVoted && (
                             <button
                                 onClick={handleVote}
                                 disabled={!selectedOption || voting}
@@ -158,6 +252,14 @@ const PollDetail = () => {
                             >
                                 {voting ? 'Submitting...' : 'Submit Vote'}
                             </button>
+                        )}
+                        {hasVoted && (
+                            <div className="px-6 py-3 bg-green-500/20 text-green-300 font-medium rounded-xl border border-green-500/30 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                You already voted
+                            </div>
                         )}
                     </div>
                 </div>

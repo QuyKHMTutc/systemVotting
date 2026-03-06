@@ -10,6 +10,10 @@ import java.util.List;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface UserMapper {
+    @org.mapstruct.Mapping(target = "id", ignore = true)
+    @org.mapstruct.Mapping(target = "role", ignore = true)
+    @org.mapstruct.Mapping(target = "createdAt", ignore = true)
+    @org.mapstruct.Mapping(target = "updatedAt", ignore = true)
     User toEntity(UserCreateRequestDTO dto);
 
     UserResponseDTO toDto(User entity);

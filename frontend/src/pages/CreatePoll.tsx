@@ -39,7 +39,8 @@ const CreatePoll = () => {
         setError('');
 
         try {
-            const formattedEndTime = new Date(endTime).toISOString();
+            // Send local time string directly, appending seconds since datetime-local input omits them
+            const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
             const payload = {
                 title: question,
                 options: options.map(opt => ({ text: opt })),

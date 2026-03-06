@@ -35,6 +35,9 @@ public class PollServiceImpl implements PollService {
 
         Poll poll = pollMapper.toEntity(requestDTO);
         poll.setCreator(creator);
+        if (poll.getStartTime() == null) {
+            poll.setStartTime(java.time.LocalDateTime.now());
+        }
 
         // Map and add options while preserving bidirectional relationship
         for (OptionRequestDTO optionRequest : requestDTO.getOptions()) {

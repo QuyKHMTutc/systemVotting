@@ -8,7 +8,7 @@ const Navbar = () => {
         <nav className="glass-panel sticky top-0 z-50 px-6 py-4 rounded-b-xl mb-8">
             <div className="max-w-7xl mx-auto flex justify-between items-center">
                 <Link to="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                    SystVot
+                    Votting
                 </Link>
 
                 <div className="flex items-center space-x-6">

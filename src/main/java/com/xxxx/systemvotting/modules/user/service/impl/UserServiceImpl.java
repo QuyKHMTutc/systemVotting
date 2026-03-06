@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,6 +22,10 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final com.xxxx.systemvotting.modules.vote.repository.VoteRepository voteRepository;
+    private final com.xxxx.systemvotting.modules.poll.repository.PollRepository pollRepository;
+    private final com.xxxx.systemvotting.modules.auth.repository.RefreshTokenRepository refreshTokenRepository;
+    private final com.xxxx.systemvotting.modules.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Override
     @Transactional
@@ -72,9 +75,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found with id: " + id);
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        // Manually delete associations to prevent Foreign Key Constraint errors
+        voteRepository.deleteByUser(user);
+        pollRepository.deleteByCreator(user);
+        refreshTokenRepository.deleteByUser(user);
+        passwordResetTokenRepository.deleteByUser(user);
+
         userRepository.deleteById(id);
     }
 }

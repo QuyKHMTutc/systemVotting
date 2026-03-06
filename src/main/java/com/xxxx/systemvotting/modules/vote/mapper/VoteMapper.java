@@ -10,6 +10,8 @@ import org.mapstruct.MappingConstants;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface VoteMapper {
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "poll", ignore = true)
     @Mapping(target = "option", ignore = true)
