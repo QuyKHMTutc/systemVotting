@@ -87,4 +87,22 @@ public class PollServiceImpl implements PollService {
 
         pollRepository.delete(poll);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<PollResponseDTO> getMyPolls(Long userId) {
+        java.util.List<Poll> polls = pollRepository.findByCreatorIdOrderByIdDesc(userId);
+        return polls.stream()
+                .map(pollMapper::toDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<PollResponseDTO> getVotedPolls(Long userId) {
+        java.util.List<Poll> polls = pollRepository.findPollsVotedByUser(userId);
+        return polls.stream()
+                .map(pollMapper::toDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
 }

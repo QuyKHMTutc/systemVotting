@@ -48,6 +48,9 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean locked = false;
 
+    @Builder.Default
+    private boolean isVerified = false;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -88,6 +91,8 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        // ADMIN accounts skip email verification
+        if (role == Role.ADMIN) return true;
+        return isVerified;
     }
 }

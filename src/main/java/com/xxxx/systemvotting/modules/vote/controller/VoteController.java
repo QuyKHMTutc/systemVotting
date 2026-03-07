@@ -35,4 +35,12 @@ public class VoteController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Vote submitted successfully", voteResult));
     }
+
+    @org.springframework.web.bind.annotation.GetMapping("/check")
+    public ResponseEntity<ApiResponse<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO>> checkVote(
+            @org.springframework.web.bind.annotation.RequestParam Long pollId,
+            @AuthenticationPrincipal User user) {
+        com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkResult = voteService.checkVote(user.getId(), pollId);
+        return ResponseEntity.ok(ApiResponse.success("Vote check retrieved successfully", checkResult));
+    }
 }

@@ -1,5 +1,7 @@
 package com.xxxx.systemvotting.modules.poll.controller;
 
+import java.util.List;
+
 import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
@@ -69,5 +71,19 @@ public class PollController {
             @AuthenticationPrincipal User user) {
         pollService.deletePoll(id, user);
         return ResponseEntity.ok(ApiResponse.success("Poll deleted successfully", null));
+    }
+
+    @GetMapping("/my-polls")
+    public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getMyPolls(
+            @AuthenticationPrincipal User user) {
+        java.util.List<PollResponseDTO> polls = pollService.getMyPolls(user.getId());
+        return ResponseEntity.ok(ApiResponse.success(polls));
+    }
+
+    @GetMapping("/my-voted")
+    public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getVotedPolls(
+            @AuthenticationPrincipal User user) {
+        java.util.List<PollResponseDTO> polls = pollService.getVotedPolls(user.getId());
+        return ResponseEntity.ok(ApiResponse.success(polls));
     }
 }

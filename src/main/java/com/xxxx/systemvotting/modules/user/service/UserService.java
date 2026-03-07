@@ -20,4 +20,8 @@ public interface UserService {
     UserResponseDTO toggleLock(Long id);
 
     UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO, MultipartFile avatarFile);
+
+    void verifyRegistrationOtp(String email, String otp);
+
+    void resendRegistrationOtp(String email);
 }

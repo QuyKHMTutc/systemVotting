@@ -76,4 +76,17 @@ public class VoteServiceImpl implements VoteService {
         Vote savedVote = voteRepository.save(vote);
         return voteMapper.toDto(savedVote);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkVote(Long userId, Long pollId) {
+        return voteRepository.findByUserIdAndPollId(userId, pollId)
+                .map(vote -> com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
+                        .hasVoted(true)
+                        .optionId(vote.getOption().getId())
+                        .build())
+                .orElse(com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
+                        .hasVoted(false)
+                        .build());
+    }
 }
