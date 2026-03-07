@@ -5,6 +5,7 @@ import type { Poll } from '../services/poll.service';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import confetti from 'canvas-confetti';
 
 const COLORS = ['#818cf8', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#60a5fa'];
 
@@ -20,13 +21,33 @@ const PollDetail = () => {
 
     useEffect(() => {
         if (id) {
+            // Check local storage for quick UI update
             const voted = JSON.parse(localStorage.getItem('votedPolls') || '[]');
             if (voted.includes(Number(id))) {
                 setHasVoted(true);
             }
+            // Verify with server for accuracy
+            checkVoteStatus(Number(id));
             fetchPoll(Number(id));
         }
     }, [id]);
+
+    const checkVoteStatus = async (pollId: number) => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return; // Not logged in
+            
+            const response = await api.get(`/votes/check?pollId=${pollId}`);
+            if (response.data?.data?.hasVoted) {
+                setHasVoted(true);
+                if (response.data.data.optionId) {
+                    setSelectedOption(response.data.data.optionId);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to check vote status relative to the server', err);
+        }
+    };
 
     const fetchPoll = async (pollId: number) => {
         try {
@@ -60,6 +81,10 @@ const PollDetail = () => {
                 localStorage.setItem('votedPolls', JSON.stringify(voted));
             }
             setHasVoted(true);
+            
+            // Trigger fireworks animation
+            fireworkEffect();
+            
             setSelectedOption(null); // Reset selection
         } catch (err: any) {
             const errorMsg = err.response?.data?.message || 'Failed to submit vote. You might have already voted.';
@@ -75,6 +100,26 @@ const PollDetail = () => {
         } finally {
             setVoting(false);
         }
+    };
+
+    const fireworkEffect = () => {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+
+        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+        const interval: any = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
     };
 
     if (loading) {
@@ -104,11 +149,15 @@ const PollDetail = () => {
     const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
     const showResults = hasVoted || !isActive;
 
-    const chartData = poll.options.map(opt => ({
-        name: opt.text.length > 15 ? opt.text.substring(0, 15) + '...' : opt.text,
-        votes: opt.voteCount,
-        fullText: opt.text
-    }));
+    const chartData = poll.options.map(opt => {
+        const percentage = totalVotes > 0 ? Math.round((opt.voteCount / totalVotes) * 100) : 0;
+        return {
+            name: opt.text.length > 15 ? opt.text.substring(0, 15) + '...' : opt.text,
+            votes: opt.voteCount,
+            percentage: percentage,
+            fullText: opt.text
+        };
+    });
 
     // Custom Tooltip for the chart
     const CustomTooltip = ({ active, payload }: any) => {
@@ -116,7 +165,7 @@ const PollDetail = () => {
             return (
                 <div className="bg-[#1e1e2f]/90 border border-white/10 p-3 rounded-lg shadow-xl backdrop-blur-md">
                     <p className="text-white font-medium text-sm mb-1">{payload[0].payload.fullText}</p>
-                    <p className="text-indigo-300 font-bold">{payload[0].value} votes</p>
+                    <p className="text-indigo-300 font-bold">{payload[0].value} votes ({payload[0].payload.percentage}%)</p>
                 </div>
             );
         }
@@ -163,8 +212,8 @@ const PollDetail = () => {
                             return (
                                 <div
                                     key={option.id}
-                                    onClick={() => isActive ? setSelectedOption(option.id) : null}
-                                    className={`relative overflow-hidden rounded-xl border transition-all duration-300 p-4 ${isActive ? 'cursor-pointer hover:border-indigo-400' : 'cursor-default'} ${isSelected ? 'border-indigo-400 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'border-white/10 bg-white/5'}`}
+                                    onClick={() => (isActive && !hasVoted) ? setSelectedOption(option.id) : null}
+                                    className={`relative overflow-hidden rounded-xl border transition-all duration-300 p-4 ${(isActive && !hasVoted) ? 'cursor-pointer hover:border-indigo-400' : 'cursor-default'} ${isSelected ? 'border-indigo-400 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'border-white/10 bg-white/5'}`}
                                 >
                                     {/* Progress Bar Background */}
                                     {showResults && (

@@ -5,6 +5,10 @@ export const authService = {
         const response = await api.post('/auth/login', data);
         return response.data;
     },
+    loginWithGoogle: async (idToken: string) => {
+        const response = await api.post('/auth/google', { idToken });
+        return response.data;
+    },
     register: async (data: any) => {
         const response = await api.post('/auth/register', data);
         return response.data;
@@ -15,6 +19,14 @@ export const authService = {
     },
     resetPassword: async (data: any) => {
         const response = await api.post('/auth/reset-password', data);
+        return response.data;
+    },
+    verifyRegistration: async (email: string, otp: string) => {
+        const response = await api.post('/auth/verify-registration', { email, otp });
+        return response.data;
+    },
+    resendRegistrationOtp: async (email: string) => {
+        const response = await api.post('/auth/resend-registration-otp', { email });
         return response.data;
     }
 };
