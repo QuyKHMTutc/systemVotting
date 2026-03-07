@@ -16,10 +16,10 @@ const Navbar = () => {
 
                 <div className="flex items-center space-x-6">
                     <div className="text-white hidden sm:flex items-center gap-4">
-                        <button
-                            onClick={() => setIsProfileModalOpen(true)}
+                        <Link
+                            to="/profile"
                             className="flex items-center gap-3 hover:bg-white/5 p-2 rounded-xl transition-colors text-left"
-                            aria-label="Edit Profile"
+                            aria-label="View Profile"
                         >
                             <div className="w-8 h-8 rounded-full border border-indigo-500 overflow-hidden bg-white/5 flex items-center justify-center shrink-0">
                                 {user?.avatarUrl ? (
@@ -29,7 +29,7 @@ const Navbar = () => {
                                 )}
                             </div>
                             <span className="font-medium text-white">{user?.username}</span>
-                        </button>
+                        </Link>
 
                         {user?.role === 'ADMIN' && (
                             <Link to="/admin" className="px-3 py-1 text-xs bg-purple-500/20 text-purple-200 hover:bg-purple-500/30 border border-purple-500/30 rounded-full transition-colors flex items-center gap-1">

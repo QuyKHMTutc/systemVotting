@@ -8,6 +8,7 @@ import PollDetail from './pages/PollDetail';
 import AdminPanel from './pages/AdminPanel';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import { Profile } from './pages/Profile';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, requireRole?: string }) => {
@@ -56,6 +57,12 @@ function App() {
             <Route path="/admin" element={
               <ProtectedRoute requireRole="ADMIN">
                 <AdminPanel />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/profile" element={
+              <ProtectedRoute requireRole="USER">
+                <Profile />
               </ProtectedRoute>
             } />
           </Routes>

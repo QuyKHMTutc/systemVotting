@@ -46,5 +46,15 @@ export const pollService = {
 
     deletePoll: async (id: number): Promise<void> => {
         await api.delete(`/polls/${id}`);
+    },
+
+    getMyPolls: async (): Promise<Poll[]> => {
+        const response = await api.get('/polls/my-polls');
+        return response.data.data;
+    },
+
+    getMyVotedPolls: async (): Promise<Poll[]> => {
+        const response = await api.get('/polls/my-voted');
+        return response.data.data;
     }
 };
