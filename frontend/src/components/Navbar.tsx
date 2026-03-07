@@ -1,11 +1,8 @@
-import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import UserProfileModal from './UserProfileModal';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
-    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
     return (
         <nav className="glass-panel sticky top-0 z-50 px-6 py-4 rounded-b-xl mb-8">
@@ -46,11 +43,6 @@ const Navbar = () => {
                     </button>
                 </div>
             </div>
-
-            <UserProfileModal
-                isOpen={isProfileModalOpen}
-                onClose={() => setIsProfileModalOpen(false)}
-            />
         </nav>
     );
 };

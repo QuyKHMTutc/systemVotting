@@ -6,6 +6,7 @@ import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import confetti from 'canvas-confetti';
+import { Share2, Check, X } from 'lucide-react';
 
 const COLORS = ['#818cf8', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#60a5fa'];
 
@@ -17,7 +18,15 @@ const PollDetail = () => {
     const [voting, setVoting] = useState(false);
     const [hasVoted, setHasVoted] = useState(false);
     const [error, setError] = useState('');
+    const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
+
+    const handleShare = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     useEffect(() => {
         if (id) {
@@ -176,18 +185,19 @@ const PollDetail = () => {
         <div className="min-h-screen pb-12">
             <Navbar />
 
-            <main className="max-w-3xl mx-auto px-6">
+            <main className="max-w-3xl mx-auto px-6 relative">
+                {/* Close button */}
                 <button
-                    onClick={() => navigate('/')}
-                    className="text-indigo-300 hover:text-indigo-100 mb-6 flex items-center transition-colors group text-sm"
+                    onClick={() => navigate(-1)}
+                    className="absolute -top-2 right-6 p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all hover:rotate-90 z-10"
+                    title="Thoát"
                 >
-                    <span className="mr-2 transform group-hover:-translate-x-1 transition-transform">←</span>
-                    Back to Dashboard
+                    <X className="w-6 h-6" />
                 </button>
 
                 <div className="glass-panel p-8 rounded-2xl shadow-xl">
-                    <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-6">
-                        <div>
+                    <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-6 relative">
+                        <div className="pr-12">
                             <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${isActive ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'} mb-4 inline-block`}>
                                 {isActive ? 'Active' : 'Ended'}
                             </span>
@@ -196,6 +206,18 @@ const PollDetail = () => {
                                 Created by <span className="text-white">{poll.creator.username}</span> • Ends on {new Date(poll.endTime).toLocaleString()}
                             </p>
                         </div>
+                        <button
+                            onClick={handleShare}
+                            className="absolute top-0 right-0 p-2.5 bg-white/5 hover:bg-white/10 text-indigo-200 hover:text-white rounded-xl transition-all border border-white/10 flex items-center justify-center group"
+                            title="Copy poll link"
+                        >
+                            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />}
+                            {copied && (
+                                <span className="absolute -bottom-8 right-0 bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap border border-white/10 animate-fade-in-up">
+                                    Link copied!
+                                </span>
+                            )}
+                        </button>
                     </div>
 
                     {error && (

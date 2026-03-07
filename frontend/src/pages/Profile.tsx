@@ -3,16 +3,36 @@ import { useAuth } from '../contexts/AuthContext';
 import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import { PollCard } from '../components/PollCard';
-import { UserCircle, ListPlus, CheckSquare } from 'lucide-react';
+import { ListPlus, CheckSquare, X, Trash2 } from 'lucide-react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import UserProfileModal from '../components/UserProfileModal';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const Profile = () => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<'created' | 'voted'>('created');
+    const navigate = useNavigate();
+
+    // Persist active tab in URL so it survives navigate(-1) from PollDetail
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = (searchParams.get('tab') as 'created' | 'voted') || 'created';
+    const setActiveTab = (tab: 'created' | 'voted') =>
+        setSearchParams({ tab }, { replace: true });
+
     const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
     const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+    const handleDeletePoll = async (pollId: number) => {
+        if (!window.confirm('Bạn có chắc muốn xóa cuộc bình chọn này không?')) return;
+        try {
+            await pollService.deletePoll(pollId);
+            setCreatedPolls(prev => prev.filter(p => p.id !== pollId));
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Xóa thất bại. Vui lòng thử lại.');
+        }
+    };
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -41,15 +61,43 @@ export const Profile = () => {
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-8">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-8 relative">
+                {/* Nút Đóng Profile */}
+                <button 
+                    onClick={() => navigate(-1)}
+                    className="absolute top-4 right-4 z-20 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-all backdrop-blur-md hover:rotate-90"
+                    aria-label="Close Profile"
+                    title="Đóng trang cá nhân"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-12 text-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
                     <div className="relative z-10 flex flex-col items-center">
-                        <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-md mb-4">
-                            <UserCircle className="h-20 w-20 text-indigo-600" />
+                        <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-md mb-4 overflow-hidden border-4 border-white/20">
+                            {user?.avatarUrl ? (
+                                <img 
+                                    src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `http://localhost:8080${user.avatarUrl}`} 
+                                    alt={user.username} 
+                                    className="w-full h-full object-cover" 
+                                    onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} 
+                                />
+                            ) : (
+                                <span className="text-4xl font-bold text-indigo-600">{user?.username?.charAt(0).toUpperCase()}</span>
+                            )}
                         </div>
                         <h1 className="text-3xl font-bold text-white mb-2">{user?.username}</h1>
                         <p className="text-blue-100">{user?.email}</p>
+                        <button
+                            onClick={() => setIsProfileModalOpen(true)}
+                            className="mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Edit Profile
+                        </button>
                     </div>
                 </div>
 
@@ -89,8 +137,16 @@ export const Profile = () => {
                          {activeTab === 'created' ? (
                             createdPolls.length > 0 ? (
                                 createdPolls.map(poll => (
-                                    <div key={poll.id} className="transition-transform duration-200 hover:-translate-y-1">
-                                         <PollCard poll={poll} />
+                                    <div key={poll.id} className="relative group/card transition-transform duration-200 hover:-translate-y-1">
+                                         <PollCard poll={poll} hasVoted={votedPolls.some(vp => vp.id === poll.id)} />
+                                         {/* Delete button - appears on hover */}
+                                         <button
+                                             onClick={() => handleDeletePoll(poll.id)}
+                                             className="absolute top-3 right-12 z-20 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover/card:opacity-100 transition-all shadow-md"
+                                             title="Xóa cuộc bình chọn này"
+                                         >
+                                             <Trash2 className="w-4 h-4" />
+                                         </button>
                                     </div>
                                 ))
                             ) : (
@@ -104,7 +160,7 @@ export const Profile = () => {
                             votedPolls.length > 0 ? (
                                 votedPolls.map(poll => (
                                     <div key={poll.id} className="transition-transform duration-200 hover:-translate-y-1">
-                                        <PollCard poll={poll} />
+                                        <PollCard poll={poll} hasVoted={true} />
                                     </div>
                                 ))
                             ) : (
@@ -118,6 +174,11 @@ export const Profile = () => {
                     </div>
                 </div>
             </div>
+
+            <UserProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+            />
         </div>
     );
 };

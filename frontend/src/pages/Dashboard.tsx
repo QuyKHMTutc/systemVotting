@@ -2,17 +2,36 @@ import { useEffect, useState } from 'react';
 import { pollService } from '../services/poll.service';
 import type { PollPageResponse } from '../services/poll.service';
 import Navbar from '../components/Navbar';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
     const [pollPage, setPollPage] = useState<PollPageResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [currentPage, setCurrentPage] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'ENDED'>('ALL');
+    const [votedPollIds, setVotedPollIds] = useState<number[]>([]);
     const { user } = useAuth();
+
+    // Store page and filter in URL so they survive navigation back from poll detail
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentPage = parseInt(searchParams.get('page') || '0', 10);
+    const filterStatus = (searchParams.get('filter') as 'ALL' | 'ACTIVE' | 'ENDED') || 'ALL';
+
+    const setCurrentPage = (valOrFn: number | ((prev: number) => number)) => {
+        const next = typeof valOrFn === 'function' ? valOrFn(currentPage) : valOrFn;
+        setSearchParams({ page: String(next), filter: filterStatus }, { replace: true });
+    };
+
+    const setFilterStatus = (status: 'ALL' | 'ACTIVE' | 'ENDED') => {
+        setSearchParams({ page: '0', filter: status }, { replace: true });
+    };
+
+    useEffect(() => {
+        // Load voted polls from localStorage so we can reflect vote status on cards
+        const stored = JSON.parse(localStorage.getItem('votedPolls') || '[]');
+        setVotedPollIds(stored);
+    }, []);
 
     useEffect(() => {
         fetchPolls(currentPage);
@@ -187,9 +206,15 @@ const Dashboard = () => {
 
                                                 <Link
                                                     to={`/poll/${poll.id}`}
-                                                    className={`block text-center w-full py-3 px-4 rounded-xl transition-all font-medium ${isActive ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20' : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'}`}
+                                                    className={`block text-center w-full py-3 px-4 rounded-xl transition-all font-medium ${
+                                                        !isActive
+                                                            ? 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                                                            : votedPollIds.includes(poll.id)
+                                                            ? 'bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20'
+                                                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
+                                                    }`}
                                                 >
-                                                    {isActive ? 'Vote Now' : 'View Results'}
+                                                    {!isActive ? 'View Results' : votedPollIds.includes(poll.id) ? 'View Results' : 'Vote Now'}
                                                 </Link>
                                             </div>
                                         </div>
