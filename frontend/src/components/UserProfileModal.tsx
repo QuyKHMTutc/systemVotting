@@ -68,7 +68,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                         <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200 tracking-wide">Edit Profile</h2>
                         <p className="text-indigo-200/60 text-sm mt-1">Customize your public voting identity</p>
                     </div>
-                    <button onClick={onClose} className="text-white/50 hover:text-white bg-white/5 hover:bg-white/10 p-2.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button onClick={onClose} className="p-2 sm:p-2.5 bg-white/10 border border-white/20 text-white hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-full transition-all duration-300 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-red-500">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                         </svg>

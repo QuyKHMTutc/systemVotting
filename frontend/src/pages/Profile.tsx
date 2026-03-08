@@ -65,7 +65,7 @@ export const Profile = () => {
                 {/* Nút Đóng Profile */}
                 <button 
                     onClick={() => navigate(-1)}
-                    className="absolute top-4 right-4 z-20 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-all backdrop-blur-md hover:rotate-90"
+                    className="absolute top-4 right-4 z-20 p-2.5 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full transition-all duration-300 hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] hover:rotate-90"
                     aria-label="Close Profile"
                     title="Đóng trang cá nhân"
                 >

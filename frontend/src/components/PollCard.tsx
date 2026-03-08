@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Poll } from '../services/poll.service';
 import { Share2, Check } from 'lucide-react';
 import { useState } from 'react';
+import { getCategoryIcon } from '../constants/categories';
 
 export const PollCard = ({ poll, hasVoted = false }: { poll: Poll; hasVoted?: boolean }) => {
     const isActive = new Date(poll.endTime) > new Date();
@@ -23,9 +24,20 @@ export const PollCard = ({ poll, hasVoted = false }: { poll: Poll; hasVoted?: bo
             
             <div className="relative z-10 flex-grow flex flex-col">
                 <div className="flex justify-between items-start mb-4">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
-                        {isActive ? '● Active' : '○ Ended'}
-                    </span>
+                    <div className="flex gap-2">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                            {isActive ? '● Active' : '○ Ended'}
+                        </span>
+                        {poll.category && (() => {
+                            const CatIcon = getCategoryIcon(poll.category);
+                            return (
+                                <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm bg-purple-100 text-purple-700 border-purple-200">
+                                    <CatIcon className="w-3 h-3" />
+                                    {poll.category}
+                                </span>
+                            );
+                        })()}
+                    </div>
                     <button
                         onClick={handleShare}
                         className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none relative group/share"

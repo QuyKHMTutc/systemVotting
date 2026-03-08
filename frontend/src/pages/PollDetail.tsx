@@ -189,7 +189,7 @@ const PollDetail = () => {
                 {/* Close button */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="absolute -top-2 right-6 p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all hover:rotate-90 z-10"
+                    className="absolute -top-4 right-4 z-20 p-2.5 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full transition-all duration-300 hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] hover:rotate-90"
                     title="Thoát"
                 >
                     <X className="w-6 h-6" />

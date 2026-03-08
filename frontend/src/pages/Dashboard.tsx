@@ -4,6 +4,7 @@ import type { PollPageResponse } from '../services/poll.service';
 import Navbar from '../components/Navbar';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { CATEGORIES, ALL_CATEGORY, getCategoryIcon } from '../constants/categories';
 
 const Dashboard = () => {
     const [pollPage, setPollPage] = useState<PollPageResponse | null>(null);
@@ -17,21 +18,35 @@ const Dashboard = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const currentPage = parseInt(searchParams.get('page') || '0', 10);
     const filterStatus = (searchParams.get('filter') as 'ALL' | 'ACTIVE' | 'ENDED') || 'ALL';
+    const filterCategory = searchParams.get('category') || 'ALL';
 
     const setCurrentPage = (valOrFn: number | ((prev: number) => number)) => {
         const next = typeof valOrFn === 'function' ? valOrFn(currentPage) : valOrFn;
-        setSearchParams({ page: String(next), filter: filterStatus }, { replace: true });
+        setSearchParams({ page: String(next), filter: filterStatus, category: filterCategory }, { replace: true });
     };
 
     const setFilterStatus = (status: 'ALL' | 'ACTIVE' | 'ENDED') => {
-        setSearchParams({ page: '0', filter: status }, { replace: true });
+        setSearchParams({ page: '0', filter: status, category: filterCategory }, { replace: true });
+    };
+
+    const setFilterCategoryValue = (category: string) => {
+        setSearchParams({ page: '0', filter: filterStatus, category: category }, { replace: true });
     };
 
     useEffect(() => {
         // Load voted polls from localStorage so we can reflect vote status on cards
         const stored = JSON.parse(localStorage.getItem('votedPolls') || '[]');
         setVotedPollIds(stored);
-    }, []);
+        
+        // Also sync from backend since localStorage is cleared on logout
+        if (user) {
+            pollService.getMyVotedPolls().then((votedPolls) => {
+                const votedIds = votedPolls.map(p => p.id);
+                setVotedPollIds(votedIds);
+                localStorage.setItem('votedPolls', JSON.stringify(votedIds));
+            }).catch(err => console.error("Failed to sync voted polls", err));
+        }
+    }, [user]);
 
     useEffect(() => {
         fetchPolls(currentPage);
@@ -114,6 +129,24 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+                {/* Modern Category Selection Row */}
+                <div className="mb-8 flex gap-3 w-full overflow-x-auto pb-3 hide-scrollbar">
+                    {[ALL_CATEGORY, ...CATEGORIES].map(cat => {
+                        const isSelected = filterCategory === cat.id;
+                        const Icon = cat.icon;
+                        return (
+                            <button
+                                key={cat.id}
+                                onClick={() => setFilterCategoryValue(cat.id)}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap border ${isSelected ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/30 transform scale-105' : 'bg-white/5 border-white/10 text-indigo-300 hover:bg-white/10 hover:text-indigo-200'}`}
+                            >
+                                <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-200' : 'opacity-70'}`} />
+                                {cat.name}
+                            </button>
+                        );
+                    })}
+                </div>
+
                 {loading ? (
                     <div className="flex justify-center items-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
@@ -127,7 +160,8 @@ const Dashboard = () => {
                                 const matchesStatus = filterStatus === 'ALL'
                                     ? true
                                     : filterStatus === 'ACTIVE' ? isActive : !isActive;
-                                return matchesSearch && matchesStatus;
+                                const matchesCategory = filterCategory === 'ALL' || poll.category === filterCategory;
+                                return matchesSearch && matchesStatus && matchesCategory;
                             }) || [];
 
                             if (filteredPolls.length === 0) {
@@ -155,9 +189,21 @@ const Dashboard = () => {
 
                                         <div className="relative z-10 flex-grow flex flex-col">
                                             <div className="flex justify-between items-start mb-4">
-                                                <span className={`px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>
-                                                    {isActive ? '● Active' : '○ Ended'}
-                                                </span>
+                                                <div className="flex gap-2">
+                                                    <span className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>
+                                                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                                                        {isActive ? 'Active' : 'Ended'}
+                                                    </span>
+                                                    {poll.category && (() => {
+                                                        const CatIcon = getCategoryIcon(poll.category);
+                                                        return (
+                                                            <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm bg-indigo-500/10 text-indigo-300 border-indigo-500/20">
+                                                                <CatIcon className="w-3 h-3" />
+                                                                {poll.category}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </div>
 
                                                 {(user?.role === 'ADMIN' || user?.id === poll.creator.id) && (
                                                     <button
