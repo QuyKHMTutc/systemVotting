@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Poll } from '../services/poll.service';
 import { Share2, Check } from 'lucide-react';
 import { useState } from 'react';
-import { getCategoryIcon } from '../constants/categories';
+import { getTopicIcon } from '../constants/topics';
 
 export const PollCard = ({ poll, hasVoted = false }: { poll: Poll; hasVoted?: boolean }) => {
     const isActive = new Date(poll.endTime) > new Date();
@@ -28,12 +28,12 @@ export const PollCard = ({ poll, hasVoted = false }: { poll: Poll; hasVoted?: bo
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
                             {isActive ? '● Active' : '○ Ended'}
                         </span>
-                        {poll.category && (() => {
-                            const CatIcon = getCategoryIcon(poll.category);
+                        {poll.topic && (() => {
+                            const CatIcon = getTopicIcon(poll.topic);
                             return (
                                 <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm bg-purple-100 text-purple-700 border-purple-200">
                                     <CatIcon className="w-3 h-3" />
-                                    {poll.category}
+                                    {poll.topic}
                                 </span>
                             );
                         })()}

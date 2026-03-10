@@ -12,7 +12,7 @@ export interface Poll {
     id: number;
     title: string;
     description: string;
-    category: string;
+    topic: string;
     startTime: string;
     endTime: string;
     creator: {
@@ -30,8 +30,16 @@ export interface PollOption {
 }
 
 export const pollService = {
-    getAllPolls: async (page = 0, size = 10): Promise<PollPageResponse> => {
-        const response = await api.get(`/polls?page=${page}&size=${size}`);
+    getAllPolls: async (page = 0, size = 10, title = '', topic = 'ALL', status = 'ALL'): Promise<PollPageResponse> => {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            size: size.toString(),
+            topic: topic,
+            status: status
+        });
+        if (title) params.append('title', title);
+
+        const response = await api.get(`/polls?${params.toString()}`);
         return response.data.data;
     },
 

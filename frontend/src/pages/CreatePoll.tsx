@@ -2,20 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import Navbar from '../components/Navbar';
-import { Cpu, Coffee, Gamepad2, BookOpen, Trophy, Tag } from 'lucide-react';
-
-const CATEGORIES = [
-    { id: 'Công nghệ', name: 'Công nghệ', icon: Cpu },
-    { id: 'Cuộc sống', name: 'Cuộc sống', icon: Coffee },
-    { id: 'Game', name: 'Game', icon: Gamepad2 },
-    { id: 'Giáo dục', name: 'Giáo dục', icon: BookOpen },
-    { id: 'Thể thao', name: 'Thể thao', icon: Trophy },
-    { id: 'Khác', name: 'Khác', icon: Tag },
-];
+import { TOPICS } from '../constants/topics';
 
 const CreatePoll = () => {
     const [question, setQuestion] = useState('');
-    const [category, setCategory] = useState('Khác');
+    const [topic, setTopic] = useState('Khác');
     const [options, setOptions] = useState<string[]>(['', '']);
     const [endTime, setEndTime] = useState('');
     const [error, setError] = useState('');
@@ -54,7 +45,7 @@ const CreatePoll = () => {
             const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
             const payload = {
                 title: question,
-                category: category,
+                topic: topic,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime
             };
@@ -102,16 +93,16 @@ const CreatePoll = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-indigo-100 mb-3">Category</label>
+                            <label className="block text-sm font-medium text-indigo-100 mb-3">Topic / Chủ đề</label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {CATEGORIES.map((cat) => {
-                                    const Icon = cat.icon;
-                                    const isSelected = category === cat.id;
+                                {TOPICS.map((t) => {
+                                    const Icon = t.icon;
+                                    const isSelected = topic === t.id;
                                     return (
                                         <button
-                                            key={cat.id}
+                                            key={t.id}
                                             type="button"
-                                            onClick={() => setCategory(cat.id)}
+                                            onClick={() => setTopic(t.id)}
                                             className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ${
                                                 isSelected 
                                                     ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] transform scale-[1.02]' 
@@ -119,7 +110,7 @@ const CreatePoll = () => {
                                             }`}
                                         >
                                             <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-indigo-400' : 'text-indigo-300/70'}`} />
-                                            <span className="text-sm font-medium">{cat.name}</span>
+                                            <span className="text-sm font-medium">{t.name}</span>
                                         </button>
                                     );
                                 })}

@@ -62,8 +62,8 @@ public class PollServiceImpl implements PollService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PollResponseDTO> getAllPolls(Pageable pageable) {
-        Page<Poll> pollPage = pollRepository.findAll(pageable);
+    public Page<PollResponseDTO> getAllPolls(String title, String topic, String status, Pageable pageable) {
+        Page<Poll> pollPage = pollRepository.findWithFilters(title, topic, status, java.time.LocalDateTime.now(), pageable);
         return pollPage.map(pollMapper::toDto);
     }
 

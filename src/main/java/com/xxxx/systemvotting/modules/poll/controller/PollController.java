@@ -52,6 +52,9 @@ public class PollController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<PollResponseDTO>>> getAllPolls(
+            @RequestParam(name = "title", required = false) String title,
+            @RequestParam(name = "topic", required = false, defaultValue = "ALL") String topic,
+            @RequestParam(name = "status", required = false, defaultValue = "ALL") String status,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
             @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
@@ -61,7 +64,7 @@ public class PollController {
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<PollResponseDTO> polls = pollService.getAllPolls(pageable);
+        Page<PollResponseDTO> polls = pollService.getAllPolls(title, topic, status, pageable);
         return ResponseEntity.ok(ApiResponse.success(polls));
     }
 

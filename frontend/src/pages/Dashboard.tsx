@@ -4,7 +4,7 @@ import type { PollPageResponse } from '../services/poll.service';
 import Navbar from '../components/Navbar';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { CATEGORIES, ALL_CATEGORY, getCategoryIcon } from '../constants/categories';
+import { TOPICS, ALL_TOPIC, getTopicIcon } from '../constants/topics';
 
 const Dashboard = () => {
     const [pollPage, setPollPage] = useState<PollPageResponse | null>(null);
@@ -14,23 +14,22 @@ const Dashboard = () => {
     const [votedPollIds, setVotedPollIds] = useState<number[]>([]);
     const { user } = useAuth();
 
-    // Store page and filter in URL so they survive navigation back from poll detail
     const [searchParams, setSearchParams] = useSearchParams();
     const currentPage = parseInt(searchParams.get('page') || '0', 10);
     const filterStatus = (searchParams.get('filter') as 'ALL' | 'ACTIVE' | 'ENDED') || 'ALL';
-    const filterCategory = searchParams.get('category') || 'ALL';
+    const filterTopic = searchParams.get('topic') || 'ALL';
 
     const setCurrentPage = (valOrFn: number | ((prev: number) => number)) => {
         const next = typeof valOrFn === 'function' ? valOrFn(currentPage) : valOrFn;
-        setSearchParams({ page: String(next), filter: filterStatus, category: filterCategory }, { replace: true });
+        setSearchParams({ page: String(next), filter: filterStatus, topic: filterTopic }, { replace: true });
     };
 
-    const setFilterStatus = (status: 'ALL' | 'ACTIVE' | 'ENDED') => {
-        setSearchParams({ page: '0', filter: status, category: filterCategory }, { replace: true });
+    const setFilterStatusConfig = (status: 'ALL' | 'ACTIVE' | 'ENDED') => {
+        setSearchParams({ page: '0', filter: status, topic: filterTopic }, { replace: true });
     };
 
-    const setFilterCategoryValue = (category: string) => {
-        setSearchParams({ page: '0', filter: filterStatus, category: category }, { replace: true });
+    const setFilterTopicValue = (topic: string) => {
+        setSearchParams({ page: '0', filter: filterStatus, topic: topic }, { replace: true });
     };
 
     useEffect(() => {
@@ -49,13 +48,17 @@ const Dashboard = () => {
     }, [user]);
 
     useEffect(() => {
-        fetchPolls(currentPage);
-    }, [currentPage]);
+        const delayDebounceFn = setTimeout(() => {
+            fetchPolls(currentPage, searchQuery, filterTopic, filterStatus);
+        }, 300);
 
-    const fetchPolls = async (page: number) => {
+        return () => clearTimeout(delayDebounceFn);
+    }, [currentPage, searchQuery, filterTopic, filterStatus]);
+
+    const fetchPolls = async (page: number, title: string, topic: string, status: string) => {
         setLoading(true);
         try {
-            const data = await pollService.getAllPolls(page, 6); // 9 polls per page fits a 3x3 grid
+            const data = await pollService.getAllPolls(page, 6, title, topic, status); // 6 polls per page
             setPollPage(data);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err: any) {
@@ -69,7 +72,7 @@ const Dashboard = () => {
         if (window.confirm('Are you sure you want to delete this poll?')) {
             try {
                 await pollService.deletePoll(id);
-                fetchPolls(currentPage); // Refresh list
+                fetchPolls(currentPage, searchQuery, filterTopic, filterStatus); // Refresh list
             } catch (err: any) {
                 alert(err.response?.data?.message || 'Failed to delete poll');
             }
@@ -120,7 +123,7 @@ const Dashboard = () => {
                         {(['ALL', 'ACTIVE', 'ENDED'] as const).map(status => (
                             <button
                                 key={status}
-                                onClick={() => setFilterStatus(status)}
+                                onClick={() => setFilterStatusConfig(status)}
                                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap border ${filterStatus === status ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 border-white/10 text-indigo-200 hover:bg-white/10'}`}
                             >
                                 {status === 'ALL' ? 'All Polls' : status}
@@ -129,19 +132,19 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Modern Category Selection Row */}
+                {/* Modern Topic Selection Row */}
                 <div className="mb-8 flex gap-3 w-full overflow-x-auto pb-3 hide-scrollbar">
-                    {[ALL_CATEGORY, ...CATEGORIES].map(cat => {
-                        const isSelected = filterCategory === cat.id;
-                        const Icon = cat.icon;
+                    {[ALL_TOPIC, ...TOPICS].map(topic => {
+                        const isSelected = filterTopic === topic.id;
+                        const Icon = topic.icon;
                         return (
                             <button
-                                key={cat.id}
-                                onClick={() => setFilterCategoryValue(cat.id)}
+                                key={topic.id}
+                                onClick={() => setFilterTopicValue(topic.id)}
                                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap border ${isSelected ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/30 transform scale-105' : 'bg-white/5 border-white/10 text-indigo-300 hover:bg-white/10 hover:text-indigo-200'}`}
                             >
                                 <Icon className={`w-4 h-4 ${isSelected ? 'text-indigo-200' : 'opacity-70'}`} />
-                                {cat.name}
+                                {topic.name}
                             </button>
                         );
                     })}
@@ -154,17 +157,9 @@ const Dashboard = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {(() => {
-                            const filteredPolls = pollPage?.content.filter(poll => {
-                                const matchesSearch = poll.title.toLowerCase().includes(searchQuery.toLowerCase());
-                                const isActive = new Date(poll.endTime) > new Date();
-                                const matchesStatus = filterStatus === 'ALL'
-                                    ? true
-                                    : filterStatus === 'ACTIVE' ? isActive : !isActive;
-                                const matchesCategory = filterCategory === 'ALL' || poll.category === filterCategory;
-                                return matchesSearch && matchesStatus && matchesCategory;
-                            }) || [];
+                            const pollsToDisplay = pollPage?.content || [];
 
-                            if (filteredPolls.length === 0) {
+                            if (pollsToDisplay.length === 0) {
                                 return (
                                     <div className="col-span-full glass-panel py-16 text-center rounded-2xl border-dashed">
                                         <div className="mx-auto w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
@@ -173,12 +168,12 @@ const Dashboard = () => {
                                             </svg>
                                         </div>
                                         <p className="text-indigo-200/60 text-lg">No polls found matching your criteria.</p>
-                                        <button onClick={() => { setSearchQuery(''); setFilterStatus('ALL'); }} className="text-indigo-400 hover:text-indigo-300 mt-3 inline-block font-medium">Clear Filters</button>
+                                        <button onClick={() => { setSearchQuery(''); setFilterStatusConfig('ALL'); setFilterTopicValue('ALL'); }} className="text-indigo-400 hover:text-indigo-300 mt-3 inline-block font-medium">Clear Filters</button>
                                     </div>
                                 );
                             }
 
-                            return filteredPolls.map((poll) => {
+                            return pollsToDisplay.map((poll) => {
                                 const isActive = new Date(poll.endTime) > new Date();
                                 const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
 
@@ -194,12 +189,12 @@ const Dashboard = () => {
                                                         <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-red-400'}`}></span>
                                                         {isActive ? 'Active' : 'Ended'}
                                                     </span>
-                                                    {poll.category && (() => {
-                                                        const CatIcon = getCategoryIcon(poll.category);
+                                                    {poll.topic && (() => {
+                                                        const CatIcon = getTopicIcon(poll.topic);
                                                         return (
                                                             <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm bg-indigo-500/10 text-indigo-300 border-indigo-500/20">
                                                                 <CatIcon className="w-3 h-3" />
-                                                                {poll.category}
+                                                                {poll.topic}
                                                             </span>
                                                         );
                                                     })()}

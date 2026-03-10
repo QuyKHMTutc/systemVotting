@@ -35,17 +35,15 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
-        // Delete any existing OTP for this user
-        tokenRepository.findByUser(user).ifPresent(tokenRepository::delete);
+        // Reuse existing token if present, otherwise create new one
+        PasswordResetToken resetToken = tokenRepository.findByUser(user)
+                .orElseGet(() -> PasswordResetToken.builder().user(user).build());
 
         // Generate 6-digit OTP
-        String otp = String.format("%06d", new Random().nextInt(999999));
+        String otp = String.format("%06d", new Random().nextInt(1000000));
 
-        PasswordResetToken resetToken = PasswordResetToken.builder()
-                .otp(otp)
-                .user(user)
-                .expiryDate(Instant.now().plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES))
-                .build();
+        resetToken.setOtp(otp);
+        resetToken.setExpiryDate(Instant.now().plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES));
 
         tokenRepository.save(resetToken);
 
@@ -75,8 +73,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new BadRequestException("OTP has expired");
         }
 
-        // OTP Valid - Update password
+        // OTP Valid - Update password and set user as verified
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setVerified(true);
         userRepository.save(user);
 
         // Delete token after successful reset

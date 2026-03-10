@@ -39,6 +39,9 @@ public class Poll {
 
     private String description;
 
+    // NEW: Topic field
+    private String topic;
+
     // NEW: Time constraints
     private LocalDateTime startTime;
     private LocalDateTime endTime;

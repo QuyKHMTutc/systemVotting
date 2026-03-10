@@ -79,6 +79,11 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                             .build();
                     user = userRepository.save(user);
                 }
+                
+                // Check if account is locked before continuing
+                if (!user.isAccountNonLocked()) {
+                    throw new com.xxxx.systemvotting.exception.custom.BadRequestException("Tài khoản của bạn đã bị khóa.");
+                }
 
                 // Generate our JWT and Refresh tokens
                 Map<String, Object> extraClaims = new HashMap<>();
