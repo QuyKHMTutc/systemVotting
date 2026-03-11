@@ -6,6 +6,8 @@ import CommentInput from './CommentInput';
 interface CommentItemProps {
     comment: Comment;
     onReplySubmit: (parentId: number, content: string) => void;
+    expandedReplies: Record<number, boolean>;
+    toggleReply: (commentId: number, forceOpen?: boolean) => void;
 }
 
 // Relative time helper
@@ -31,9 +33,11 @@ const getRelativeTime = (dateString: string) => {
     return date.toLocaleDateString();
 };
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit, expandedReplies, toggleReply }) => {
     const [isReplying, setIsReplying] = useState(false);
-    const [showReplies, setShowReplies] = useState(false);
+    
+    // Check global expanded state instead of local state
+    const showReplies = expandedReplies[comment.id] || false;
 
     const hasVoted = comment.voteStatus !== 'Chưa vote';
     const isReply = comment.parentId != null;
@@ -44,7 +48,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit }) => 
     };
 
     return (
-        <div className="flex gap-2 mb-4 w-full group/item">
+        <div className="flex gap-2.5 mb-[14px] w-full group/item">
             {/* Avatar */}
             <div className="flex-shrink-0 mt-1">
                 <img 
@@ -55,11 +59,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit }) => 
             </div>
 
             {/* Comment Content Area */}
-            <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
                 {/* Bubble Wrapper with Hover */}
                 <div className="max-w-[80%] md:max-w-[500px]">
-                    <div className="bg-[#2a2a2a] md:bg-[#2a2a2a] px-3 py-2 rounded-2xl relative group-hover/item:bg-white/5 transition-colors w-fit inline-block">
-                        <span className="font-semibold text-white text-[13px] mr-2 cursor-pointer hover:underline">{comment.username}</span>
+                    <div className="bg-[rgba(255,255,255,0.05)] px-3 py-2.5 rounded-[16px] relative group-hover/item:bg-[rgba(255,255,255,0.08)] transition-colors w-fit inline-block">
+                        <span className="font-bold text-white text-[13px] mr-2 cursor-pointer hover:underline">{comment.username}</span>
                         <span className="text-[#E4E6EB] whitespace-pre-wrap text-[14px] leading-snug break-words">
                             {comment.content.split(' ').map((word, index) => {
                                 if (word.startsWith('@')) {
@@ -72,17 +76,15 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit }) => 
                 </div>
 
                 {/* Action Row - Outside Bubble */}
-                <div className="flex items-center gap-3 mt-1 ml-3 text-[12px] text-gray-400">
+                <div className="flex items-center gap-3 mt-1 ml-3 text-[11px] text-gray-400 font-medium">
                     <span className="hover:underline cursor-pointer">{formattedDate}</span>
-                    <span className="text-gray-500 font-bold -translate-y-px">·</span>
                     <button 
                         onClick={handleReplyClick}
-                        className="font-bold hover:underline transition-colors outline-none cursor-pointer"
+                        className="hover:underline transition-colors outline-none cursor-pointer"
                     >
                         Reply
                     </button>
-                    <span className="text-gray-500 font-bold -translate-y-px">·</span>
-                    <button className="font-bold hover:underline transition-colors outline-none cursor-pointer">
+                    <button className="hover:underline transition-colors outline-none cursor-pointer">
                         Like
                     </button>
                     {hasVoted && (
@@ -106,6 +108,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit }) => 
                                 }
                                 onReplySubmit(comment.id, finalContent);
                                 setIsReplying(false);
+                                // Force open this thread to show the new reply immediately
+                                toggleReply(comment.id, true);
                             }}
                             placeholder={`Reply to ${comment.username}...`}
                             username="You" 
@@ -125,10 +129,12 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit }) => 
                                         key={reply.id} 
                                         comment={reply} 
                                         onReplySubmit={onReplySubmit} 
+                                        expandedReplies={expandedReplies}
+                                        toggleReply={toggleReply}
                                     />
                                 ))}
                                 <button 
-                                    onClick={() => setShowReplies(false)}
+                                    onClick={() => toggleReply(comment.id, false)}
                                     className="text-[13px] font-medium text-blue-400 hover:underline mt-1 flex items-center gap-2 group w-fit outline-none transition-colors"
                                 >
                                     <CornerDownRight className="w-4 h-4 opacity-70" />
@@ -137,7 +143,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit }) => 
                             </>
                         ) : (
                             <button 
-                                onClick={() => setShowReplies(true)}
+                                onClick={() => toggleReply(comment.id, true)}
                                 className="text-[13px] font-medium text-blue-400 hover:underline mt-1 flex items-center gap-2 group w-fit outline-none transition-colors"
                             >
                                 <CornerDownRight className="w-4 h-4" />
