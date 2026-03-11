@@ -6,7 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="4f5d4a6b-31e5-4f9a-bdd0-eeda515f9588" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application-dev.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application-dev.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application-prod.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application-prod.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -133,7 +134,8 @@
       <workItem from="1773188641860" duration="7673000" />
       <workItem from="1773196699715" duration="223000" />
       <workItem from="1773196959010" duration="3850000" />
-      <workItem from="1773203028259" duration="363000" />
+      <workItem from="1773203028259" duration="1145000" />
+      <workItem from="1773205877884" duration="851000" />
     </task>
     <servers />
   </component>
