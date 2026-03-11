@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import confetti from 'canvas-confetti';
 import { Share2, Check, X } from 'lucide-react';
+import CommentSection from '../components/comments/CommentSection';
 
 const COLORS = ['#818cf8', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#60a5fa'];
 
@@ -19,6 +20,7 @@ const PollDetail = () => {
     const [hasVoted, setHasVoted] = useState(false);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
+    const [voteTrigger, setVoteTrigger] = useState(0);
     const navigate = useNavigate();
 
     const handleShare = () => {
@@ -90,6 +92,7 @@ const PollDetail = () => {
                 localStorage.setItem('votedPolls', JSON.stringify(voted));
             }
             setHasVoted(true);
+            setVoteTrigger(prev => prev + 1);
             
             // Trigger fireworks animation
             fireworkEffect();
@@ -334,6 +337,8 @@ const PollDetail = () => {
                         )}
                     </div>
                 </div>
+
+                <CommentSection pollId={poll.id} voteTrigger={voteTrigger} />
             </main>
         </div>
     );
