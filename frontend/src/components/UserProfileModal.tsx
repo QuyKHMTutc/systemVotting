@@ -100,7 +100,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 bg-white/5 p-6 rounded-2xl border border-white/5">
                             <div className="relative group shrink-0 w-24 h-24 rounded-full border-2 border-indigo-500/50 shadow-lg shadow-indigo-500/20 overflow-hidden bg-[#242636] flex items-center justify-center">
                                 {previewUrl ? (
-                                    <img src={previewUrl.startsWith('http') || previewUrl.startsWith('blob') ? previewUrl : `http://localhost:8080${previewUrl}`} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.username}` }} />
+                                    <img src={previewUrl.startsWith('http') || previewUrl.startsWith('blob') ? previewUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${previewUrl}`} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.username}` }} />
                                 ) : (
                                     <span className="text-4xl font-bold text-indigo-300/80">{username.charAt(0).toUpperCase()}</span>
                                 )}
