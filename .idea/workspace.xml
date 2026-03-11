@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="4f5d4a6b-31e5-4f9a-bdd0-eeda515f9588" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.mvn/wrapper/maven-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/backend/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build_output.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mvnw" beforeDir="false" afterPath="$PROJECT_DIR$/backend/mvnw" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mvnw.cmd" beforeDir="false" afterPath="$PROJECT_DIR$/backend/mvnw.cmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/SystemVottingApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/SystemVottingApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/common/dto/ApiResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/common/dto/ApiResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/common/service/EmailService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/common/service/EmailService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/common/service/FileStorageService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/common/service/FileStorageService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/config/AppConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/config/AppConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/config/DataInitializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/config/DataInitializer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/config/WebMvcConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/config/WebMvcConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/exception/custom/BadRequestException.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/exception/custom/BadRequestException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/exception/custom/DuplicateResourceException.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/exception/custom/DuplicateResourceException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/exception/custom/ResourceNotFoundException.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/exception/custom/ResourceNotFoundException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/exception/custom/TokenRefreshException.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/exception/custom/TokenRefreshException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/AuthRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/AuthRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/ForgotPasswordRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/ForgotPasswordRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/GoogleAuthRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/GoogleAuthRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/ResendRegistrationOtpRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/ResendRegistrationOtpRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/ResetPasswordRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/ResetPasswordRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/TokenRefreshRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/TokenRefreshRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/VerifyRegistrationRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/request/VerifyRegistrationRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/dto/response/AuthResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/dto/response/AuthResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/entity/PasswordResetToken.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/entity/PasswordResetToken.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/entity/RefreshToken.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/entity/RefreshToken.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/entity/RegistrationToken.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/entity/RegistrationToken.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/repository/PasswordResetTokenRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/repository/PasswordResetTokenRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/repository/RefreshTokenRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/repository/RefreshTokenRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/repository/RegistrationTokenRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/repository/RegistrationTokenRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/AuthService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/GoogleAuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/GoogleAuthService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/PasswordResetService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/PasswordResetService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/RefreshTokenService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/RefreshTokenService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/AuthServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/AuthServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/GoogleAuthServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/GoogleAuthServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/PasswordResetServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/PasswordResetServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/RefreshTokenServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/auth/service/impl/RefreshTokenServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/controller/PollController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/controller/PollController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/dto/OptionRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/dto/OptionRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/dto/OptionResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/dto/OptionResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/dto/PollCreateRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/dto/PollCreateRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/dto/PollResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/dto/PollResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/entity/Option.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/entity/Option.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/entity/Poll.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/entity/Poll.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/mapper/PollMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/mapper/PollMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/repository/OptionRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/repository/OptionRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/repository/PollRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/repository/PollRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/service/PollService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/service/PollService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/poll/service/impl/PollServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/poll/service/impl/PollServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/dto/UserCreateRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/dto/UserCreateRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/dto/UserProfileUpdateRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/dto/UserProfileUpdateRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/dto/UserResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/dto/UserResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/enums/Role.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/enums/Role.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/mapper/UserMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/mapper/UserMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/repository/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/user/service/impl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/user/service/impl/UserServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/controller/VoteController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/controller/VoteController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/dto/request/VoteRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/dto/request/VoteRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/dto/response/VoteCheckResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/dto/response/VoteCheckResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/dto/response/VoteResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/dto/response/VoteResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/entity/Vote.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/entity/Vote.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/mapper/VoteMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/mapper/VoteMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/repository/VoteRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/repository/VoteRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/service/VoteService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/service/VoteService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/modules/vote/service/impl/VoteServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/modules/vote/service/impl/VoteServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/security/JwtAuthenticationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/security/JwtAuthenticationFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/xxxx/systemvotting/security/JwtService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/xxxx/systemvotting/security/JwtService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application-dev.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application-dev.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/logback-spring.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/logback-spring.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/xxxx/systemvotting/SystemVottingApplicationTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/test/java/com/xxxx/systemvotting/SystemVottingApplicationTests.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-avatar.png" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="87" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="3Al4wATLJlqH0vAFbyJLBrnrc1J" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Maven.SystemVotting [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.SystemVotting [install].executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;Spring Boot.SystemVottingApplication.executor&quot;: &quot;Run&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/guyguy/IdeaProjects/systemVotting&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;MTFeaturesSettingsConfigurable&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/backend/target" />
+      <recent name="$PROJECT_DIR$/backend/logs" />
+      <recent name="$PROJECT_DIR$/backend/uploads" />
+      <recent name="$PROJECT_DIR$/backend" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration name="SystemVottingApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="DB_PASSWORD" value="190399" />
+        <env name="JWT_SECRET_KEY" value="m3BtrDOYSPRJaQC+J7NdoONQ6gV1/978Yqoo15obL08=" />
+        <env name="MAIL_PASSWORD" value="ebsk wlxv unac cwdt" />
+        <env name="MAIL_USERNAME:tvqqiyi@gmail.com" value="" />
+      </envs>
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="SystemVotting" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.xxxx.systemvotting.SystemVottingApplication" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-26cb7f24e5b0-intellij.indexing.shared.core-IU-253.29346.138" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.29346.138" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="4f5d4a6b-31e5-4f9a-bdd0-eeda515f9588" name="Changes" comment="" />
+      <created>1773154058279</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1773154058279</updated>
+      <workItem from="1773154059559" duration="2505000" />
+      <workItem from="1773156589819" duration="2025000" />
+      <workItem from="1773158981977" duration="440000" />
+      <workItem from="1773187995685" duration="458000" />
+      <workItem from="1773188461147" duration="102000" />
+      <workItem from="1773188641860" duration="680000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
