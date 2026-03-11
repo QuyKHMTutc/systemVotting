@@ -78,7 +78,7 @@ export const Profile = () => {
                         <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-md mb-4 overflow-hidden border-4 border-white/20">
                             {user?.avatarUrl ? (
                                 <img 
-                                    src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `http://localhost:8080${user.avatarUrl}`} 
+                                    src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} 
                                     alt={user.username} 
                                     className="w-full h-full object-cover" 
                                     onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} 
