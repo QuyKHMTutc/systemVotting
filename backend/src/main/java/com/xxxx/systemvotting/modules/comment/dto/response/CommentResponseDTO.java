@@ -17,6 +17,7 @@ public class CommentResponseDTO {
     private String username;
     private String avatarUrl;
     private String content;
+    private boolean isAnonymous;
     private LocalDateTime createdAt;
     
     // The dynamically assigned vote status (e.g., "Chưa vote", or the exact option text they voted for)

@@ -2,16 +2,32 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import Navbar from '../components/Navbar';
-import { TOPICS } from '../constants/topics';
 
 const CreatePoll = () => {
     const [question, setQuestion] = useState('');
-    const [topic, setTopic] = useState('Khác');
+    const [tags, setTags] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(false);
     const [options, setOptions] = useState<string[]>(['', '']);
     const [endTime, setEndTime] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const newTag = tagInput.trim().replace(/^#/, '');
+            if (newTag && !tags.includes(newTag) && tags.length < 5) {
+                setTags([...tags, newTag]);
+            }
+            setTagInput('');
+        }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        setTags(tags.filter(tag => tag !== tagToRemove));
+    };
 
     const handleAddOption = () => {
         setOptions([...options, '']);
@@ -45,7 +61,8 @@ const CreatePoll = () => {
             const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
             const payload = {
                 title: question,
-                topic: topic,
+                tags: tags.length > 0 ? tags : ['General'],
+                isAnonymous: isAnonymous,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime
             };
@@ -93,39 +110,44 @@ const CreatePoll = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-indigo-100 mb-3">Topic / Chủ đề</label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {TOPICS.map((t) => {
-                                    const Icon = t.icon;
-                                    const isSelected = topic === t.id;
-                                    return (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            onClick={() => setTopic(t.id)}
-                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ${
-                                                isSelected 
-                                                    ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] transform scale-[1.02]' 
-                                                    : 'bg-white/5 border-white/10 text-indigo-200 hover:bg-white/10 hover:border-white/20'
-                                            }`}
+                            <label className="block text-sm font-medium text-indigo-100 mb-3">Tags (Tối đa 5 thẻ)</label>
+                            
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {tags.map((tag) => (
+                                    <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 text-white text-sm font-medium shadow-sm">
+                                        #{tag}
+                                        <button 
+                                            type="button" 
+                                            onClick={() => removeTag(tag)}
+                                            className="ml-1 text-white/70 hover:text-white transition-colors"
                                         >
-                                            <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-indigo-400' : 'text-indigo-300/70'}`} />
-                                            <span className="text-sm font-medium">{t.name}</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
                                         </button>
-                                    );
-                                })}
+                                    </span>
+                                ))}
                             </div>
+                            <input
+                                type="text"
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                onKeyDown={handleTagKeyDown}
+                                disabled={tags.length >= 5}
+                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
+                                placeholder={tags.length >= 5 ? "Đã đạt tối đa 5 thẻ" : "Nhập tag và bấm Enter (VD: CongNghe, GiaiTri)"}
+                            />
                         </div>
 
                         <div className="space-y-4">
                             <label className="block text-sm font-medium text-indigo-100 mb-2">Options</label>
                             {options.map((option, index) => (
-                                <div key={index} className="flex gap-3">
+                                <div key={index} className="flex gap-3 relative group">
                                     <input
                                         type="text"
                                         value={option}
                                         onChange={(e) => handleOptionChange(index, e.target.value)}
-                                        className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                        className="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
                                         placeholder={`Option ${index + 1}`}
                                         required
                                     />
@@ -133,9 +155,12 @@ const CreatePoll = () => {
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveOption(index)}
-                                            className="px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/30 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                            title="Remove Option"
                                         >
-                                            Remove
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
                                         </button>
                                     )}
                                 </div>
@@ -143,9 +168,12 @@ const CreatePoll = () => {
                             <button
                                 type="button"
                                 onClick={handleAddOption}
-                                className="text-indigo-300 hover:text-indigo-200 text-sm font-medium mt-2 flex items-center transition-colors border border-dashed border-indigo-500/30 px-4 py-2 rounded-lg w-full justify-center"
+                                className="w-full flex items-center justify-center gap-2 py-3 mt-4 border border-dashed border-white/20 text-indigo-300 hover:text-white hover:bg-white/5 hover:border-white/40 rounded-xl transition-all font-medium group focus:outline-none focus:ring-2 focus:ring-pink-500"
                             >
-                                + Add another option
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400 group-hover:text-pink-400 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                                </svg>
+                                Add another option
                             </button>
                         </div>
 
@@ -161,6 +189,28 @@ const CreatePoll = () => {
                             />
                         </div>
 
+                        {/* Anonymous Toggle */}
+                        <div className="pt-2 border-t border-white/10">
+                            <label className="flex items-center cursor-pointer group">
+                                <div className="relative">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only" 
+                                        checked={isAnonymous}
+                                        onChange={() => setIsAnonymous(!isAnonymous)}
+                                    />
+                                    <div className={`block w-12 h-7 rounded-full transition-colors ${isAnonymous ? 'bg-pink-500' : 'bg-white/10'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${isAnonymous ? 'transform translate-x-5' : ''}`}></div>
+                                </div>
+                                <div className="ml-4">
+                                    <span className="block text-white font-medium">Bảo mật ẩn danh (Anonymous Mode)</span>
+                                    <span className="block text-xs text-indigo-200/60 mt-0.5 group-hover:text-indigo-200/90 transition-colors">
+                                        Đăng dưới chế độ ẩn danh. Người khác sẽ không thấy bạn là người tạo.
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+
                         <div className="pt-4 flex justify-end gap-4">
                             <button
                                 type="button"
@@ -172,7 +222,7 @@ const CreatePoll = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="px-8 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wide text-sm"
                             >
                                 {loading ? 'Creating...' : 'Create Poll'}
                             </button>

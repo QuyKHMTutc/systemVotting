@@ -36,7 +36,8 @@ public class CommentServiceImpl implements CommentService {
         Comment.CommentBuilder commentBuilder = Comment.builder()
                 .poll(poll)
                 .user(currentUser)
-                .content(request.getContent());
+                .content(request.getContent())
+                .isAnonymous(request.isAnonymous());
 
         if (request.getParentId() != null) {
             Comment parent = commentRepository.findById(request.getParentId())
@@ -105,12 +106,16 @@ public class CommentServiceImpl implements CommentService {
     }
 
     private CommentResponseDTO mapToDTO(Comment comment, String voteStatus) {
+        String displayUsername = comment.isAnonymous() ? "Anonymous" : comment.getUser().getUsername();
+        String displayAvatarUrl = comment.isAnonymous() ? null : comment.getUser().getAvatarUrl();
+
         return CommentResponseDTO.builder()
                 .id(comment.getId())
                 .userId(comment.getUser().getId())
-                .username(comment.getUser().getUsername())
-                .avatarUrl(comment.getUser().getAvatarUrl())
+                .username(displayUsername)
+                .avatarUrl(displayAvatarUrl)
                 .content(comment.getContent())
+                .isAnonymous(comment.isAnonymous())
                 .createdAt(comment.getCreatedAt())
                 .voteStatus(voteStatus)
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)

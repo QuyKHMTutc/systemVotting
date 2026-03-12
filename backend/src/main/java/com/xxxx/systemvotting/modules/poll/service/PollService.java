@@ -13,7 +13,7 @@ public interface PollService {
 
     PollResponseDTO getPollById(Long id);
 
-    Page<PollResponseDTO> getAllPolls(String title, String topic, String status, Pageable pageable);
+    Page<PollResponseDTO> getAllPolls(String title, String tag, String status, Pageable pageable);
 
     void deletePoll(Long pollId, User authenticatedUser);
 
