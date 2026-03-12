@@ -1,4 +1,4 @@
-import React, { useRef, KeyboardEvent } from 'react';
+import React, { useRef } from 'react';
 
 interface OtpInputProps {
     length?: number;
@@ -25,7 +25,7 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, value, onChange, disabl
         }
     };
 
-    const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Backspace') {
             if (!value[index] && index > 0) {
                 // If current input is empty, focus previous and clear it
@@ -65,7 +65,9 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, value, onChange, disabl
             {valueArray.map((digit, index) => (
                 <input
                     key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
+                    ref={(el) => {
+                        inputRefs.current[index] = el;
+                    }}
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"

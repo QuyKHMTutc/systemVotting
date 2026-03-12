@@ -9,6 +9,7 @@ export const PollCard = ({ poll, hasVoted = false }: { poll: Poll; hasVoted?: bo
     const isActive = new Date(poll.endTime) > new Date();
     const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
     const [copied, setCopied] = useState(false);
+    const topic = poll.tags?.[0];
 
     const handleShare = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent navigating to poll detail if clicking share
@@ -28,12 +29,12 @@ export const PollCard = ({ poll, hasVoted = false }: { poll: Poll; hasVoted?: bo
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
                             {isActive ? '● Active' : '○ Ended'}
                         </span>
-                        {poll.topic && (() => {
-                            const CatIcon = getTopicIcon(poll.topic);
+                        {topic && (() => {
+                            const CatIcon = getTopicIcon(topic);
                             return (
                                 <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm bg-purple-100 text-purple-700 border-purple-200">
                                     <CatIcon className="w-3 h-3" />
-                                    {poll.topic}
+                                    {topic}
                                 </span>
                             );
                         })()}
