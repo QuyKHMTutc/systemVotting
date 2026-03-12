@@ -12,7 +12,8 @@ export interface Poll {
     id: number;
     title: string;
     description: string;
-    topic: string;
+    tags: string[];
+    isAnonymous: boolean;
     startTime: string;
     endTime: string;
     creator: {
@@ -30,11 +31,11 @@ export interface PollOption {
 }
 
 export const pollService = {
-    getAllPolls: async (page = 0, size = 10, title = '', topic = 'ALL', status = 'ALL'): Promise<PollPageResponse> => {
+    getAllPolls: async (page = 0, size = 10, title = '', tag = 'ALL', status = 'ALL'): Promise<PollPageResponse> => {
         const params = new URLSearchParams({
             page: page.toString(),
             size: size.toString(),
-            topic: topic,
+            tag: tag,
             status: status
         });
         if (title) params.append('title', title);

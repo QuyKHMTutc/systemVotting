@@ -2,16 +2,32 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import Navbar from '../components/Navbar';
-import { TOPICS } from '../constants/topics';
 
 const CreatePoll = () => {
     const [question, setQuestion] = useState('');
-    const [topic, setTopic] = useState('Khác');
+    const [tags, setTags] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(false);
     const [options, setOptions] = useState<string[]>(['', '']);
     const [endTime, setEndTime] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const newTag = tagInput.trim().replace(/^#/, '');
+            if (newTag && !tags.includes(newTag) && tags.length < 5) {
+                setTags([...tags, newTag]);
+            }
+            setTagInput('');
+        }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        setTags(tags.filter(tag => tag !== tagToRemove));
+    };
 
     const handleAddOption = () => {
         setOptions([...options, '']);
@@ -45,7 +61,8 @@ const CreatePoll = () => {
             const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
             const payload = {
                 title: question,
-                topic: topic,
+                tags: tags.length > 0 ? tags : ['General'],
+                isAnonymous: isAnonymous,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime
             };
@@ -93,28 +110,33 @@ const CreatePoll = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-indigo-100 mb-3">Topic / Chủ đề</label>
-                            <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar w-full">
-                                {TOPICS.map((t) => {
-                                    const Icon = t.icon;
-                                    const isSelected = topic === t.id;
-                                    return (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            onClick={() => setTopic(t.id)}
-                                            className={`flex flex-row items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-200 whitespace-nowrap outline-none ${
-                                                isSelected 
-                                                    ? 'bg-gradient-to-r from-pink-600 to-purple-600 border-transparent text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] transform scale-105 font-bold' 
-                                                    : 'bg-white/5 border-white/10 text-indigo-200 hover:bg-white/10 hover:border-white/20 hover:text-white font-medium'
-                                            }`}
+                            <label className="block text-sm font-medium text-indigo-100 mb-3">Tags (Tối đa 5 thẻ)</label>
+                            
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {tags.map((tag) => (
+                                    <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 text-white text-sm font-medium shadow-sm">
+                                        #{tag}
+                                        <button 
+                                            type="button" 
+                                            onClick={() => removeTag(tag)}
+                                            className="ml-1 text-white/70 hover:text-white transition-colors"
                                         >
-                                            <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-indigo-300/70'}`} />
-                                            <span className="text-sm">{t.name}</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
                                         </button>
-                                    );
-                                })}
+                                    </span>
+                                ))}
                             </div>
+                            <input
+                                type="text"
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                onKeyDown={handleTagKeyDown}
+                                disabled={tags.length >= 5}
+                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
+                                placeholder={tags.length >= 5 ? "Đã đạt tối đa 5 thẻ" : "Nhập tag và bấm Enter (VD: CongNghe, GiaiTri)"}
+                            />
                         </div>
 
                         <div className="space-y-4">
@@ -165,6 +187,28 @@ const CreatePoll = () => {
                                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all [color-scheme:dark]"
                                 required
                             />
+                        </div>
+
+                        {/* Anonymous Toggle */}
+                        <div className="pt-2 border-t border-white/10">
+                            <label className="flex items-center cursor-pointer group">
+                                <div className="relative">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only" 
+                                        checked={isAnonymous}
+                                        onChange={() => setIsAnonymous(!isAnonymous)}
+                                    />
+                                    <div className={`block w-12 h-7 rounded-full transition-colors ${isAnonymous ? 'bg-pink-500' : 'bg-white/10'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${isAnonymous ? 'transform translate-x-5' : ''}`}></div>
+                                </div>
+                                <div className="ml-4">
+                                    <span className="block text-white font-medium">Bảo mật ẩn danh (Anonymous Mode)</span>
+                                    <span className="block text-xs text-indigo-200/60 mt-0.5 group-hover:text-indigo-200/90 transition-colors">
+                                        Đăng dưới chế độ ẩn danh. Người khác sẽ không thấy bạn là người tạo.
+                                    </span>
+                                </div>
+                            </label>
                         </div>
 
                         <div className="pt-4 flex justify-end gap-4">

@@ -6,6 +6,7 @@ export interface Comment {
     username: string;
     avatarUrl: string | null;
     content: string;
+    isAnonymous: boolean;
     createdAt: string;
     voteStatus: string;
     parentId?: number;
@@ -16,6 +17,7 @@ export interface CommentCreateRequest {
     pollId: number;
     parentId?: number;
     content: string;
+    isAnonymous: boolean;
 }
 
 export const commentService = {
