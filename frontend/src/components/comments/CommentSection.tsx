@@ -34,7 +34,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
         setError('');
 
         try {
-            await commentService.createComment({ pollId, content });
+            await commentService.createComment({ pollId, content, isAnonymous: false });
             fetchComments();
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to post comment');
@@ -46,7 +46,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
             await commentService.createComment({
                 pollId,
                 parentId,
-                content
+                content,
+                isAnonymous: false
             });
             fetchComments();
         } catch (err: any) {

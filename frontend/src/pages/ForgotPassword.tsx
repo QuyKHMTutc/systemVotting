@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
-import { KeyRound, Mail, ArrowLeft, Loader2, Fingerprint, Activity, Zap } from 'lucide-react';
+import { KeyRound, Mail, ArrowLeft, Loader2, Fingerprint, Zap } from 'lucide-react';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');

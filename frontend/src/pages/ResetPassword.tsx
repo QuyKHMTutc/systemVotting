@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import OtpInput from '../components/OtpInput';
 import PasswordStrength from '../components/PasswordStrength';
-import { ShieldCheck, Lock, Eye, EyeOff, Loader2, ArrowLeft, Fingerprint, Activity, Zap } from 'lucide-react';
+import { ShieldCheck, Lock, Eye, EyeOff, Loader2, ArrowLeft, Activity, Zap } from 'lucide-react';
 
 const ResetPassword = () => {
     const location = useLocation();
