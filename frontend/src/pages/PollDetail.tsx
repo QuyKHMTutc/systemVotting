@@ -284,21 +284,21 @@ const PollDetail = () => {
                                 <div
                                     key={option.id}
                                     onClick={() => (isActive && !hasVoted) ? setSelectedOption(option.id) : null}
-                                    className={`relative overflow-hidden rounded-xl border transition-all duration-300 p-4 ${(isActive && !hasVoted) ? 'cursor-pointer hover:border-indigo-400' : 'cursor-default'} ${isSelected ? 'border-indigo-400 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'border-white/10 bg-white/5'}`}
+                                    className={`relative overflow-hidden rounded-xl border transition-all duration-300 p-4 ${(isActive && !hasVoted) ? 'cursor-pointer hover:border-pink-400 hover:shadow-[0_0_15px_rgba(236,72,153,0.1)]' : 'cursor-default'} ${isSelected ? 'border-pink-500 bg-gradient-to-r from-pink-500/10 to-purple-500/10 shadow-[0_0_15px_rgba(236,72,153,0.2)]' : 'border-white/10 bg-white/5'}`}
                                 >
                                     {/* Progress Bar Background */}
                                     {showResults && (
                                         <div
-                                            className="absolute inset-0 bg-white/10"
+                                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-r border-white/5 shadow-[inset_-2px_0_10px_rgba(255,255,255,0.05)]"
                                             style={{ width: `${percentage}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                                         ></div>
                                     )}
 
                                     <div className="relative z-10 flex justify-between items-center">
                                         <div className="flex items-center gap-3">
-                                            {isActive && (
-                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'border-indigo-400' : 'border-white/30'}`}>
-                                                    {isSelected && <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full"></div>}
+                                            {isActive && !hasVoted && (
+                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${isSelected ? 'border-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.5)]' : 'border-white/30'}`}>
+                                                    {isSelected && <div className="w-2.5 h-2.5 bg-pink-500 rounded-full"></div>}
                                                 </div>
                                             )}
                                             <span className="text-white font-medium text-lg">{option.text}</span>
@@ -368,7 +368,7 @@ const PollDetail = () => {
                             <button
                                 onClick={handleVote}
                                 disabled={!selectedOption || voting}
-                                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-8 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
                             >
                                 {voting ? 'Submitting...' : 'Submit Vote'}
                             </button>

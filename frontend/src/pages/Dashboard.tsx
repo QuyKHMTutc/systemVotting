@@ -91,8 +91,11 @@ const Dashboard = () => {
                     </div>
                     <Link
                         to="/create-poll"
-                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105"
+                        className="px-6 py-3.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-0.5 active:scale-[0.98] uppercase tracking-wider text-sm flex items-center gap-2"
                     >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
                         Create New Poll
                     </Link>
                 </div>
@@ -173,20 +176,32 @@ const Dashboard = () => {
                                 );
                             }
 
-                            return pollsToDisplay.map((poll) => {
+                            return pollsToDisplay.map((poll, index) => {
                                 const isActive = new Date(poll.endTime) > new Date();
                                 const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
 
                                 return (
-                                    <div key={poll.id} className="glass-panel p-6 rounded-2xl transition-all duration-300 hover:shadow-indigo-500/10 hover:-translate-y-1 relative overflow-hidden group flex flex-col h-full">
+                                    <div 
+                                        key={poll.id} 
+                                        className="glass-panel p-6 rounded-2xl transition-all duration-300 hover:shadow-[0_10px_30px_rgba(139,92,246,0.2)] hover:-translate-y-1.5 relative overflow-hidden group flex flex-col h-full animate-fade-in-up"
+                                        style={{ animationDelay: `${index * 50}ms` }}
+                                    >
                                         {/* Decorative Gradient Background overlay */}
                                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                                         <div className="relative z-10 flex-grow flex flex-col">
                                             <div className="flex justify-between items-start mb-4">
                                                 <div className="flex gap-2">
-                                                    <span className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>
-                                                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                                                    <span className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full shadow-sm transition-all ${isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                                        {isActive ? (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                            </svg>
+                                                        )}
                                                         {isActive ? 'Active' : 'Ended'}
                                                     </span>
                                                     {poll.topic && (() => {
@@ -247,12 +262,12 @@ const Dashboard = () => {
 
                                                 <Link
                                                     to={`/poll/${poll.id}`}
-                                                    className={`block text-center w-full py-3 px-4 rounded-xl transition-all font-medium ${
+                                                    className={`block text-center w-full py-3.5 px-4 rounded-xl transition-all font-bold uppercase tracking-wider text-xs ${
                                                         !isActive
-                                                            ? 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                                                            ? 'bg-transparent text-white/50 border border-white/10 hover:bg-white/5 hover:text-white'
                                                             : votedPollIds.includes(poll.id)
-                                                            ? 'bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20'
-                                                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
+                                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                                                            : 'bg-transparent border border-pink-500/50 text-pink-400 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 hover:border-transparent hover:text-white hover:shadow-[0_0_15px_rgba(236,72,153,0.3)]'
                                                     }`}
                                                 >
                                                     {!isActive ? 'View Results' : votedPollIds.includes(poll.id) ? 'View Results' : 'Vote Now'}

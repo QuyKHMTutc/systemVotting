@@ -94,7 +94,7 @@ const CreatePoll = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-indigo-100 mb-3">Topic / Chủ đề</label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar w-full">
                                 {TOPICS.map((t) => {
                                     const Icon = t.icon;
                                     const isSelected = topic === t.id;
@@ -103,14 +103,14 @@ const CreatePoll = () => {
                                             key={t.id}
                                             type="button"
                                             onClick={() => setTopic(t.id)}
-                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ${
+                                            className={`flex flex-row items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-200 whitespace-nowrap outline-none ${
                                                 isSelected 
-                                                    ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] transform scale-[1.02]' 
-                                                    : 'bg-white/5 border-white/10 text-indigo-200 hover:bg-white/10 hover:border-white/20'
+                                                    ? 'bg-gradient-to-r from-pink-600 to-purple-600 border-transparent text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] transform scale-105 font-bold' 
+                                                    : 'bg-white/5 border-white/10 text-indigo-200 hover:bg-white/10 hover:border-white/20 hover:text-white font-medium'
                                             }`}
                                         >
-                                            <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-indigo-400' : 'text-indigo-300/70'}`} />
-                                            <span className="text-sm font-medium">{t.name}</span>
+                                            <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-indigo-300/70'}`} />
+                                            <span className="text-sm">{t.name}</span>
                                         </button>
                                     );
                                 })}
@@ -120,12 +120,12 @@ const CreatePoll = () => {
                         <div className="space-y-4">
                             <label className="block text-sm font-medium text-indigo-100 mb-2">Options</label>
                             {options.map((option, index) => (
-                                <div key={index} className="flex gap-3">
+                                <div key={index} className="flex gap-3 relative group">
                                     <input
                                         type="text"
                                         value={option}
                                         onChange={(e) => handleOptionChange(index, e.target.value)}
-                                        className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                        className="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
                                         placeholder={`Option ${index + 1}`}
                                         required
                                     />
@@ -133,9 +133,12 @@ const CreatePoll = () => {
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveOption(index)}
-                                            className="px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/30 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                            title="Remove Option"
                                         >
-                                            Remove
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
                                         </button>
                                     )}
                                 </div>
@@ -143,9 +146,12 @@ const CreatePoll = () => {
                             <button
                                 type="button"
                                 onClick={handleAddOption}
-                                className="text-indigo-300 hover:text-indigo-200 text-sm font-medium mt-2 flex items-center transition-colors border border-dashed border-indigo-500/30 px-4 py-2 rounded-lg w-full justify-center"
+                                className="w-full flex items-center justify-center gap-2 py-3 mt-4 border border-dashed border-white/20 text-indigo-300 hover:text-white hover:bg-white/5 hover:border-white/40 rounded-xl transition-all font-medium group focus:outline-none focus:ring-2 focus:ring-pink-500"
                             >
-                                + Add another option
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400 group-hover:text-pink-400 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                                </svg>
+                                Add another option
                             </button>
                         </div>
 
@@ -172,7 +178,7 @@ const CreatePoll = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="px-8 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wide text-sm"
                             >
                                 {loading ? 'Creating...' : 'Create Poll'}
                             </button>
