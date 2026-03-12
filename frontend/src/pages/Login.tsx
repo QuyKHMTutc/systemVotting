@@ -5,6 +5,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
 import { Eye, EyeOff, Mail, Lock, LogIn, Activity, Fingerprint, Zap } from 'lucide-react';
 
+function decodeJwtPayload(token: string): any {
+    const part = token.split('.')[1];
+    if (!part) throw new Error('Invalid JWT');
+    const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    return JSON.parse(atob(padded));
+}
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -58,7 +66,7 @@ const Login = () => {
             const response = await authService.login({ email, password });
 
             if (response.status === 200 && response.data) {
-                const tokenPayload = JSON.parse(atob(response.data.accessToken.split('.')[1]));
+                const tokenPayload = decodeJwtPayload(response.data.accessToken);
                 const userData = {
                     id: tokenPayload.id || 0,
                     username: tokenPayload.username || tokenPayload.sub || '',
@@ -204,7 +212,7 @@ const Login = () => {
                                                 setError('');
                                                 const res = await authService.loginWithGoogle(credentialResponse.credential);
                                                 if (res.status === 200 && res.data) {
-                                                    const tokenPayload = JSON.parse(atob(res.data.accessToken.split('.')[1]));
+                                                    const tokenPayload = decodeJwtPayload(res.data.accessToken);
                                                     const userData = {
                                                         id: tokenPayload.id || 0,
                                                         username: tokenPayload.username || tokenPayload.sub || '',
