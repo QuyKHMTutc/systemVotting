@@ -65,24 +65,25 @@ const PollDetail = () => {
         }
     };
 
-    const handleCommentSubmit = async (content: string) => {
+    const handleCommentSubmit = async (content: string, isAnonymous: boolean) => {
         if (!poll) return;
         setCommentError('');
         try {
-            await commentService.createComment({ pollId: poll.id, content });
+            await commentService.createComment({ pollId: poll.id, content, isAnonymous: isAnonymous });
             fetchComments(poll.id);
         } catch (err: any) {
             setCommentError(err.response?.data?.message || 'Failed to post comment');
         }
     };
 
-    const handleReplySubmit = async (parentId: number, content: string) => {
+    const handleReplySubmit = async (parentId: number, content: string, isAnonymous: boolean) => {
         if (!poll) return;
         try {
             await commentService.createComment({
                 pollId: poll.id,
                 parentId,
-                content
+                content,
+                isAnonymous: isAnonymous
             });
             fetchComments(poll.id);
         } catch (err: any) {
@@ -247,9 +248,14 @@ const PollDetail = () => {
                 <div className="glass-panel p-8 rounded-2xl shadow-xl">
                     <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-6 relative">
                         <div className="pr-12">
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${isActive ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'} mb-4 inline-block`}>
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${isActive ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'} mb-4 mr-2 inline-block`}>
                                 {isActive ? 'Active' : 'Ended'}
                             </span>
+                            {poll.tags && poll.tags.map(tag => (
+                                <span key={tag} className="px-3 py-1 text-xs font-semibold rounded-full border bg-indigo-500/10 text-indigo-300 border-indigo-500/20 mb-4 mr-2 inline-block shadow-sm">
+                                    #{tag}
+                                </span>
+                            ))}
                             <h1 className="text-3xl font-bold text-white mb-2">{poll.title}</h1>
                             <p className="text-indigo-200/60 text-sm">
                                 Created by <span className="text-white">{poll.creator.username}</span> • Ends on {new Date(poll.endTime).toLocaleString()}

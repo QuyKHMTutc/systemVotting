@@ -5,7 +5,7 @@ import CommentInput from './CommentInput';
 
 interface CommentItemProps {
     comment: Comment;
-    onReplySubmit: (parentId: number, content: string) => void;
+    onReplySubmit: (parentId: number, content: string, isAnonymous: boolean) => void;
     expandedReplies: Record<number, boolean>;
     toggleReply: (commentId: number, forceOpen?: boolean) => void;
 }
@@ -101,12 +101,12 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit, expan
                 {isReplying && (
                     <div className="w-full mt-2">
                         <CommentInput 
-                            onSubmit={(content) => {
+                            onSubmit={(content, isAnonymous) => {
                                 let finalContent = content;
                                 if (isReply && !finalContent.startsWith(`@${comment.username}`)) {
                                     finalContent = `@${comment.username} ${finalContent}`;
                                 }
-                                onReplySubmit(comment.id, finalContent);
+                                onReplySubmit(comment.id, finalContent, isAnonymous);
                                 setIsReplying(false);
                                 // Force open this thread to show the new reply immediately
                                 toggleReply(comment.id, true);

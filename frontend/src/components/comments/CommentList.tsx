@@ -4,7 +4,7 @@ import CommentItem from './CommentItem';
 
 interface CommentListProps {
     comments: Comment[];
-    onReplySubmit: (parentId: number, content: string) => void;
+    onReplySubmit: (parentId: number, content: string, isAnonymous: boolean) => void;
 }
 
 const CommentList: React.FC<CommentListProps> = ({ comments, onReplySubmit }) => {
