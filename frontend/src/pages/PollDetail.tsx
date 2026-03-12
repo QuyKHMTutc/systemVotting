@@ -7,6 +7,11 @@ import Navbar from '../components/Navbar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import confetti from 'canvas-confetti';
 import { Share2, Check, X } from 'lucide-react';
+import PostActions from '../components/post/PostActions';
+import CommentList from '../components/comments/CommentList';
+import CommentInput from '../components/comments/CommentInput';
+import { commentService } from '../services/comment.service';
+import type { Comment } from '../services/comment.service';
 
 const COLORS = ['#818cf8', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#60a5fa'];
 
@@ -20,6 +25,12 @@ const PollDetail = () => {
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
+
+    // Comment State
+    const [showComments, setShowComments] = useState(false);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [loadingComments, setLoadingComments] = useState(false);
+    const [commentError, setCommentError] = useState('');
 
     const handleShare = () => {
         const url = window.location.href;
@@ -38,8 +49,46 @@ const PollDetail = () => {
             // Verify with server for accuracy
             checkVoteStatus(Number(id));
             fetchPoll(Number(id));
+            fetchComments(Number(id));
         }
     }, [id]);
+
+    const fetchComments = async (pollId: number) => {
+        setLoadingComments(true);
+        try {
+            const data = await commentService.getCommentsByPollId(pollId);
+            setComments(data);
+        } catch (err) {
+            console.error('Failed to fetch comments', err);
+        } finally {
+            setLoadingComments(false);
+        }
+    };
+
+    const handleCommentSubmit = async (content: string) => {
+        if (!poll) return;
+        setCommentError('');
+        try {
+            await commentService.createComment({ pollId: poll.id, content });
+            fetchComments(poll.id);
+        } catch (err: any) {
+            setCommentError(err.response?.data?.message || 'Failed to post comment');
+        }
+    };
+
+    const handleReplySubmit = async (parentId: number, content: string) => {
+        if (!poll) return;
+        try {
+            await commentService.createComment({
+                pollId: poll.id,
+                parentId,
+                content
+            });
+            fetchComments(poll.id);
+        } catch (err: any) {
+            console.error('Failed to post reply:', err);
+        }
+    };
 
     const checkVoteStatus = async (pollId: number) => {
         try {
@@ -271,7 +320,7 @@ const PollDetail = () => {
 
                     {/* Chart Visualization */}
                     {totalVotes > 0 && showResults && (
-                        <div className="mt-10 mb-8 p-6 bg-white/5 border border-white/10 rounded-2xl">
+                        <div className="pt-6 border-t border-white/10">
                             <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
                                     <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
@@ -325,7 +374,7 @@ const PollDetail = () => {
                             </button>
                         )}
                         {hasVoted && (
-                            <div className="px-6 py-3 bg-green-500/20 text-green-300 font-medium rounded-xl border border-green-500/30 flex items-center gap-2">
+                            <div className="px-6 py-2.5 bg-green-500/10 text-green-400 font-medium rounded-xl border border-green-500/20 flex items-center gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
@@ -333,6 +382,47 @@ const PollDetail = () => {
                             </div>
                         )}
                     </div>
+
+                    <PostActions 
+                        commentsCount={comments.length}
+                        onCommentClick={() => setShowComments(!showComments)}
+                        onShareClick={handleShare}
+                        hasCopied={copied}
+                    />
+
+                    {/* Inline Comment Section */}
+                    {showComments && (
+                        <div className="border-t border-white/10 animate-fade-in-up flex flex-col h-[500px] -mx-8 -mb-8 mt-2 bg-black/20 rounded-b-2xl">
+                            
+                            {/* Scrollable Comment List */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 relative">
+                                {loadingComments && comments.length === 0 ? (
+                                    <div className="flex justify-center py-4">
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+                                    </div>
+                                ) : comments.length === 0 ? (
+                                    <div className="text-center text-white/40 py-6 border border-dashed border-white/10 rounded-xl">
+                                        No comments yet. Be the first to share your thoughts!
+                                    </div>
+                                ) : (
+                                    <>
+                                        {loadingComments && (
+                                            <div className="absolute top-2 right-4 z-10">
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-500"></div>
+                                            </div>
+                                        )}
+                                        <CommentList comments={comments} onReplySubmit={handleReplySubmit} />
+                                    </>
+                                )}
+                            </div>
+                            
+                            {/* Sticky Comment Input */}
+                            <div className="shrink-0 p-4 border-t border-white/10 bg-[#1a1a1a]/80 backdrop-blur-md rounded-b-2xl">
+                                {commentError && <div className="text-red-400 text-sm mb-2 ml-12">{commentError}</div>}
+                                <CommentInput onSubmit={handleCommentSubmit} placeholder="Write a comment..." />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

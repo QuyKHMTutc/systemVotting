@@ -38,3 +38,17 @@ body {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   /* Soft but deep shadow */
 }
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
