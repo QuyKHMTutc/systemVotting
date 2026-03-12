@@ -1,160 +1,166 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Comment } from '../../services/comment.service';
-import { CornerDownRight } from 'lucide-react';
+import { CornerDownRight, ThumbsUp } from 'lucide-react';
 import CommentInput from './CommentInput';
 
 interface CommentItemProps {
-    comment: Comment;
-    onReplySubmit: (parentId: number, content: string, isAnonymous: boolean) => void;
-    expandedReplies: Record<number, boolean>;
-    toggleReply: (commentId: number, forceOpen?: boolean) => void;
+  comment: Comment;
+  onReplySubmit: (parentId: number, content: string, isAnonymous: boolean) => void;
+  expandedReplies: Record<number, boolean>;
+  toggleReply: (commentId: number, forceOpen?: boolean) => void;
 }
 
-// Relative time helper
-const getRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+function getRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return 'Vừa xong';
-    
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d`;
-    
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    if (diffInWeeks < 4) return `${diffInWeeks}w`;
-    
-    return date.toLocaleDateString();
-};
+  if (diffSeconds < 60) return 'Just now';
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onReplySubmit, expandedReplies, toggleReply }) => {
-    const [isReplying, setIsReplying] = useState(false);
-    
-    // Check global expanded state instead of local state
-    const showReplies = expandedReplies[comment.id] || false;
+export default function CommentItem({
+  comment,
+  onReplySubmit,
+  expandedReplies,
+  toggleReply,
+}: CommentItemProps) {
+  const [isReplying, setIsReplying] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
 
-    const hasVoted = comment.voteStatus !== 'Chưa vote';
-    const isReply = comment.parentId != null;
-    const formattedDate = getRelativeTime(comment.createdAt);
+  const showReplies = expandedReplies[comment.id] ?? false;
+  const isReply = comment.parentId != null;
+  const timeAgo = getRelativeTime(comment.createdAt);
 
-    const handleReplyClick = () => {
-        setIsReplying(!isReplying);
-    };
+  const handleReplyClick = () => setIsReplying(!isReplying);
+  const handleLikeClick = () => {
+    setLiked(!liked);
+    setLikeCount((c) => (liked ? c - 1 : c + 1));
+  };
 
-    return (
-        <div className="flex gap-2.5 mb-[14px] w-full group/item">
-            {/* Avatar */}
-            <div className="flex-shrink-0 mt-1">
-                <img 
-                    src={comment.avatarUrl || `https://ui-avatars.com/api/?name=${comment.username}&background=random`} 
-                    alt={comment.username} 
-                    className="w-8 h-8 rounded-full object-cover cursor-pointer"
-                />
-            </div>
+  return (
+    <div className="flex gap-3 py-4 group hover:bg-white/[0.02] rounded-xl -mx-2 px-2 transition-colors">
+      {/* Avatar */}
+      <div className="shrink-0">
+        {comment.avatarUrl ? (
+          <img
+            src={comment.avatarUrl}
+            alt={comment.username}
+            className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/10">
+            {comment.username.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
 
-            {/* Comment Content Area */}
-        <div className="flex-1 min-w-0">
-                {/* Bubble Wrapper with Hover */}
-                <div className="max-w-[80%] md:max-w-[500px]">
-                    <div className="bg-[rgba(255,255,255,0.05)] px-3 py-2.5 rounded-[16px] relative group-hover/item:bg-[rgba(255,255,255,0.08)] transition-colors w-fit inline-block">
-                        <span className="font-bold text-white text-[13px] mr-2 cursor-pointer hover:underline">{comment.username}</span>
-                        <span className="text-[#E4E6EB] whitespace-pre-wrap text-[14px] leading-snug break-words">
-                            {comment.content.split(' ').map((word, index) => {
-                                if (word.startsWith('@')) {
-                                    return <span key={index} className="text-indigo-400 font-medium">{word} </span>;
-                                }
-                                return word + ' ';
-                            })}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Action Row - Outside Bubble */}
-                <div className="flex items-center gap-3 mt-1 ml-3 text-[11px] text-gray-400 font-medium">
-                    <span className="hover:underline cursor-pointer">{formattedDate}</span>
-                    <button 
-                        onClick={handleReplyClick}
-                        className="hover:underline transition-colors outline-none cursor-pointer"
-                    >
-                        Reply
-                    </button>
-                    <button className="hover:underline transition-colors outline-none cursor-pointer">
-                        Like
-                    </button>
-                    {hasVoted && (
-                        <>
-                            <span className="text-gray-500 font-bold -translate-y-px">·</span>
-                            <span className="text-[11px] px-1.5 py-0.5 rounded-full text-indigo-300 bg-indigo-500/10 whitespace-nowrap">
-                                {comment.voteStatus}
-                            </span>
-                        </>
-                    )}
-                </div>
-
-                {/* Reply Form */}
-                {isReplying && (
-                    <div className="w-full mt-2">
-                        <CommentInput 
-                            onSubmit={(content, isAnonymous) => {
-                                let finalContent = content;
-                                if (isReply && !finalContent.startsWith(`@${comment.username}`)) {
-                                    finalContent = `@${comment.username} ${finalContent}`;
-                                }
-                                onReplySubmit(comment.id, finalContent, isAnonymous);
-                                setIsReplying(false);
-                                // Force open this thread to show the new reply immediately
-                                toggleReply(comment.id, true);
-                            }}
-                            placeholder={`Reply to ${comment.username}...`}
-                            username="You" 
-                            isReply={true}
-                            autoFocus={true}
-                        />
-                    </div>
-                )}
-
-                {/* Render Replies (Recursive) */}
-                {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-2 w-full ml-0 sm:ml-4 flex flex-col pl-4">
-                        {showReplies ? (
-                            <>
-                                {comment.replies?.map(reply => (
-                                    <CommentItem 
-                                        key={reply.id} 
-                                        comment={reply} 
-                                        onReplySubmit={onReplySubmit} 
-                                        expandedReplies={expandedReplies}
-                                        toggleReply={toggleReply}
-                                    />
-                                ))}
-                                <button 
-                                    onClick={() => toggleReply(comment.id, false)}
-                                    className="text-[13px] font-medium text-blue-400 hover:underline mt-1 flex items-center gap-2 group w-fit outline-none transition-colors"
-                                >
-                                    <CornerDownRight className="w-4 h-4 opacity-70" />
-                                    Hide replies
-                                </button>
-                            </>
-                        ) : (
-                            <button 
-                                onClick={() => toggleReply(comment.id, true)}
-                                className="text-[13px] font-medium text-blue-400 hover:underline mt-1 flex items-center gap-2 group w-fit outline-none transition-colors"
-                            >
-                                <CornerDownRight className="w-4 h-4" />
-                                View {comment.replies?.length} replies
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
+      <div className="flex-1 min-w-0">
+        {/* Username + time */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="font-semibold text-white text-sm">{comment.username}</span>
+          <span className="text-white/40 text-xs">·</span>
+          <span className="text-white/50 text-xs">{timeAgo}</span>
         </div>
-    );
-};
 
-export default CommentItem;
+        {/* Content */}
+        <p className="text-white/90 text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+          {comment.content.split(' ').map((word, i) =>
+            word.startsWith('@') ? (
+              <span key={i} className="text-indigo-400 font-medium">
+                {word}{' '}
+              </span>
+            ) : (
+              <span key={i}>{word} </span>
+            )
+          )}
+        </p>
+
+        {/* Actions */}
+        <div className="flex items-center gap-4 mt-2">
+          <button
+            onClick={handleLikeClick}
+            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+              liked ? 'text-indigo-400' : 'text-white/50 hover:text-white/80'
+            }`}
+          >
+            <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+            {likeCount > 0 ? likeCount : 'Like'}
+          </button>
+          <button
+            onClick={handleReplyClick}
+            className="text-xs font-medium text-white/50 hover:text-white/80 transition-colors"
+          >
+            Reply
+          </button>
+          {comment.voteStatus !== 'Chưa vote' && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">
+              {comment.voteStatus}
+            </span>
+          )}
+        </div>
+
+        {/* Reply form */}
+        {isReplying && (
+          <div className="mt-3">
+            <CommentInput
+              onSubmit={(content, isAnonymous) => {
+                const final = isReply && !content.startsWith(`@${comment.username}`)
+                  ? `@${comment.username} ${content}`
+                  : content;
+                onReplySubmit(comment.id, final, isAnonymous);
+                setIsReplying(false);
+                toggleReply(comment.id, true);
+              }}
+              placeholder={`Reply to ${comment.username}...`}
+              username="You"
+              isReply
+              autoFocus
+            />
+          </div>
+        )}
+
+        {/* Nested replies */}
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="mt-4 pl-4 border-l-2 border-white/10 space-y-0">
+            {showReplies ? (
+              <>
+                {comment.replies.map((r) => (
+                  <CommentItem
+                    key={r.id}
+                    comment={r}
+                    onReplySubmit={onReplySubmit}
+                    expandedReplies={expandedReplies}
+                    toggleReply={toggleReply}
+                  />
+                ))}
+                <button
+                  onClick={() => toggleReply(comment.id, false)}
+                  className="flex items-center gap-2 mt-2 text-sm font-medium text-indigo-400 hover:text-indigo-300"
+                >
+                  <CornerDownRight className="w-4 h-4" />
+                  Hide replies
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => toggleReply(comment.id, true)}
+                className="flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300"
+              >
+                <CornerDownRight className="w-4 h-4" />
+                View {comment.replies.length} repl{comment.replies.length === 1 ? 'y' : 'ies'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

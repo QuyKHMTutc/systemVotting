@@ -3,182 +3,297 @@ import { useAuth } from '../contexts/AuthContext';
 import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import { PollCard } from '../components/PollCard';
-import { ListPlus, CheckSquare, X, Trash2 } from 'lucide-react';
+import { ListPlus, CheckSquare, X, PenLine, MessageSquare } from 'lucide-react';
+import Navbar from '../components/Navbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import UserProfileModal from '../components/UserProfileModal';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const Profile = () => {
-    const { user } = useAuth();
-    const navigate = useNavigate();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-    // Persist active tab in URL so it survives navigate(-1) from PollDetail
-    const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = (searchParams.get('tab') as 'created' | 'voted') || 'created';
-    const setActiveTab = (tab: 'created' | 'voted') =>
-        setSearchParams({ tab }, { replace: true });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as 'created' | 'voted') || 'created';
+  const setActiveTab = (tab: 'created' | 'voted') =>
+    setSearchParams({ tab }, { replace: true });
 
-    const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
-    const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
+  const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-    const handleDeletePoll = async (pollId: number) => {
-        if (!window.confirm('Bạn có chắc muốn xóa cuộc bình chọn này không?')) return;
-        try {
-            await pollService.deletePoll(pollId);
-            setCreatedPolls(prev => prev.filter(p => p.id !== pollId));
-        } catch (err: any) {
-            alert(err.response?.data?.message || 'Xóa thất bại. Vui lòng thử lại.');
-        }
+  const handleDeletePoll = async (pollId: number) => {
+    if (!window.confirm('Are you sure you want to delete this poll?')) return;
+    try {
+      await pollService.deletePoll(pollId);
+      setCreatedPolls((prev) => prev.filter((p) => p.id !== pollId));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true);
+        const [created, voted] = await Promise.all([
+          pollService.getMyPolls(),
+          pollService.getMyVotedPolls(),
+        ]);
+        setCreatedPolls(created);
+        setVotedPolls(voted);
+      } catch (err) {
+        console.error('Failed to fetch profile data', err);
+        setError('Failed to load profile data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    useEffect(() => {
-        const fetchProfileData = async () => {
-            try {
-                setLoading(true);
-                const [created, voted] = await Promise.all([
-                    pollService.getMyPolls(),
-                    pollService.getMyVotedPolls()
-                ]);
-                setCreatedPolls(created);
-                setVotedPolls(voted);
-            } catch (err) {
-                console.error("Failed to fetch profile data", err);
-                setError('Failed to load profile data. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        };
+    if (user) fetchProfileData();
+  }, [user]);
 
-        if (user) {
-            fetchProfileData();
-        }
-    }, [user]);
+  if (loading) return <LoadingSpinner />;
 
-    if (loading) return <LoadingSpinner />;
+  return (
+    <div className="min-h-screen pb-12">
+      <Navbar />
 
-    return (
-        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-8 relative">
-                {/* Nút Đóng Profile */}
-                <button 
-                    onClick={() => navigate(-1)}
-                    className="absolute top-4 right-4 z-20 p-2.5 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full transition-all duration-300 hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] hover:rotate-90"
-                    aria-label="Close Profile"
-                    title="Đóng trang cá nhân"
-                >
-                    <X className="w-5 h-5" />
-                </button>
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Profile Card */}
+        <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden relative">
+          {/* Back button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-4 right-4 z-20 p-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-white/80 hover:text-white transition-all duration-200"
+            aria-label="Back"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-12 text-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-                    <div className="relative z-10 flex flex-col items-center">
-                        <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-md mb-4 overflow-hidden border-4 border-white/20">
-                            {user?.avatarUrl ? (
-                                <img 
-                                    src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} 
-                                    alt={user.username} 
-                                    className="w-full h-full object-cover" 
-                                    onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} 
-                                />
-                            ) : (
-                                <span className="text-4xl font-bold text-indigo-600">{user?.username?.charAt(0).toUpperCase()}</span>
-                            )}
-                        </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">{user?.username}</h1>
-                        <p className="text-blue-100">{user?.email}</p>
-                        <button
-                            onClick={() => setIsProfileModalOpen(true)}
-                            className="mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            Edit Profile
-                        </button>
-                    </div>
+          {/* Cover / Header - gradient + blur + glow */}
+          <div className="relative h-40 sm:h-48 overflow-hidden">
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600" />
+
+            {/* Blurred shapes */}
+            <div className="absolute top-0 left-1/4 w-64 h-64 rounded-full bg-indigo-400/30 blur-3xl -translate-y-1/2" />
+            <div className="absolute bottom-0 right-1/4 w-48 h-48 rounded-full bg-purple-400/25 blur-3xl translate-y-1/2" />
+            <div className="absolute top-1/2 right-0 w-32 h-32 rounded-full bg-pink-400/20 blur-2xl" />
+
+            {/* Overlay for depth */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/5" />
+          </div>
+
+          {/* Profile content - overlaps cover */}
+          <div className="relative px-6 sm:px-8 -mt-16 sm:-mt-20 pb-6">
+            <div className="flex flex-col items-center text-center">
+              {/* Avatar - 80–100px, ring, shadow */}
+              <div className="relative mb-4">
+                <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full ring-4 ring-white/20 sm:ring-purple-400/30 bg-white/10 flex items-center justify-center overflow-hidden shadow-xl shadow-black/30">
+                  {user?.avatarUrl ? (
+                    <img
+                      src={
+                        user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')
+                          ? user.avatarUrl
+                          : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`
+                      }
+                      alt={user.username}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}`;
+                      }}
+                    />
+                  ) : (
+                    <span className="text-4xl font-bold text-white/90">
+                      {user?.username?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
+                {/* Subtle glow behind avatar */}
+                <div className="absolute inset-0 rounded-full bg-indigo-500/20 blur-xl -z-10 scale-110" />
+              </div>
 
-                <div className="flex border-b border-gray-200">
-                    <button
-                        onClick={() => setActiveTab('created')}
-                        className={`flex-1 py-4 px-6 text-sm font-medium flex items-center justify-center space-x-2 transition-colors duration-200 
-                            ${activeTab === 'created' 
-                                ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                            }`}
-                    >
-                        <ListPlus className="w-5 h-5" />
-                        <span>Created Polls ({createdPolls.length})</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('voted')}
-                        className={`flex-1 py-4 px-6 text-sm font-medium flex items-center justify-center space-x-2 transition-colors duration-200 
-                            ${activeTab === 'voted' 
-                                ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                            }`}
-                    >
-                        <CheckSquare className="w-5 h-5" />
-                        <span>Voted Polls ({votedPolls.length})</span>
-                    </button>
-                </div>
-                
-                <div className="p-6">
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg text-sm text-center">
-                            {error}
-                        </div>
-                    )}
+              {/* Username & Email */}
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 tracking-tight">
+                {user?.username}
+              </h1>
+              <p className="text-white/60 text-sm mb-5">{user?.email}</p>
 
-                    <div className="space-y-6">
-                         {activeTab === 'created' ? (
-                            createdPolls.length > 0 ? (
-                                createdPolls.map(poll => (
-                                    <div key={poll.id} className="relative group/card transition-transform duration-200 hover:-translate-y-1">
-                                         <PollCard poll={poll} hasVoted={votedPolls.some(vp => vp.id === poll.id)} />
-                                         {/* Delete button - appears on hover */}
-                                         <button
-                                             onClick={() => handleDeletePoll(poll.id)}
-                                             className="absolute top-3 right-12 z-20 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover/card:opacity-100 transition-all shadow-md"
-                                             title="Xóa cuộc bình chọn này"
-                                         >
-                                             <Trash2 className="w-4 h-4" />
-                                         </button>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 border-dashed">
-                                    <ListPlus className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No polls created yet</h3>
-                                    <p className="text-gray-500">When you create a poll, it will show up here.</p>
-                                </div>
-                            )
-                        ) : (
-                            votedPolls.length > 0 ? (
-                                votedPolls.map(poll => (
-                                    <div key={poll.id} className="transition-transform duration-200 hover:-translate-y-1">
-                                        <PollCard poll={poll} hasVoted={true} />
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 border-dashed">
-                                    <CheckSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-1">You haven't voted on any polls yet</h3>
-                                    <p className="text-gray-500">Explore active polls and cast your vote!</p>
-                                </div>
-                            )
-                        )}
-                    </div>
-                </div>
+              {/* Edit Profile button */}
+              <button
+                onClick={() => setIsProfileModalOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10"
+              >
+                <PenLine className="w-4 h-4" />
+                Edit Profile
+              </button>
             </div>
 
-            <UserProfileModal
-                isOpen={isProfileModalOpen}
-                onClose={() => setIsProfileModalOpen(false)}
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/10">
+              <div className="text-center group">
+                <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
+                  <ListPlus className="w-4 h-4 group-hover:text-indigo-400 transition-colors" />
+                  <span className="text-xs font-medium uppercase tracking-wider">Polls</span>
+                </div>
+                <p className="text-2xl font-bold text-white">{createdPolls.length}</p>
+              </div>
+              <div className="text-center group">
+                <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
+                  <CheckSquare className="w-4 h-4 group-hover:text-emerald-400 transition-colors" />
+                  <span className="text-xs font-medium uppercase tracking-wider">Votes</span>
+                </div>
+                <p className="text-2xl font-bold text-white">{votedPolls.length}</p>
+              </div>
+              <div className="text-center group">
+                <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
+                  <MessageSquare className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
+                  <span className="text-xs font-medium uppercase tracking-wider">Engagement</span>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {createdPolls.length + votedPolls.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs - animated underline */}
+          <div className="relative border-b border-white/10">
+            <div className="flex">
+              <button
+                onClick={() => setActiveTab('created')}
+                className={`relative flex-1 py-4 px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
+                  activeTab === 'created'
+                    ? 'text-indigo-400'
+                    : 'text-white/50 hover:text-white/80'
+                }`}
+              >
+                <ListPlus className="w-5 h-5" />
+                <span>Created Polls</span>
+                <span
+                  className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    activeTab === 'created' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
+                  }`}
+                >
+                  {createdPolls.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('voted')}
+                className={`relative flex-1 py-4 px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
+                  activeTab === 'voted'
+                    ? 'text-indigo-400'
+                    : 'text-white/50 hover:text-white/80'
+                }`}
+              >
+                <CheckSquare className="w-5 h-5" />
+                <span>Voted Polls</span>
+                <span
+                  className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    activeTab === 'voted' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
+                  }`}
+                >
+                  {votedPolls.length}
+                </span>
+              </button>
+            </div>
+            {/* Animated glowing underline */}
+            <div
+              className="absolute bottom-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-[left] duration-300 ease-out"
+              style={{
+                left: activeTab === 'created' ? '25%' : '75%',
+                width: '30%',
+                transform: 'translateX(-50%)',
+                boxShadow: '0 0 12px rgba(99, 102, 241, 0.6)',
+              }}
             />
+          </div>
+
+          {/* Poll list content */}
+          <div className="p-6 sm:p-8">
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-6">
+              {activeTab === 'created' ? (
+                createdPolls.length > 0 ? (
+                  createdPolls.map((poll, i) => (
+                    <div
+                      key={poll.id}
+                      className="animate-fade-in-up"
+                      style={{ animationDelay: `${i * 50}ms` }}
+                    >
+                      <div className="transition-transform duration-200 hover:-translate-y-0.5">
+                        <PollCard
+                          poll={poll}
+                          hasVoted={votedPolls.some((vp) => vp.id === poll.id)}
+                          onDelete={handleDeletePoll}
+                          showDeleteButton
+                        />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                      <ListPlus className="h-8 w-8 text-white/40" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">No polls created yet</h3>
+                    <p className="text-white/50 text-sm mb-4">
+                      Create your first poll to start gathering community votes.
+                    </p>
+                    <button
+                      onClick={() => navigate('/create-poll')}
+                      className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
+                    >
+                      Create a poll →
+                    </button>
+                  </div>
+                )
+              ) : votedPolls.length > 0 ? (
+                votedPolls.map((poll, i) => (
+                  <div
+                    key={poll.id}
+                    className="animate-fade-in-up"
+                    style={{ animationDelay: `${i * 50}ms` }}
+                  >
+                    <div className="transition-transform duration-200 hover:-translate-y-0.5">
+                      <PollCard poll={poll} hasVoted />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                    <CheckSquare className="h-8 w-8 text-white/40" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2">No votes yet</h3>
+                  <p className="text-white/50 text-sm mb-4">
+                    Explore polls and cast your first vote!
+                  </p>
+                  <button
+                    onClick={() => navigate('/')}
+                    className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
+                  >
+                    Browse polls →
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-    );
+      </div>
+
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
+    </div>
+  );
 };

@@ -1,86 +1,154 @@
-
 import { Link } from 'react-router-dom';
 import type { Poll } from '../services/poll.service';
-import { Share2, Check } from 'lucide-react';
+import { Share2, Check, Users, MessageCircle, BarChart3, Clock } from 'lucide-react';
 import { useState } from 'react';
-import { getTopicIcon } from '../constants/topics';
+import { timeAgo, endsIn } from '../utils/date';
+import { getTagPillClass } from '../utils/tagPills';
 
-export const PollCard = ({ poll, hasVoted = false }: { poll: Poll; hasVoted?: boolean }) => {
-    const isActive = new Date(poll.endTime) > new Date();
-    const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
-    const [copied, setCopied] = useState(false);
-    const topic = poll.tags?.[0];
+export interface PollCardProps {
+  poll: Poll;
+  hasVoted?: boolean;
+  commentCount?: number;
+  onDelete?: (pollId: number) => void;
+  showDeleteButton?: boolean;
+}
 
-    const handleShare = (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent navigating to poll detail if clicking share
-        const url = `${window.location.origin}/poll/${poll.id}`;
-        navigator.clipboard.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+export const PollCard = ({
+  poll,
+  hasVoted = false,
+  commentCount = 0,
+  onDelete,
+  showDeleteButton = false,
+}: PollCardProps) => {
+  const isActive = new Date(poll.endTime) > new Date();
+  const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
+  const [copied, setCopied] = useState(false);
 
-    return (
-        <div className="glass-panel p-6 rounded-2xl transition-all duration-300 hover:shadow-indigo-500/10 hover:-translate-y-1 relative overflow-hidden group flex flex-col h-full border border-gray-100 bg-white">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
-            <div className="relative z-10 flex-grow flex flex-col">
-                <div className="flex justify-between items-start mb-4">
-                    <div className="flex gap-2">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border shadow-sm ${isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
-                            {isActive ? '● Active' : '○ Ended'}
-                        </span>
-                        {topic && (() => {
-                            const CatIcon = getTopicIcon(topic);
-                            return (
-                                <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-sm bg-purple-100 text-purple-700 border-purple-200">
-                                    <CatIcon className="w-3 h-3" />
-                                    {topic}
-                                </span>
-                            );
-                        })()}
-                    </div>
-                    <button
-                        onClick={handleShare}
-                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors focus:outline-none relative group/share"
-                        title="Copy poll link"
-                    >
-                        {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
-                        {copied && (
-                            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap animate-fade-in-up">
-                                Copied!
-                            </span>
-                        )}
-                    </button>
-                </div>
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/poll/${poll.id}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-                <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 leading-tight group-hover:text-indigo-600 transition-colors">{poll.title}</h2>
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete?.(poll.id);
+  };
 
-                <div className="mt-auto pt-4">
-                    <div className="flex justify-between items-center text-xs text-gray-500 mb-5 py-3 border-y border-gray-100">
-                        <div className="flex flex-col items-center">
-                            <span className="text-gray-900 font-bold text-sm mb-0.5">{totalVotes}</span>
-                            <span>Votes</span>
-                        </div>
-                        <div className="w-px h-8 bg-gray-200"></div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-gray-900 font-bold text-sm mb-0.5">{poll.options.length}</span>
-                            <span>Options</span>
-                        </div>
-                        <div className="w-px h-8 bg-gray-200"></div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-gray-900 font-medium mb-0.5">{new Date(poll.endTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                            <span>Ends</span>
-                        </div>
-                    </div>
+  return (
+    <Link
+      to={`/poll/${poll.id}`}
+      className="block h-full group"
+    >
+      <div className="glass-panel card-hover-effect rounded-2xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-white/20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/8 via-transparent to-purple-500/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-                    <Link
-                        to={`/poll/${poll.id}`}
-                        className={`block text-center w-full py-2.5 px-4 rounded-xl transition-all font-medium text-sm ${isActive && !hasVoted ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'}`}
-                    >
-                        {isActive && !hasVoted ? 'Vote Now' : 'View Results'}
-                    </Link>
-                </div>
+        <div className="relative z-10 p-6 flex flex-col flex-grow">
+          {/* Header: status badge + tags */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${
+                  isActive
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                {isActive ? 'Active' : 'Ended'}
+              </span>
+              {poll.tags?.slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getTagPillClass(tag)} transition-transform hover:scale-105`}
+                >
+                  #{tag}
+                </span>
+              ))}
+              {poll.tags && poll.tags.length > 3 && (
+                <span className="px-2 py-1 text-xs text-white/50">+{poll.tags.length - 3}</span>
+              )}
             </div>
+            <div className="flex items-center gap-1">
+              {showDeleteButton && onDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  title="Delete"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={handleShare}
+                className="p-2 text-white/40 hover:text-indigo-400 hover:bg-white/5 rounded-lg transition-all focus:outline-none"
+                title="Copy link"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-lg font-bold text-white mb-4 line-clamp-2 leading-snug group-hover:text-indigo-200 transition-colors">
+            {poll.title}
+          </h2>
+
+          {/* Creator row */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shrink-0 shadow-lg shadow-indigo-500/20">
+              {poll.creator.username.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-white/90 font-medium text-sm truncate">{poll.creator.username}</span>
+              <span className="text-white/50 text-xs">{timeAgo(poll.createdAt)}</span>
+            </div>
+          </div>
+
+          {/* Stats row */}
+          <div className="flex items-center gap-4 text-xs text-white/60 mb-5 py-3 border-y border-white/5">
+            <span className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-indigo-400/80" />
+              <span className="text-white font-semibold">{totalVotes}</span> voters
+            </span>
+            <span className="flex items-center gap-1.5">
+              <MessageCircle className="w-4 h-4 text-indigo-400/80" />
+              <span className="text-white font-semibold">{commentCount}</span> comments
+            </span>
+            <span className="flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4 text-indigo-400/80" />
+              <span className="text-white font-semibold">{poll.options.length}</span> options
+            </span>
+          </div>
+
+          {/* Ends in / Ended */}
+          <div className="flex items-center gap-2 mb-5 text-xs">
+            <Clock className="w-4 h-4 text-white/40" />
+            <span className={isActive ? 'text-indigo-300/90' : 'text-white/50'}>{endsIn(poll.endTime)}</span>
+          </div>
+
+          {/* CTA Button */}
+          <div className="mt-auto pt-2">
+            <span
+              className={`block text-center w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                !isActive
+                  ? 'bg-white/5 text-white/50 border border-white/10'
+                  : hasVoted
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    : 'btn-primary text-white border-0 hover:opacity-95 group-hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)]'
+              }`}
+            >
+              {!isActive ? 'View Results' : hasVoted ? 'View Results' : 'VOTE NOW'}
+            </span>
+          </div>
         </div>
-    );
+      </div>
+    </Link>
+  );
 };
