@@ -11,7 +11,8 @@ public class PollResponseDTO {
     private Long id;
     private String title;
     private String description;
-    private String topic;
+    private List<String> tags;
+    private boolean isAnonymous;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private UserResponseDTO creator;

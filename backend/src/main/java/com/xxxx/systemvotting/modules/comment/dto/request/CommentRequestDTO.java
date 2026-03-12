@@ -18,4 +18,6 @@ public class CommentRequestDTO {
 
     @NotBlank(message = "Content must not be blank")
     private String content;
+
+    private boolean isAnonymous;
 }

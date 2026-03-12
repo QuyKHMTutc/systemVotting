@@ -6,8 +6,10 @@ import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.poll.entity.Option;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
+import com.xxxx.systemvotting.modules.poll.entity.Tag;
 import com.xxxx.systemvotting.modules.poll.mapper.PollMapper;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
+import com.xxxx.systemvotting.modules.poll.repository.TagRepository;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
@@ -25,6 +27,7 @@ public class PollServiceImpl implements PollService {
     private final PollRepository pollRepository;
     private final UserRepository userRepository;
     private final VoteRepository voteRepository;
+    private final TagRepository tagRepository;
     private final PollMapper pollMapper;
 
     @Override
@@ -39,6 +42,18 @@ public class PollServiceImpl implements PollService {
         poll.setCreator(creator);
         if (poll.getStartTime() == null) {
             poll.setStartTime(java.time.LocalDateTime.now());
+        }
+
+        // Handle tags dynamic creation/mapping
+        if (requestDTO.getTags() != null) {
+            for (String tagName : requestDTO.getTags()) {
+                String trimmedName = tagName.trim();
+                if (!trimmedName.isEmpty()) {
+                    Tag tag = tagRepository.findByName(trimmedName)
+                            .orElseGet(() -> tagRepository.save(Tag.builder().name(trimmedName).build()));
+                    poll.getTags().add(tag);
+                }
+            }
         }
 
         // Map and add options while preserving bidirectional relationship
@@ -62,8 +77,8 @@ public class PollServiceImpl implements PollService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PollResponseDTO> getAllPolls(String title, String topic, String status, Pageable pageable) {
-        Page<Poll> pollPage = pollRepository.findWithFilters(title, topic, status, java.time.LocalDateTime.now(), pageable);
+    public Page<PollResponseDTO> getAllPolls(String title, String tag, String status, Pageable pageable) {
+        Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, java.time.LocalDateTime.now(), pageable);
         return pollPage.map(pollMapper::toDto);
     }
 

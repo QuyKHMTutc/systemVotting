@@ -2,6 +2,7 @@ package com.xxxx.systemvotting.modules.comment.entity;
 
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.user.entity.User;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -45,6 +46,9 @@ public class Comment {
     private User user;
 
     private String content;
+
+    @Column(name = "is_anonymous", nullable = false)
+    private boolean isAnonymous;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

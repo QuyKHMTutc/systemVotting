@@ -18,8 +18,9 @@ public class PollCreateRequestDTO {
 
     private String description;
 
-    @NotBlank(message = "Topic is required")
-    private String topic;
+    private List<String> tags;
+
+    private boolean isAnonymous;
 
     @FutureOrPresent(message = "Start time cannot be in the past")
     private LocalDateTime startTime;
