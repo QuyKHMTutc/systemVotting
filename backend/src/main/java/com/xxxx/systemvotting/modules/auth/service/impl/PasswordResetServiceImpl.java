@@ -35,6 +35,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
+        if (!user.isVerified()) {
+            throw new BadRequestException("Account not verified. Please verify your registration first.");
+        }
+
         // Reuse existing token if present, otherwise create new one
         PasswordResetToken resetToken = tokenRepository.findByUser(user)
                 .orElseGet(() -> PasswordResetToken.builder().user(user).build());
