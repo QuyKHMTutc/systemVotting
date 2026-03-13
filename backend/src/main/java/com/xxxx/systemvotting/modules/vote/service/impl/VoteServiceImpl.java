@@ -63,17 +63,19 @@ public class VoteServiceImpl implements VoteService {
             throw new DuplicateResourceException("User has already voted for this poll");
         }
 
-        // 5. Update Option Vote Count
-        option.setVoteCount(option.getVoteCount() + 1);
-        optionRepository.save(option);
-
-        // 6. Create and save new Vote record
+        // 5. Create and save Vote first (DB unique constraint prevents race condition)
+        //    If we incremented option.voteCount first, a concurrent request could pass
+        //    the duplicate check and cause voteCount to be wrong when one save fails.
         Vote vote = voteMapper.toEntity(requestDTO);
         vote.setUser(user);
         vote.setPoll(poll);
         vote.setOption(option);
 
         Vote savedVote = voteRepository.save(vote);
+
+        // 6. Update Option Vote Count only after Vote is persisted successfully
+        option.setVoteCount(option.getVoteCount() + 1);
+        optionRepository.save(option);
         return voteMapper.toDto(savedVote);
     }
 

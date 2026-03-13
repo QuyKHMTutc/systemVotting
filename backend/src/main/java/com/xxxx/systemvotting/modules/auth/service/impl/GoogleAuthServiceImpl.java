@@ -33,8 +33,8 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                                  UserRepository userRepository,
                                  JwtService jwtService,
                                  RefreshTokenService refreshTokenService) {
-        // Build verifier without strict audience checks for debugging!
         this.verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections.singletonList(clientId))
                 .build();
         this.userRepository = userRepository;
         this.jwtService = jwtService;

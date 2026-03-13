@@ -108,10 +108,11 @@ public class CommentServiceImpl implements CommentService {
     private CommentResponseDTO mapToDTO(Comment comment, String voteStatus) {
         String displayUsername = comment.isAnonymous() ? "Anonymous" : comment.getUser().getUsername();
         String displayAvatarUrl = comment.isAnonymous() ? null : comment.getUser().getAvatarUrl();
+        Long userId = comment.isAnonymous() ? null : comment.getUser().getId();
 
         return CommentResponseDTO.builder()
                 .id(comment.getId())
-                .userId(comment.getUser().getId())
+                .userId(userId)
                 .username(displayUsername)
                 .avatarUrl(displayAvatarUrl)
                 .content(comment.getContent())

@@ -32,11 +32,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public void processForgotPassword(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
-
-        if (!user.isVerified()) {
-            throw new BadRequestException("Account not verified. Please verify your registration first.");
+        // Do not reveal whether email exists (security: prevents user enumeration)
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null || !user.isVerified()) {
+            return; // Same success response - do not reveal if email exists or verification status
         }
 
         // Reuse existing token if present, otherwise create new one
