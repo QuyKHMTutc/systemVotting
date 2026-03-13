@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.poll.service.impl;
 
+import com.xxxx.systemvotting.exception.custom.BadRequestException;
 import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
 import com.xxxx.systemvotting.modules.poll.dto.OptionRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
@@ -46,8 +47,14 @@ public class PollServiceImpl implements PollService {
 
         Poll poll = pollMapper.toEntity(requestDTO);
         poll.setCreator(creator);
-        if (poll.getStartTime() == null) {
-            poll.setStartTime(java.time.LocalDateTime.now());
+        java.time.LocalDateTime startTime = poll.getStartTime();
+        java.time.LocalDateTime endTime = poll.getEndTime();
+        if (startTime == null) {
+            startTime = java.time.LocalDateTime.now();
+            poll.setStartTime(startTime);
+        }
+        if (endTime != null && !endTime.isAfter(startTime)) {
+            throw new BadRequestException("End time must be after start time");
         }
 
         // Handle tags dynamic creation/mapping
@@ -110,9 +117,9 @@ public class PollServiceImpl implements PollService {
                     "You do not have permission to delete this poll");
         }
 
-        // Delete all votes associated with this poll's options to satisfy FK
-        // constraints
+        // Delete votes and comments before poll (FK constraints)
         poll.getOptions().forEach(option -> voteRepository.deleteByOptionId(option.getId()));
+        commentRepository.deleteByPoll_Id(poll.getId());
 
         pollRepository.delete(poll);
     }

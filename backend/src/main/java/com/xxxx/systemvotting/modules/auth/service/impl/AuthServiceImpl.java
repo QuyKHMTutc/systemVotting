@@ -76,7 +76,6 @@ public class AuthServiceImpl implements AuthService {
                             .refreshToken(requestRefreshToken)
                             .build();
                 })
-                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
-                        "Refresh token is not in database!"));
+                .orElseThrow(() -> new TokenRefreshException("Refresh token is invalid or expired"));
     }
 }
