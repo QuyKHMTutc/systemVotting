@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Comment } from '../../services/comment.service';
 import { CornerDownRight, ThumbsUp } from 'lucide-react';
 import CommentInput from './CommentInput';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface CommentItemProps {
   comment: Comment;
@@ -31,6 +32,7 @@ export default function CommentItem({
   expandedReplies,
   toggleReply,
 }: CommentItemProps) {
+  const { user } = useAuth();
   const [isReplying, setIsReplying] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -51,9 +53,10 @@ export default function CommentItem({
       <div className="shrink-0">
         {comment.avatarUrl ? (
           <img
-            src={comment.avatarUrl}
+            src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`}
             alt={comment.username}
             className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10"
+            onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.username}` }}
           />
         ) : (
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/10">
@@ -120,7 +123,8 @@ export default function CommentItem({
                 toggleReply(comment.id, true);
               }}
               placeholder={`Reply to ${comment.username}...`}
-              username="You"
+              username={user?.username || "You"}
+              avatarUrl={user?.avatarUrl && (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : user?.avatarUrl ? `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}` : undefined}
               isReply
               autoFocus
             />
