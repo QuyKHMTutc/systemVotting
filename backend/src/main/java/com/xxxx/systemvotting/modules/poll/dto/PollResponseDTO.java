@@ -17,6 +17,7 @@ public class PollResponseDTO {
     private LocalDateTime endTime;
     private UserResponseDTO creator;
     private List<OptionResponseDTO> options;
+    private int commentCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

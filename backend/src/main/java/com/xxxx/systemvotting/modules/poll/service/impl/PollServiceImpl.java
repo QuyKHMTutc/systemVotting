@@ -14,6 +14,7 @@ import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
+import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,11 @@ public class PollServiceImpl implements PollService {
     private final VoteRepository voteRepository;
     private final TagRepository tagRepository;
     private final PollMapper pollMapper;
+    private final CommentRepository commentRepository;
+
+    private int getCommentCountForPoll(Long pollId) {
+        return commentRepository.findByPollIdOrderByCreatedAtDesc(pollId).size();
+    }
 
     @Override
     @Transactional
@@ -64,7 +70,9 @@ public class PollServiceImpl implements PollService {
         }
 
         Poll savedPoll = pollRepository.save(poll);
-        return pollMapper.toDto(savedPoll);
+        PollResponseDTO dto = pollMapper.toDto(savedPoll);
+        dto.setCommentCount(0); // Brand new poll has 0 comments
+        return dto;
     }
 
     @Override
@@ -72,14 +80,20 @@ public class PollServiceImpl implements PollService {
     public PollResponseDTO getPollById(Long id) {
         Poll poll = pollRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Poll not found with id: " + id));
-        return pollMapper.toDto(poll);
+        PollResponseDTO dto = pollMapper.toDto(poll);
+        dto.setCommentCount(getCommentCountForPoll(id));
+        return dto;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<PollResponseDTO> getAllPolls(String title, String tag, String status, Pageable pageable) {
         Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, java.time.LocalDateTime.now(), pageable);
-        return pollPage.map(pollMapper::toDto);
+        return pollPage.map(poll -> {
+            PollResponseDTO dto = pollMapper.toDto(poll);
+            dto.setCommentCount(getCommentCountForPoll(poll.getId()));
+            return dto;
+        });
     }
 
     @Override
@@ -108,7 +122,11 @@ public class PollServiceImpl implements PollService {
     public java.util.List<PollResponseDTO> getMyPolls(Long userId) {
         java.util.List<Poll> polls = pollRepository.findByCreatorIdOrderByIdDesc(userId);
         return polls.stream()
-                .map(pollMapper::toDto)
+                .map(poll -> {
+                    PollResponseDTO dto = pollMapper.toDto(poll);
+                    dto.setCommentCount(getCommentCountForPoll(poll.getId()));
+                    return dto;
+                })
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -117,7 +135,11 @@ public class PollServiceImpl implements PollService {
     public java.util.List<PollResponseDTO> getVotedPolls(Long userId) {
         java.util.List<Poll> polls = pollRepository.findPollsVotedByUser(userId);
         return polls.stream()
-                .map(pollMapper::toDto)
+                .map(poll -> {
+                    PollResponseDTO dto = pollMapper.toDto(poll);
+                    dto.setCommentCount(getCommentCountForPoll(poll.getId()));
+                    return dto;
+                })
                 .collect(java.util.stream.Collectors.toList());
     }
 }
