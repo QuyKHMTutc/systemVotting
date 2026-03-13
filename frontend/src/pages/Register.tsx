@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import OtpInput from '../components/OtpInput';
 import PasswordStrength from '../components/PasswordStrength';
@@ -9,11 +9,12 @@ import confetti from 'canvas-confetti';
 type Stage = 'register' | 'verify';
 
 const Register = () => {
-    const [stage, setStage] = useState<Stage>('register');
+    const location = useLocation();
+    const [stage, setStage] = useState<Stage>(location.state?.stage || 'register');
 
     // Register form state
     const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState(location.state?.email || '');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreeTerms, setAgreeTerms] = useState(false);
@@ -31,6 +32,16 @@ const Register = () => {
     const [loading, setLoading] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
     const navigate = useNavigate();
+
+    // Trigger cooldown on initial mount if state is already 'verify'
+    // Also send an OTP the first time they arrive from login
+    useEffect(() => {
+        if (stage === 'verify' && resendCooldown === 0) {
+           startResendCooldown();
+           // Optionally, trigger an initial resend if the user navigates directly
+           // to ensure they have a fresh code, but the backend handles that with the resend action
+        }
+    }, []);
 
     // Shake animation state
     const [isShaking, setIsShaking] = useState(false);
