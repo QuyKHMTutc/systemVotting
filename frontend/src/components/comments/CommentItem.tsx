@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Comment } from '../../services/comment.service';
-import { CornerDownRight, ThumbsUp } from 'lucide-react';
+import { CornerDownRight, ThumbsUp, User } from 'lucide-react';
 import CommentInput from './CommentInput';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -49,22 +49,27 @@ export default function CommentItem({
 
   return (
     <div className="flex gap-3 py-4 group hover:bg-white/[0.02] rounded-xl -mx-2 px-2 transition-colors">
-      {/* Avatar */}
-      <div className="shrink-0">
-        {comment.avatarUrl ? (
+      {/* Avatar column */}
+      <div className="shrink-0 mt-1">
+        {comment.isAnonymous ? (
+          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 ring-2 ring-white/10 shadow-lg shadow-black/20">
+            <User className="w-5 h-5" />
+          </div>
+        ) : comment.avatarUrl ? (
           <img
             src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`}
             alt={comment.username}
-            className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10"
+            className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10 shadow-lg shadow-black/20"
             onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.username}` }}
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/10">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/10 shadow-lg shadow-indigo-500/20">
             {comment.username.charAt(0).toUpperCase()}
           </div>
         )}
       </div>
 
+      {/* Content column */}
       <div className="flex-1 min-w-0">
         {/* Username + time */}
         <div className="flex items-center gap-2 mb-1">

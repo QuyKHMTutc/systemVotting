@@ -191,7 +191,7 @@ const Dashboard = () => {
                   <PollCard
                     poll={poll}
                     hasVoted={votedPollIds.includes(poll.id)}
-                    commentCount={0}
+                    commentCount={poll.commentCount}
                     onDelete={canDelete(poll) ? handleDelete : undefined}
                     showDeleteButton={canDelete(poll)}
                   />

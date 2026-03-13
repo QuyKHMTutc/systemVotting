@@ -22,6 +22,7 @@ export interface Poll {
         avatarUrl?: string;
     };
     options: PollOption[];
+    commentCount: number;
     createdAt: string;
 }
 

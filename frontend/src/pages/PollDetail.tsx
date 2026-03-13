@@ -4,7 +4,7 @@ import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import { Share2, Check, X } from 'lucide-react';
+import { Share2, Check, X, Users, MessageCircle, BarChart3 } from 'lucide-react';
 import PostActions from '../components/post/PostActions';
 import CommentList from '../components/comments/CommentList';
 import CommentInput from '../components/comments/CommentInput';
@@ -261,6 +261,22 @@ const PollDetail = () => {
                 {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />}
               </button>
             </div>
+
+            {/* Stats row */}
+            <div className="flex items-center gap-4 text-xs text-white/60 mt-5 pt-4 border-t border-white/5">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-indigo-400/80" />
+                <span className="text-white font-semibold">{totalVotes}</span> voters
+              </span>
+              <span className="flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4 text-indigo-400/80" />
+                <span className="text-white font-semibold">{countTotalComments(comments)}</span> comments
+              </span>
+              <span className="flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-indigo-400/80" />
+                <span className="text-white font-semibold">{poll.options.length}</span> options
+              </span>
+            </div>
           </div>
 
           {/* Error */}
@@ -328,7 +344,7 @@ const PollDetail = () => {
           {/* Vote Button / Status */}
           <div className="px-6 sm:px-8 py-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-white/70 text-sm">
-              Total votes: <span className="text-white font-semibold">{showResults ? totalVotes : '—'}</span>
+              Total votes: <span className="text-white font-semibold">{totalVotes}</span>
             </div>
             {isActive && !hasVoted && (
               <button
