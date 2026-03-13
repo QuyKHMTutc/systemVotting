@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.comment.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -23,5 +24,6 @@ public class CommentRequestDTO {
     @Size(max = 2000, message = "Content must not exceed 2000 characters")
     private String content;
 
+    @JsonProperty("isAnonymous")
     private boolean isAnonymous;
 }

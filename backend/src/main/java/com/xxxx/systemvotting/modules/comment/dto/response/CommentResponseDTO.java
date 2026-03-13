@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.comment.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class CommentResponseDTO {
     private String username;
     private String avatarUrl;
     private String content;
+    @JsonProperty("isAnonymous")
     private boolean isAnonymous;
     private LocalDateTime createdAt;
     
