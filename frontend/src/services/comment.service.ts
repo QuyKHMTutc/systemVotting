@@ -2,7 +2,7 @@ import api from './api';
 
 export interface Comment {
     id: number;
-    userId: number;
+    userId: number | null;
     username: string;
     avatarUrl: string | null;
     content: string;
