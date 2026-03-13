@@ -233,6 +233,7 @@ export const Profile = () => {
                         <PollCard
                           poll={poll}
                           hasVoted={votedPolls.some((vp) => vp.id === poll.id)}
+                          commentCount={poll.commentCount}
                           onDelete={handleDeletePoll}
                           showDeleteButton
                         />
@@ -264,7 +265,7 @@ export const Profile = () => {
                     style={{ animationDelay: `${i * 50}ms` }}
                   >
                     <div className="transition-transform duration-200 hover:-translate-y-0.5">
-                      <PollCard poll={poll} hasVoted />
+                      <PollCard poll={poll} hasVoted commentCount={poll.commentCount} />
                     </div>
                   </div>
                 ))

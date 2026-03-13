@@ -19,8 +19,10 @@ export interface Poll {
     creator: {
         id: number;
         username: string;
+        avatarUrl?: string;
     };
     options: PollOption[];
+    commentCount: number;
     createdAt: string;
 }
 

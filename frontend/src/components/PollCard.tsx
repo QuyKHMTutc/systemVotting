@@ -102,8 +102,17 @@ export const PollCard = ({
 
           {/* Creator row */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shrink-0 shadow-lg shadow-indigo-500/20">
-              {poll.creator.username.charAt(0).toUpperCase()}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shrink-0 shadow-lg shadow-indigo-500/20 overflow-hidden">
+              {poll.creator.avatarUrl ? (
+                <img
+                  src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
+                  alt={poll.creator.username}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                />
+              ) : (
+                poll.creator.username.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-white/90 font-medium text-sm truncate">{poll.creator.username}</span>

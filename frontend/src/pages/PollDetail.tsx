@@ -4,7 +4,7 @@ import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import { Share2, Check, X } from 'lucide-react';
+import { Share2, Check, X, Users, MessageCircle, BarChart3 } from 'lucide-react';
 import PostActions from '../components/post/PostActions';
 import CommentList from '../components/comments/CommentList';
 import CommentInput from '../components/comments/CommentInput';
@@ -13,10 +13,18 @@ import type { Comment } from '../services/comment.service';
 import { timeAgo, endsIn } from '../utils/date';
 import { getTagPillClass } from '../utils/tagPills';
 import confetti from 'canvas-confetti';
+import { useAuth } from '../contexts/AuthContext';
+
+const countTotalComments = (commentsList: Comment[]): number => {
+    return commentsList.reduce((acc, comment) => {
+        return acc + 1 + countTotalComments(comment.replies || []);
+    }, 0);
+};
 
 
 const PollDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [poll, setPoll] = useState<Poll | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -229,8 +237,17 @@ const PollDetail = () => {
 
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shadow-lg shadow-indigo-500/20">
-                  {poll.creator.username.charAt(0).toUpperCase()}
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
+                  {poll.creator.avatarUrl ? (
+                    <img 
+                      src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`} 
+                      alt={poll.creator.username} 
+                      className="w-full h-full object-cover" 
+                      onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                    />
+                  ) : (
+                    <span>{poll.creator.username.charAt(0).toUpperCase()}</span>
+                  )}
                 </div>
                 <div>
                   <span className="text-white/90 font-medium block">{poll.creator.username}</span>
@@ -243,6 +260,22 @@ const PollDetail = () => {
               >
                 {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />}
               </button>
+            </div>
+
+            {/* Stats row */}
+            <div className="flex items-center gap-4 text-xs text-white/60 mt-5 pt-4 border-t border-white/5">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-indigo-400/80" />
+                <span className="text-white font-semibold">{totalVotes}</span> voters
+              </span>
+              <span className="flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4 text-indigo-400/80" />
+                <span className="text-white font-semibold">{countTotalComments(comments)}</span> comments
+              </span>
+              <span className="flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-indigo-400/80" />
+                <span className="text-white font-semibold">{poll.options.length}</span> options
+              </span>
             </div>
           </div>
 
@@ -311,7 +344,7 @@ const PollDetail = () => {
           {/* Vote Button / Status */}
           <div className="px-6 sm:px-8 py-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-white/70 text-sm">
-              Total votes: <span className="text-white font-semibold">{showResults ? totalVotes : '—'}</span>
+              Total votes: <span className="text-white font-semibold">{totalVotes}</span>
             </div>
             {isActive && !hasVoted && (
               <button
@@ -332,7 +365,7 @@ const PollDetail = () => {
 
           {/* Post Actions */}
           <PostActions
-            commentsCount={comments.length}
+            commentsCount={countTotalComments(comments)}
             onCommentClick={() => setShowComments(!showComments)}
             onShareClick={handleShare}
             hasCopied={copied}
@@ -354,7 +387,12 @@ const PollDetail = () => {
               </div>
               <div className="shrink-0 p-4 sm:p-6 border-t border-white/10">
                 {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
-                <CommentInput onSubmit={handleCommentSubmit} placeholder="Write a comment..." />
+                <CommentInput 
+                  onSubmit={handleCommentSubmit} 
+                  placeholder="Write a comment..." 
+                  avatarUrl={user?.avatarUrl && (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : user?.avatarUrl ? `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}` : undefined}
+                  username={user?.username}
+                />
               </div>
             </div>
           )}
