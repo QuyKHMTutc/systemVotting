@@ -10,6 +10,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Data
 public class PollCreateRequestDTO {
     @NotBlank(message = "Title is required")
@@ -20,6 +22,7 @@ public class PollCreateRequestDTO {
 
     private List<String> tags;
 
+    @JsonProperty("isAnonymous")
     private boolean isAnonymous;
 
     @FutureOrPresent(message = "Start time cannot be in the past")

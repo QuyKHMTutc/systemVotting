@@ -28,6 +28,7 @@ public interface PollMapper {
     @Mapping(target = "creator", ignore = true) // Will be mapped in Service
     @Mapping(target = "options", ignore = true) // Custom handling to maintain bidirectional relation
     @Mapping(target = "tags", ignore = true) // Will be mapped in Service
+    @Mapping(target = "isAnonymous", source = "anonymous")
     Poll toEntity(PollCreateRequestDTO dto);
 
     PollResponseDTO toDto(Poll entity);
