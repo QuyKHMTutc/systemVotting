@@ -3,6 +3,8 @@ package com.xxxx.systemvotting.modules.auth.controller;
 import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.auth.dto.request.AuthRequestDTO;
 import com.xxxx.systemvotting.modules.auth.dto.response.AuthResponseDTO;
+import com.xxxx.systemvotting.modules.auth.service.AuthService;
+import com.xxxx.systemvotting.modules.auth.service.GoogleAuthService;
 import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
 import com.xxxx.systemvotting.modules.user.service.UserService;
@@ -26,10 +28,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-        private final com.xxxx.systemvotting.modules.auth.service.AuthService authService;
+        private final AuthService authService;
         private final UserService userService;
         private final PasswordResetService passwordResetService;
-        private final com.xxxx.systemvotting.modules.auth.service.GoogleAuthService googleAuthService;
+        private final GoogleAuthService googleAuthService;
 
         @PostMapping("/register")
         public ResponseEntity<ApiResponse<UserResponseDTO>> register(
