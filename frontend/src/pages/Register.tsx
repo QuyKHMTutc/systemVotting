@@ -3,6 +3,8 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import OtpInput from '../components/OtpInput';
 import PasswordStrength from '../components/PasswordStrength';
+import LegalModal from '../components/LegalModal';
+import type { LegalModalType } from '../components/LegalModal';
 import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, MailCheck, Check, Fingerprint, Activity, Zap } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -45,6 +47,13 @@ const Register = () => {
 
     // Shake animation state
     const [isShaking, setIsShaking] = useState(false);
+
+    // Legal documents modal (Terms / Privacy)
+    const [legalModal, setLegalModal] = useState<{ open: boolean; type: LegalModalType }>({ open: false, type: 'terms' });
+    const openLegalModal = (type: LegalModalType) => (e: React.MouseEvent) => {
+        e.preventDefault();
+        setLegalModal({ open: true, type });
+    };
 
     const triggerShake = () => {
         setIsShaking(true);
@@ -315,9 +324,9 @@ const Register = () => {
                                         <span className="text-pink-100/70 font-medium select-none cursor-pointer" onClick={() => setAgreeTerms(!agreeTerms)}>
                                             I agree to the{' '}
                                         </span>
-                                        <Link to="/terms" className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">Terms of Service</Link>
+                                        <button type="button" onClick={openLegalModal('terms')} className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">Terms of Service</button>
                                         <span className="text-pink-100/70 font-medium"> and </span>
-                                        <Link to="/privacy" className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">Privacy Policy</Link>
+                                        <button type="button" onClick={openLegalModal('privacy')} className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">Privacy Policy</button>
                                         <span className="text-pink-100/70 font-medium">.</span>
                                     </div>
                                 </div>
@@ -436,6 +445,11 @@ const Register = () => {
                 </div>
             </div>
 
+            <LegalModal
+                isOpen={legalModal.open}
+                onClose={() => setLegalModal((p) => ({ ...p, open: false }))}
+                type={legalModal.type}
+            />
         </div>
     );
 };
