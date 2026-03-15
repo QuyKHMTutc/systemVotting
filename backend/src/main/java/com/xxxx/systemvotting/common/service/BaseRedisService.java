@@ -4,28 +4,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public interface BaseRedisService {
-    void set(String key, String value);
+public interface BaseRedisService<K,F,V> {
+    void set(K key, V value);
 
-    void setTimeToLive(String key, long timeoutInDays);
+    void setTimeToLive(K key, long timeoutInDays);
 
-    void hashSet(String key, String field, Object value);
+    // F là kiểu của Field trong Hash
+    void hashSet(K key, F field, V value);
 
-    boolean hashExists(String key, String field);
+    boolean hashExists(K key, F field);
 
-    Object get(String key);
+    V get(K key);
 
-    public Map<String, Object> getField(String key);
+    // Trả về toàn bộ Map trong Hash
+    Map<F, V> getField(K key);
 
-    Object hashGet(String key, String field);
+    V hashGet(K key, F field);
 
-    List<Object> hashGetByFieldPrefix(String key, String fieldPrefix);
+    List<V> hashGetByFieldPrefix(K key, String fieldPrefix);
 
-    Set<String> getFieldPrefixes(String key);
+    Set<F> getFieldPrefixes(K key);
 
-    void delete(String key);
+    void delete(K key);
 
-    void delete(String key, String field);
+    void delete(K key, F field);
 
-    void delete(String key, List<String> fields);
+    void delete(K key, List<F> fields);
 }
