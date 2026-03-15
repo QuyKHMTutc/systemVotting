@@ -21,7 +21,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE " +
            "(:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
-           "(:tag IS NULL OR :tag = 'ALL' OR LOWER(t.name) = LOWER(:tag)) AND " +
+           "(:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) AND " +
            "(:status IS NULL OR :status = 'ALL' OR " +
            "(:status = 'ACTIVE' AND p.endTime > :currentTime) OR " +
            "(:status = 'ENDED' AND p.endTime <= :currentTime))")
