@@ -94,8 +94,7 @@ public class AuthServiceImpl implements AuthService {
 
             if (ttl > 0) {
                 String blacklistKey = "jwt:blacklist:" + accessToken;
-                redisService.set(blacklistKey, "blacklisted");
-                redisService.setTimeToLive(blacklistKey, ttl, java.util.concurrent.TimeUnit.MILLISECONDS);
+                redisService.setWithExpiration(blacklistKey, "blacklisted", ttl, java.util.concurrent.TimeUnit.MILLISECONDS);
             }
         });
     }

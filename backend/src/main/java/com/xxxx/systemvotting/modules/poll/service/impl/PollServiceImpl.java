@@ -90,7 +90,14 @@ public class PollServiceImpl implements PollService {
     @Transactional(readOnly = true)
     public PollResponseDTO getPollById(Long id) {
         String cacheKey = POLL_CACHE_PREFIX + id;
-        PollResponseDTO cachedPoll = redisService.get(cacheKey);
+        PollResponseDTO cachedPoll = null;
+        try {
+            cachedPoll = redisService.get(cacheKey);
+        } catch (Exception e) {
+            // Log the error but don't fail the request
+            System.err.println("[ERROR] Redis get failed for key " + cacheKey + ": " + e.getMessage());
+        }
+
         if (cachedPoll != null) {
             return cachedPoll;
         }
@@ -101,8 +108,12 @@ public class PollServiceImpl implements PollService {
         dto.setCommentCount(getCommentCountForPoll(id));
 
         // Cache the result
-        redisService.set(cacheKey, dto);
-        redisService.setTimeToLive(cacheKey, POLL_CACHE_TTL_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
+        try {
+            redisService.setWithExpiration(cacheKey, dto, POLL_CACHE_TTL_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
+        } catch (Exception e) {
+            // Log the error but don't fail the request
+            System.err.println("[ERROR] Redis set failed for key " + cacheKey + ": " + e.getMessage());
+        }
 
         return dto;
     }
@@ -139,7 +150,11 @@ public class PollServiceImpl implements PollService {
         pollRepository.delete(poll);
 
         // Evict cache
-        redisService.delete(POLL_CACHE_PREFIX + pollId);
+        try {
+            redisService.delete(POLL_CACHE_PREFIX + pollId);
+        } catch (Exception e) {
+            System.err.println("[ERROR] Redis delete failed for key " + (POLL_CACHE_PREFIX + pollId) + ": " + e.getMessage());
+        }
     }
 
     @Override

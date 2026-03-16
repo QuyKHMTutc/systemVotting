@@ -23,7 +23,7 @@ public class JwtService {
 
     // Define in application.properties/yml: app.security.jwt.secret-key
     // Temporary hardcoded default logic for simplicity, should change per env
-    @Value("${app.security.jwt.secret-key:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    @Value("${app.security.jwt.secret-key}")
     private String secretKey;
 
     @Value("${app.security.jwt.expiration:86400000}")
