@@ -11,6 +11,7 @@ import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
+import com.xxxx.systemvotting.common.service.RealTimeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,7 @@ public class CommentServiceImpl implements CommentService {
     private final PollRepository pollRepository;
     private final VoteRepository voteRepository;
     private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, Object> redisService;
+    private final RealTimeService realTimeService;
 
     private static final String POLL_CACHE_PREFIX = "poll:details:";
 
@@ -76,7 +78,12 @@ public class CommentServiceImpl implements CommentService {
         // Evict Poll Cache because comment count changed
         redisService.delete(POLL_CACHE_PREFIX + poll.getId());
 
-        return mapToDTO(comment, voteStatus, anonymousDisplayNames);
+        CommentResponseDTO responseDTO = mapToDTO(comment, voteStatus, anonymousDisplayNames);
+
+        // Broadcast the new comment to all connected clients watching this poll
+        realTimeService.broadcast("/topic/polls/" + poll.getId() + "/comments", responseDTO);
+
+        return responseDTO;
     }
 
     @Override
