@@ -30,6 +30,9 @@ public class VoteServiceImpl implements VoteService {
     private final PollRepository pollRepository;
     private final OptionRepository optionRepository;
     private final VoteMapper voteMapper;
+    private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, Object> redisService;
+
+    private static final String POLL_CACHE_PREFIX = "poll:details:";
 
     @Override
     @Transactional
@@ -75,6 +78,9 @@ public class VoteServiceImpl implements VoteService {
         
         // 6. Update Option Vote Count using atomic query to prevent race conditions
         optionRepository.incrementVoteCount(option.getId());
+
+        // 7. Evict Poll Cache to ensure updated results are shown
+        redisService.delete(POLL_CACHE_PREFIX + poll.getId());
         
         return voteMapper.toDto(savedVote);
     }

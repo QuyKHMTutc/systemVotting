@@ -32,6 +32,10 @@ public class PollServiceImpl implements PollService {
     private final TagRepository tagRepository;
     private final PollMapper pollMapper;
     private final CommentRepository commentRepository;
+    private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, PollResponseDTO> redisService;
+
+    private static final String POLL_CACHE_PREFIX = "poll:details:";
+    private static final long POLL_CACHE_TTL_MINUTES = 10;
 
     private int getCommentCountForPoll(Long pollId) {
         return (int) commentRepository.countByPollId(pollId);
@@ -85,10 +89,21 @@ public class PollServiceImpl implements PollService {
     @Override
     @Transactional(readOnly = true)
     public PollResponseDTO getPollById(Long id) {
+        String cacheKey = POLL_CACHE_PREFIX + id;
+        PollResponseDTO cachedPoll = redisService.get(cacheKey);
+        if (cachedPoll != null) {
+            return cachedPoll;
+        }
+
         Poll poll = pollRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Poll not found with id: " + id));
         PollResponseDTO dto = pollMapper.toDto(poll);
         dto.setCommentCount(getCommentCountForPoll(id));
+
+        // Cache the result
+        redisService.set(cacheKey, dto);
+        redisService.setTimeToLive(cacheKey, POLL_CACHE_TTL_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
+
         return dto;
     }
 
@@ -122,6 +137,9 @@ public class PollServiceImpl implements PollService {
         commentRepository.deleteByPoll_Id(poll.getId());
 
         pollRepository.delete(poll);
+
+        // Evict cache
+        redisService.delete(POLL_CACHE_PREFIX + pollId);
     }
 
     @Override

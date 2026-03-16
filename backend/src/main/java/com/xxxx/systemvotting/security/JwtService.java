@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -15,7 +16,10 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
+
+    private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, String> redisService;
 
     // Define in application.properties/yml: app.security.jwt.secret-key
     // Temporary hardcoded default logic for simplicity, should change per env
@@ -58,12 +62,20 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
+        if (isTokenBlacklisted(token)) {
+            return false;
+        }
         final String username = extractUsername(token);
         String expectedSubject = userDetails.getUsername();
         if (userDetails instanceof com.xxxx.systemvotting.modules.user.entity.User) {
             expectedSubject = ((com.xxxx.systemvotting.modules.user.entity.User) userDetails).getEmail();
         }
         return (username.equals(expectedSubject)) && !isTokenExpired(token);
+    }
+
+    public boolean isTokenBlacklisted(String token) {
+        String blacklistKey = "jwt:blacklist:" + token;
+        return redisService.get(blacklistKey) != null;
     }
 
     private boolean isTokenExpired(String token) {

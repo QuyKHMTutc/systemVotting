@@ -107,4 +107,16 @@ public class AuthController {
                 userService.resendRegistrationOtp(request.getEmail());
                 return ResponseEntity.ok(ApiResponse.success("A new OTP has been sent to your email", null));
         }
+
+        @Operation(summary = "Đăng xuất", description = "Hủy token truy cập và refresh token hiện tại", security = { @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "Bearer Authentication") })
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng xuất thành công") })
+        @PostMapping("/logout")
+        public ResponseEntity<ApiResponse<Void>> logout(jakarta.servlet.http.HttpServletRequest request) {
+                String authHeader = request.getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                        String jwt = authHeader.substring(7);
+                        authService.logout(jwt);
+                }
+                return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+        }
 }

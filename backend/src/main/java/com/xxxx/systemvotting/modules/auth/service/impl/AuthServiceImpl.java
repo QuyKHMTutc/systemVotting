@@ -28,6 +28,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, String> redisService;
 
     @Override
     public AuthResponseDTO login(AuthRequestDTO requestDTO) {
@@ -77,5 +78,25 @@ public class AuthServiceImpl implements AuthService {
                             .build();
                 })
                 .orElseThrow(() -> new TokenRefreshException("Refresh token is invalid or expired"));
+    }
+
+    @Override
+    public void logout(String accessToken) {
+        String email = jwtService.extractUsername(accessToken);
+        userRepository.findByEmail(email).ifPresent(user -> {
+            // Delete Refresh Token from DB
+            refreshTokenService.deleteByUserId(user.getId());
+            
+            // Blacklist the Access Token in Redis
+            long expirationTime = jwtService.extractClaim(accessToken, claims -> claims.getExpiration().getTime());
+            long currentTime = System.currentTimeMillis();
+            long ttl = expirationTime - currentTime;
+
+            if (ttl > 0) {
+                String blacklistKey = "jwt:blacklist:" + accessToken;
+                redisService.set(blacklistKey, "blacklisted");
+                redisService.setTimeToLive(blacklistKey, ttl, java.util.concurrent.TimeUnit.MILLISECONDS);
+            }
+        });
     }
 }
