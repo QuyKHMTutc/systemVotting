@@ -25,6 +25,11 @@ public class BaseRedisServiceImp<K, F, V> implements BaseRedisService<K, F, V> {
     }
 
     @Override
+    public void setWithExpiration(K key, V value, long timeout, TimeUnit unit) {
+        redisTemplate.opsForValue().set(key, value, timeout, unit);
+    }
+
+    @Override
     public void setTimeToLive(K key, long timeout, TimeUnit unit) {
         redisTemplate.expire(key, timeout, unit);
     }
@@ -57,20 +62,22 @@ public class BaseRedisServiceImp<K, F, V> implements BaseRedisService<K, F, V> {
     @Override
     public List<V> hashGetByFieldPrefix(K key, String fieldPrefix) {
         List<V> objects = new ArrayList<>();
-        Map<F, V> hashEntries = hashOperations.entries(key);
+        org.springframework.data.redis.core.ScanOptions options = org.springframework.data.redis.core.ScanOptions.scanOptions().match(fieldPrefix + "*").count(100).build();
 
-        for (Map.Entry<F, V> entry : hashEntries.entrySet()) {
-            // Lưu ý: Ép kiểu F về String để dùng startsWith
-            if (entry.getKey().toString().startsWith(fieldPrefix)) {
+        try (org.springframework.data.redis.core.Cursor<Map.Entry<F, V>> cursor = hashOperations.scan(key, options)) {
+            while (cursor.hasNext()) {
+                Map.Entry<F, V> entry = cursor.next();
                 objects.add(entry.getValue());
             }
+        } catch (Exception e) {
+            // Log or handle exceptions
         }
         return objects;
     }
 
     @Override
     public Set<F> getFieldPrefixes(K key) {
-        return hashOperations.entries(key).keySet();
+        return hashOperations.keys(key);
     }
 
     @Override
@@ -85,9 +92,18 @@ public class BaseRedisServiceImp<K, F, V> implements BaseRedisService<K, F, V> {
 
     @Override
     public void delete(K key, List<F> fields) {
-        // Tối ưu: Xóa danh sách fields trong 1 lần gọi thay vì dùng vòng lặp
         if (fields != null && !fields.isEmpty()) {
             hashOperations.delete(key, fields.toArray());
         }
+    }
+
+    @Override
+    public Long increment(K key) {
+        return redisTemplate.opsForValue().increment(key);
+    }
+
+    @Override
+    public Long decrement(K key) {
+        return redisTemplate.opsForValue().decrement(key);
     }
 }

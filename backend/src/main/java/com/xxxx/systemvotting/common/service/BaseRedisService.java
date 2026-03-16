@@ -3,20 +3,21 @@ package com.xxxx.systemvotting.common.service;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
-public interface BaseRedisService<K,F,V> {
+public interface BaseRedisService<K, F, V> {
     void set(K key, V value);
 
-    void setTimeToLive(K key, long timeout, java.util.concurrent.TimeUnit unit);
+    void setWithExpiration(K key, V value, long timeout, TimeUnit unit);
 
-    // F là kiểu của Field trong Hash
+    void setTimeToLive(K key, long timeout, TimeUnit unit);
+
     void hashSet(K key, F field, V value);
 
     boolean hashExists(K key, F field);
 
     V get(K key);
 
-    // Trả về toàn bộ Map trong Hash
     Map<F, V> getField(K key);
 
     V hashGet(K key, F field);
@@ -30,4 +31,8 @@ public interface BaseRedisService<K,F,V> {
     void delete(K key, F field);
 
     void delete(K key, List<F> fields);
+
+    Long increment(K key);
+
+    Long decrement(K key);
 }
