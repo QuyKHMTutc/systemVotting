@@ -13,9 +13,34 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springdoc.core.models.GroupedOpenApi;
 
 @Configuration
 public class SwaggerConfig {
+
+    @Bean
+    public GroupedOpenApi publicApi() {
+        return GroupedOpenApi.builder()
+                .group("v1-public")
+                .pathsToMatch("/api/v1/auth/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi pollApi() {
+        return GroupedOpenApi.builder()
+                .group("v1-poll")
+                .pathsToMatch("/api/v1/polls/**", "/api/v1/votes/**", "/api/v1/comments/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi userApi() {
+        return GroupedOpenApi.builder()
+                .group("v1-user")
+                .pathsToMatch("/api/v1/users/**")
+                .build();
+    }
 
     private SecurityScheme createBearerScheme() {
         // @formatter:off
@@ -50,18 +75,16 @@ public class SwaggerConfig {
     private Info createApiInfo() {
         // @formatter:off
         return new Info()
-                .title("Hệ thông bỏ phiếu trực tuyến")
+                .title("Hệ thống bỏ phiếu trực tuyến API")
                 .version("1.0")
                 .contact(createContact())
-                .description("Designed and implemented RESTful APIs using Spring Boot\n" +
-                        "• Implemented JWT-based authentication and role-based authorization using\n" +
-                        "Spring Security and OAuth2\n" +
-                        "• Built real-time voting updates using WebSocket (STOMP) allowing clients to\n" +
-                        "receive live poll results without page refresh\n" +
-                        "• Implemented API rate limiting using Bucket4j to prevent abuse of voting\n" +
-                        "endpoints\n" +
-                        "• Designed secure voting workflows and poll lifecycle management\n" +
-                        "• Integrated email notification system using Spring Boot Mail")
+                .description("### Giới thiệu\n" +
+                        "Hệ thống cung cấp các RESTful APIs cho việc quản lý và tham gia bỏ phiếu trực tuyến.\n\n" +
+                        "### Các tính năng chính:\n" +
+                        "* **Xác thực & Phân quyền:** Sử dụng JWT và OAuth2 (Google).\n" +
+                        "* **Bình chọn thời gian thực:** Cập nhật kết quả qua WebSocket (STOMP).\n" +
+                        "* **Bảo mật:** Giới hạn lưu lượng (Rate limiting) bằng Bucket4j.\n" +
+                        "* **Thông báo:** Tích hợp gửi email xác nhận và OTP.")
                 .termsOfService("https://guyguy.vn/terms")
                 .license(createLicense());
         // @formatter:on
@@ -77,10 +100,8 @@ public class SwaggerConfig {
                                 "Server URL in Development environment"),
                         createServer("https://uat.example.com",
                                 "Server URL in Testing environment"),
-                        createServer("https://system-votting.vercel.app/",
+                        createServer("https://system-votting.vercel.app",
                                 "Server URL in Production environment")))
-                .addSecurityItem(
-                        new SecurityRequirement().addList("Bearer Authentication"))
                 .components(new Components()
                         .addSecuritySchemes("Bearer Authentication", createBearerScheme()));
         // @formatter:on

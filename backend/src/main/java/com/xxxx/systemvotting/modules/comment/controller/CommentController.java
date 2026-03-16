@@ -5,6 +5,11 @@ import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.service.CommentService;
 import com.xxxx.systemvotting.modules.user.entity.User;
+import io.swagger.v3.oas.annotations.Operation;
+
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "Comments", description = "Bình luận theo bình chọn")
 @RestController
 @RequestMapping("/api/v1/comments")
 @RequiredArgsConstructor
@@ -26,6 +32,8 @@ public class CommentController {
 
     private final CommentService commentService;
 
+    @Operation(summary = "Tạo bình luận", description = "Thêm bình luận cho một bình chọn (yêu cầu đăng nhập)", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tạo thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
     @PostMapping
     public ResponseEntity<ApiResponse<CommentResponseDTO>> createComment(
             @Valid @RequestBody CommentRequestDTO request,
@@ -35,6 +43,8 @@ public class CommentController {
                 .body(ApiResponse.success("Comment created successfully", response));
     }
 
+    @Operation(summary = "Bình luận theo poll", description = "Lấy danh sách bình luận của một bình chọn theo pollId")
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công") })
     @GetMapping("/poll/{pollId}")
     public ResponseEntity<ApiResponse<List<CommentResponseDTO>>> getCommentsByPollId(@PathVariable Long pollId) {
         List<CommentResponseDTO> response = commentService.getCommentsByPollId(pollId);

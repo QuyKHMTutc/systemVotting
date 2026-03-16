@@ -3,8 +3,6 @@ package com.xxxx.systemvotting.modules.auth.service.impl;
 import com.xxxx.systemvotting.common.service.EmailService;
 import com.xxxx.systemvotting.exception.custom.BadRequestException;
 import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
-import com.xxxx.systemvotting.modules.auth.entity.PasswordResetToken;
-import com.xxxx.systemvotting.modules.auth.repository.PasswordResetTokenRepository;
 import com.xxxx.systemvotting.modules.auth.service.PasswordResetService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
@@ -13,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.TimeUnit;
+import com.xxxx.systemvotting.common.service.BaseRedisService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
@@ -22,12 +22,13 @@ import java.util.Random;
 public class PasswordResetServiceImpl implements PasswordResetService {
 
     private final UserRepository userRepository;
-    private final PasswordResetTokenRepository tokenRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final BaseRedisService<String, String, String> redisService;
 
     // Token valid for 10 minutes
     private static final int EXPIRATION_MINUTES = 10;
+    private static final String REDIS_OTP_PREFIX = "otp:password-reset:";
 
     @Override
     @Transactional
@@ -38,17 +39,13 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             return; // Same success response - do not reveal if email exists or verification status
         }
 
-        // Reuse existing token if present, otherwise create new one
-        PasswordResetToken resetToken = tokenRepository.findByUser(user)
-                .orElseGet(() -> PasswordResetToken.builder().user(user).build());
-
         // Generate 6-digit OTP
         String otp = String.format("%06d", new Random().nextInt(1000000));
 
-        resetToken.setOtp(otp);
-        resetToken.setExpiryDate(Instant.now().plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES));
-
-        tokenRepository.save(resetToken);
+        // Store in Redis
+        String redisKey = REDIS_OTP_PREFIX + email;
+        redisService.set(redisKey, otp);
+        redisService.setTimeToLive(redisKey, EXPIRATION_MINUTES, TimeUnit.MINUTES);
 
         // Send Email
         String subject = "Password Reset Request";
@@ -64,16 +61,15 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
-        PasswordResetToken resetToken = tokenRepository.findByUser(user)
-                .orElseThrow(() -> new BadRequestException("No OTP requested for this user"));
+        String redisKey = REDIS_OTP_PREFIX + email;
+        String storedOtp = redisService.get(redisKey);
 
-        if (!resetToken.getOtp().equals(otp)) {
-            throw new BadRequestException("Invalid OTP");
+        if (storedOtp == null) {
+            throw new BadRequestException("OTP has expired or not requested");
         }
 
-        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
-            tokenRepository.delete(resetToken);
-            throw new BadRequestException("OTP has expired");
+        if (!storedOtp.equals(otp)) {
+            throw new BadRequestException("Invalid OTP");
         }
 
         // OTP Valid - Update password and set user as verified
@@ -81,7 +77,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         user.setVerified(true);
         userRepository.save(user);
 
-        // Delete token after successful reset
-        tokenRepository.delete(resetToken);
+        // Delete OTP after successful reset
+        redisService.delete(redisKey);
     }
 }

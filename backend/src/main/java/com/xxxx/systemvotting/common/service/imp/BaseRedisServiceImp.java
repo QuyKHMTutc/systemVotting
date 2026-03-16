@@ -25,8 +25,8 @@ public class BaseRedisServiceImp<K, F, V> implements BaseRedisService<K, F, V> {
     }
 
     @Override
-    public void setTimeToLive(K key, long timeoutInDays) {
-        redisTemplate.expire(key, timeoutInDays, TimeUnit.DAYS);
+    public void setTimeToLive(K key, long timeout, TimeUnit unit) {
+        redisTemplate.expire(key, timeout, unit);
     }
 
     @Override

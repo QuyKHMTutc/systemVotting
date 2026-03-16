@@ -30,6 +30,7 @@ public class CommentServiceImpl implements CommentService {
     private final VoteRepository voteRepository;
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public CommentResponseDTO createComment(CommentRequestDTO request, User currentUser) {
         Poll poll = pollRepository.findById(request.getPollId())
                 .orElseThrow(() -> new ResourceNotFoundException("Poll not found with id: " + request.getPollId()));
@@ -52,7 +53,6 @@ public class CommentServiceImpl implements CommentService {
         }
 
         Comment comment = commentBuilder.build();
-
         comment = commentRepository.save(comment);
 
         String voteStatus = "Chưa vote";
@@ -61,12 +61,20 @@ public class CommentServiceImpl implements CommentService {
             voteStatus = "Đã vote: " + voteOpt.get().getOption().getText();
         }
 
-        List<Comment> allPollComments = commentRepository.findByPollIdOrderByCreatedAtDesc(poll.getId());
-        Map<Long, String> anonymousDisplayNames = buildAnonymousDisplayNameMap(allPollComments);
+        // Optimization: For single comment creation, we don't need to build the map for ALL poll comments.
+        // We just need the anonymous label for this specific user.
+        Map<Long, String> anonymousDisplayNames = Map.of();
+        if (comment.isAnonymous()) {
+            List<Comment> anonymousComments = commentRepository.findByPollIdOrderByCreatedAtDesc(poll.getId())
+                    .stream().filter(Comment::isAnonymous).toList();
+            anonymousDisplayNames = buildAnonymousDisplayNameMap(anonymousComments);
+        }
+
         return mapToDTO(comment, voteStatus, anonymousDisplayNames);
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<CommentResponseDTO> getCommentsByPollId(Long pollId) {
         List<Comment> comments = commentRepository.findByPollIdOrderByCreatedAtDesc(pollId);
         

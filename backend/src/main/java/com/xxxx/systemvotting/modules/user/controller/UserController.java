@@ -6,6 +6,10 @@ import com.xxxx.systemvotting.modules.user.dto.UserProfileUpdateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +28,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
+@Tag(name = "Users", description = "Quản lý user: profile, admin (promote, lock), danh sách user")
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -31,6 +36,8 @@ public class UserController {
 
     private final UserService userService;
 
+    @Operation(summary = "Tạo user (Admin)", description = "Chỉ ADMIN mới gọi được", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tạo thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền ADMIN") })
     @PostMapping
     public ResponseEntity<ApiResponse<UserResponseDTO>> createUser(
             @Valid @RequestBody UserCreateRequestDTO requestDTO) {
@@ -39,6 +46,8 @@ public class UserController {
                 .body(ApiResponse.success("User created successfully", createdUser));
     }
 
+    @Operation(summary = "Cập nhật profile", description = "Cập nhật username, avatar (multipart/form-data)", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cập nhật thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
     @PutMapping(value = "/me", consumes = { "multipart/form-data" })
     public ResponseEntity<ApiResponse<UserResponseDTO>> updateProfile(
             @RequestParam(required = false) String username,
@@ -52,6 +61,7 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", updatedUser));
     }
 
+    @Operation(summary = "Chi tiết user theo ID", description = "Lấy thông tin user (Admin)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserResponseDTO>> getUser(@PathVariable Long id) {
         UserResponseDTO user = userService.getUserById(id);
@@ -60,12 +70,16 @@ public class UserController {
 
     // These endpoints are implicitly protected by SecurityConfig as
     // hasRole("ADMIN")
+    @Operation(summary = "Thăng admin", description = "Chỉ ADMIN: thăng user lên vai trò ADMIN", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền") })
     @PutMapping("/{id}/promote")
     public ResponseEntity<ApiResponse<UserResponseDTO>> promoteToAdmin(@PathVariable Long id) {
         UserResponseDTO updatedUser = userService.promoteToAdmin(id);
         return ResponseEntity.ok(ApiResponse.success("User promoted to Admin successfully", updatedUser));
     }
 
+    @Operation(summary = "Khóa / mở khóa user", description = "Chỉ ADMIN: bật/tắt trạng thái khóa tài khoản", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền") })
     @PutMapping("/{id}/toggle-lock")
     public ResponseEntity<ApiResponse<UserResponseDTO>> toggleLock(@PathVariable Long id) {
         UserResponseDTO updatedUser = userService.toggleLock(id);
@@ -73,6 +87,7 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("User " + action + " successfully", updatedUser));
     }
 
+    @Operation(summary = "Danh sách user", description = "Chỉ ADMIN: lấy tất cả user", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping
     public ResponseEntity<ApiResponse<List<UserResponseDTO>>> getAllUsers() {
         List<UserResponseDTO> users = userService.getAllUsers();

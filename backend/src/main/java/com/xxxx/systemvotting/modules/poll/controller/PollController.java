@@ -7,6 +7,11 @@ import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
+import io.swagger.v3.oas.annotations.Operation;
+
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Polls", description = "Tạo, xem, xóa bình chọn; danh sách bình chọn của tôi / đã bình chọn")
 @RestController
 @RequestMapping("/api/v1/polls")
 @RequiredArgsConstructor
@@ -32,6 +38,8 @@ public class PollController {
 
     private final PollService pollService;
 
+    @Operation(summary = "Tạo bình chọn", description = "Tạo bình chọn mới (yêu cầu đăng nhập)", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tạo thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
     @PostMapping
     public ResponseEntity<ApiResponse<PollResponseDTO>> createPoll(
             @Valid @RequestBody PollCreateRequestDTO requestDTO,
@@ -44,12 +52,15 @@ public class PollController {
                 .body(ApiResponse.success("Poll created successfully", createdPoll));
     }
 
+    @Operation(summary = "Chi tiết bình chọn", description = "Lấy thông tin một bình chọn theo ID")
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy") })
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PollResponseDTO>> getPoll(@PathVariable("id") Long id) {
         PollResponseDTO poll = pollService.getPollById(id);
         return ResponseEntity.ok(ApiResponse.success(poll));
     }
 
+    @Operation(summary = "Danh sách bình chọn", description = "Lấy danh sách có phân trang, lọc theo title/tag/status, sắp xếp")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<PollResponseDTO>>> getAllPolls(
             @RequestParam(name = "title", required = false) String title,
@@ -68,6 +79,8 @@ public class PollController {
         return ResponseEntity.ok(ApiResponse.success(polls));
     }
 
+    @Operation(summary = "Xóa bình chọn", description = "Chỉ creator hoặc admin mới xóa được", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xóa thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền") })
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deletePoll(
             @PathVariable("id") Long id,
@@ -76,6 +89,7 @@ public class PollController {
         return ResponseEntity.ok(ApiResponse.success("Poll deleted successfully", null));
     }
 
+    @Operation(summary = "Bình chọn của tôi", description = "Danh sách bình chọn do user hiện tại tạo", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-polls")
     public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getMyPolls(
             @AuthenticationPrincipal User user) {
@@ -83,6 +97,7 @@ public class PollController {
         return ResponseEntity.ok(ApiResponse.success(polls));
     }
 
+    @Operation(summary = "Đã bình chọn", description = "Danh sách bình chọn mà user đã vote", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-voted")
     public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getVotedPolls(
             @AuthenticationPrincipal User user) {

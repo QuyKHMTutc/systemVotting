@@ -14,6 +14,9 @@ import com.xxxx.systemvotting.modules.auth.dto.request.ResetPasswordRequestDTO;
 import com.xxxx.systemvotting.modules.auth.dto.request.VerifyRegistrationRequestDTO;
 import com.xxxx.systemvotting.modules.auth.dto.request.ResendRegistrationOtpRequestDTO;
 import com.xxxx.systemvotting.modules.auth.service.PasswordResetService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Auth", description = "Đăng ký, đăng nhập, refresh token, quên mật khẩu, xác thực OTP")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -33,6 +37,8 @@ public class AuthController {
         private final PasswordResetService passwordResetService;
         private final GoogleAuthService googleAuthService;
 
+        @Operation(summary = "Đăng ký tài khoản", description = "Tạo tài khoản mới, hệ thống gửi OTP qua email để xác thực")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Đăng ký thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ") })
         @PostMapping("/register")
         public ResponseEntity<ApiResponse<UserResponseDTO>> register(
                         @Valid @RequestBody UserCreateRequestDTO requestDTO) {
@@ -41,6 +47,8 @@ public class AuthController {
                                 .body(ApiResponse.success("User registered successfully", createdUser));
         }
 
+        @Operation(summary = "Đăng nhập", description = "Đăng nhập bằng email và mật khẩu, trả về access token và refresh token")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng nhập thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Sai email hoặc mật khẩu") })
         @PostMapping("/login")
         public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
                         @Valid @RequestBody AuthRequestDTO requestDTO) {
@@ -48,6 +56,8 @@ public class AuthController {
                 return ResponseEntity.ok(ApiResponse.success(authResponse));
         }
         
+        @Operation(summary = "Đăng nhập Google", description = "Đăng nhập bằng Google ID token (OAuth2)")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng nhập thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Token không hợp lệ") })
         @PostMapping("/google")
         public ResponseEntity<ApiResponse<AuthResponseDTO>> loginWithGoogle(
                         @Valid @RequestBody com.xxxx.systemvotting.modules.auth.dto.request.GoogleAuthRequestDTO requestDTO) {
@@ -55,6 +65,8 @@ public class AuthController {
                 return ResponseEntity.ok(ApiResponse.success(authResponse));
         }
 
+        @Operation(summary = "Làm mới token", description = "Dùng refresh token để lấy access token mới")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token mới trả về thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Refresh token hết hạn hoặc không hợp lệ") })
         @PostMapping("/refreshToken")
         public ResponseEntity<ApiResponse<AuthResponseDTO>> refreshToken(
                         @Valid @RequestBody TokenRefreshRequestDTO request) {
@@ -62,18 +74,24 @@ public class AuthController {
                 return ResponseEntity.ok(ApiResponse.success(authResponse));
         }
 
+        @Operation(summary = "Quên mật khẩu", description = "Gửi OTP đặt lại mật khẩu về email")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP đã gửi"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Email không tồn tại hoặc không hợp lệ") })
         @PostMapping("/forgot-password")
         public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
                 passwordResetService.processForgotPassword(request.getEmail());
                 return ResponseEntity.ok(ApiResponse.success("OTP sent to your email successfully", null));
         }
 
+        @Operation(summary = "Đặt lại mật khẩu", description = "Xác thực OTP và cập nhật mật khẩu mới")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đổi mật khẩu thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP sai hoặc hết hạn") })
         @PostMapping("/reset-password")
         public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
                 passwordResetService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
                 return ResponseEntity.ok(ApiResponse.success("Password reset successfully", null));
         }
 
+        @Operation(summary = "Xác thực đăng ký", description = "Xác thực OTP sau khi đăng ký để kích hoạt tài khoản")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xác thực thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP sai hoặc hết hạn") })
         @PostMapping("/verify-registration")
         public ResponseEntity<ApiResponse<Void>> verifyRegistration(
                         @Valid @RequestBody VerifyRegistrationRequestDTO request) {
@@ -81,6 +99,8 @@ public class AuthController {
                 return ResponseEntity.ok(ApiResponse.success("Registration verified successfully. You can now log in.", null));
         }
 
+        @Operation(summary = "Gửi lại OTP đăng ký", description = "Gửi lại mã OTP xác thực đăng ký qua email")
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP mới đã gửi"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Email không tồn tại hoặc đã xác thực") })
         @PostMapping("/resend-registration-otp")
         public ResponseEntity<ApiResponse<Void>> resendRegistrationOtp(
                         @Valid @RequestBody ResendRegistrationOtpRequestDTO request) {

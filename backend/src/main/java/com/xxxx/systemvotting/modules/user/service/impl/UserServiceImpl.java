@@ -10,12 +10,12 @@ import com.xxxx.systemvotting.modules.user.service.UserService;
 import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.common.service.FileStorageService;
 import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
-import com.xxxx.systemvotting.modules.auth.entity.RegistrationToken;
-import com.xxxx.systemvotting.modules.auth.repository.RegistrationTokenRepository;
 import com.xxxx.systemvotting.common.service.EmailService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import com.xxxx.systemvotting.common.service.BaseRedisService;
 import java.util.Optional;
 import com.xxxx.systemvotting.exception.custom.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +35,11 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final com.xxxx.systemvotting.modules.auth.repository.RefreshTokenRepository refreshTokenRepository;
     private final FileStorageService fileStorageService;
-    private final RegistrationTokenRepository registrationTokenRepository;
     private final EmailService emailService;
+    private final BaseRedisService<String, String, String> redisService;
 
     private static final int OTP_EXPIRATION_MINUTES = 10;
+    private static final String REDIS_OTP_PREFIX = "otp:registration:";
 
     @Override
     @Transactional
@@ -58,14 +59,11 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
 
-        // Generate and send OTP
+        // Generate and store OTP in Redis
         String otp = String.format("%06d", new Random().nextInt(999999));
-        RegistrationToken token = RegistrationToken.builder()
-                .user(savedUser)
-                .otp(otp)
-                .expiryDate(Instant.now().plus(OTP_EXPIRATION_MINUTES, ChronoUnit.MINUTES))
-                .build();
-        registrationTokenRepository.save(token);
+        String redisKey = REDIS_OTP_PREFIX + savedUser.getEmail();
+        redisService.set(redisKey, otp);
+        redisService.setTimeToLive(redisKey, OTP_EXPIRATION_MINUTES, TimeUnit.MINUTES);
 
         String subject = "Verify your email - SystemVoting";
         String message = "Your OTP for registration is: " + otp + "\nThis code will expire in " + OTP_EXPIRATION_MINUTES + " minutes.";
@@ -151,20 +149,20 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("User is already verified");
         }
 
-        RegistrationToken token = registrationTokenRepository.findByUser(user)
-                .orElseThrow(() -> new BadRequestException("No verification token found for this user"));
+        String redisKey = REDIS_OTP_PREFIX + email;
+        String storedOtp = redisService.get(redisKey);
 
-        if (!token.getOtp().equals(otp)) {
-            throw new BadRequestException("Invalid OTP");
+        if (storedOtp == null) {
+            throw new BadRequestException("OTP has expired or not requested");
         }
 
-        if (token.getExpiryDate().isBefore(Instant.now())) {
-            throw new BadRequestException("OTP has expired");
+        if (!storedOtp.equals(otp)) {
+            throw new BadRequestException("Invalid OTP");
         }
 
         user.setVerified(true);
         userRepository.save(user);
-        registrationTokenRepository.delete(token);
+        redisService.delete(redisKey);
     }
 
     @Override
@@ -177,22 +175,11 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("User is already verified");
         }
 
-        // Generate and send new OTP
+        // Generate and store new OTP in Redis
         String newOtp = String.format("%06d", new Random().nextInt(999999));
-        
-        RegistrationToken token = registrationTokenRepository.findByUser(user).orElse(null);
-        if (token != null) {
-            token.setOtp(newOtp);
-            token.setExpiryDate(Instant.now().plus(OTP_EXPIRATION_MINUTES, ChronoUnit.MINUTES));
-            registrationTokenRepository.save(token);
-        } else {
-            RegistrationToken newToken = RegistrationToken.builder()
-                    .user(user)
-                    .otp(newOtp)
-                    .expiryDate(Instant.now().plus(OTP_EXPIRATION_MINUTES, ChronoUnit.MINUTES))
-                    .build();
-            registrationTokenRepository.save(newToken);
-        }
+        String redisKey = REDIS_OTP_PREFIX + email;
+        redisService.set(redisKey, newOtp);
+        redisService.setTimeToLive(redisKey, OTP_EXPIRATION_MINUTES, TimeUnit.MINUTES);
 
         String subject = "Verify your email - SystemVoting";
         String message = "Your new OTP for registration is: " + newOtp + "\nThis code will expire in " + OTP_EXPIRATION_MINUTES + " minutes.";

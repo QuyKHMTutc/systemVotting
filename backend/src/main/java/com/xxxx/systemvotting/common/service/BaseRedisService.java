@@ -7,7 +7,7 @@ import java.util.Set;
 public interface BaseRedisService<K,F,V> {
     void set(K key, V value);
 
-    void setTimeToLive(K key, long timeoutInDays);
+    void setTimeToLive(K key, long timeout, java.util.concurrent.TimeUnit unit);
 
     // F là kiểu của Field trong Hash
     void hashSet(K key, F field, V value);

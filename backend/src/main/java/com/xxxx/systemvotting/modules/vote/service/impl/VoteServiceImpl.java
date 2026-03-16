@@ -72,10 +72,10 @@ public class VoteServiceImpl implements VoteService {
         vote.setOption(option);
 
         Vote savedVote = voteRepository.save(vote);
-
-        // 6. Update Option Vote Count only after Vote is persisted successfully
-        option.setVoteCount(option.getVoteCount() + 1);
-        optionRepository.save(option);
+        
+        // 6. Update Option Vote Count using atomic query to prevent race conditions
+        optionRepository.incrementVoteCount(option.getId());
+        
         return voteMapper.toDto(savedVote);
     }
 

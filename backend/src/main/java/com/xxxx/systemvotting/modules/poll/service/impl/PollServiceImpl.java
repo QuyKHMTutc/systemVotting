@@ -34,7 +34,7 @@ public class PollServiceImpl implements PollService {
     private final CommentRepository commentRepository;
 
     private int getCommentCountForPoll(Long pollId) {
-        return commentRepository.findByPollIdOrderByCreatedAtDesc(pollId).size();
+        return (int) commentRepository.countByPollId(pollId);
     }
 
     @Override
