@@ -28,6 +28,9 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final PollRepository pollRepository;
     private final VoteRepository voteRepository;
+    private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, Object> redisService;
+
+    private static final String POLL_CACHE_PREFIX = "poll:details:";
 
     @Override
     @org.springframework.transaction.annotation.Transactional
@@ -69,6 +72,9 @@ public class CommentServiceImpl implements CommentService {
                     .stream().filter(Comment::isAnonymous).toList();
             anonymousDisplayNames = buildAnonymousDisplayNameMap(anonymousComments);
         }
+
+        // Evict Poll Cache because comment count changed
+        redisService.delete(POLL_CACHE_PREFIX + poll.getId());
 
         return mapToDTO(comment, voteStatus, anonymousDisplayNames);
     }
