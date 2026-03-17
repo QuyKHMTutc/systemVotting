@@ -27,7 +27,7 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - REDIS_URL=${SPRING_DATA_REDIS_URL}
+      - SPRING_DATA_REDIS_URL=${SPRING_DATA_REDIS_URL}
     ports:
       - "8080:8080"
     depends_on:
