@@ -5,6 +5,8 @@ import Navbar from '../components/Navbar';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PollCard } from '../components/PollCard';
+import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
+import { useCallback } from 'react';
 
 const Dashboard = () => {
   const [pollPage, setPollPage] = useState<PollPageResponse | null>(null);
@@ -50,6 +52,40 @@ const Dashboard = () => {
     }, 300);
     return () => clearTimeout(t);
   }, [currentPage, searchQuery, filterTag, filterStatus]);
+
+  const handlePollEvent = useCallback((payload: PollEventPayload) => {
+    setPollPage(prev => {
+      if (!prev) return prev;
+      let newContent = [...prev.content];
+
+      if (payload.type === 'CREATED') {
+        // Check current filter criteria simply: if not ALL, just let the standard polling/refresh pull it in naturally
+        // To be safe, we just gently insert at the top if there's no duplicate
+        if (!newContent.some(p => p.id === payload.poll.id)) {
+          newContent.unshift(payload.poll);
+        }
+      } else if (payload.type === 'DELETED') {
+        newContent = newContent.filter(p => p.id !== payload.pollId);
+      } else if (payload.type === 'VOTED') {
+        newContent = newContent.map(p => {
+          if (p.id === payload.pollId) {
+            return {
+              ...p,
+              options: p.options.map(opt => {
+                const updated = payload.options.find(o => o.optionId === opt.id);
+                return updated ? { ...opt, voteCount: updated.voteCount } : opt;
+              })
+            };
+          }
+          return p;
+        });
+      }
+
+      return { ...prev, content: newContent };
+    });
+  }, []);
+
+  usePollEventsWebSocket({ onEvent: handlePollEvent });
 
   const fetchPolls = async (page: number, title: string, tag: string, status: string) => {
     setLoading(true);

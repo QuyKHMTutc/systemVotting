@@ -4,7 +4,7 @@ import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.service.CommentService;
-import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -37,8 +37,8 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<ApiResponse<CommentResponseDTO>> createComment(
             @Valid @RequestBody CommentRequestDTO request,
-            @AuthenticationPrincipal User user) {
-        CommentResponseDTO response = commentService.createComment(request, user);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        CommentResponseDTO response = commentService.createComment(request, userDetails.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Comment created successfully", response));
     }

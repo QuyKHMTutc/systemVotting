@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,20 +22,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        // Check local storage for existing session
-        const storedToken = localStorage.getItem('accessToken');
+    const [token, setToken] = useState<string | null>(() => {
+        return localStorage.getItem('accessToken');
+    });
+    const [user, setUser] = useState<User | null>(() => {
         const storedUser = localStorage.getItem('user');
-
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-        }
-    }, []);
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
+    const navigate = useNavigate();
 
     const login = (accessToken: string, refreshToken: string, userData: User) => {
         localStorage.setItem('accessToken', accessToken);
@@ -72,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {

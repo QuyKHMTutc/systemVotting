@@ -35,7 +35,7 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/api/v1/users/me").authenticated()
                                                 .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
-                                                .requestMatchers("/uploads/**").permitAll()
+                                                .requestMatchers("/uploads/**", "/avatars/**").permitAll()
 
                                                 .anyRequest().authenticated())
 

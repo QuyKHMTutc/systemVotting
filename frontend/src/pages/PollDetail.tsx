@@ -14,6 +14,7 @@ import { timeAgo, endsIn } from '../utils/date';
 import { getTagPillClass } from '../utils/tagPills';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../contexts/AuthContext';
+import { usePollWebSocket } from '../hooks/usePollWebSocket';
 
 const countTotalComments = (commentsList: Comment[]): number => {
     return commentsList.reduce((acc, comment) => {
@@ -36,6 +37,7 @@ const PollDetail = () => {
 
   const [showComments, setShowComments] = useState(false);
   const [barAnimated, setBarAnimated] = useState(false);
+  const [liveVoteReceived, setLiveVoteReceived] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState('');
@@ -57,6 +59,48 @@ const PollDetail = () => {
       setLoadingComments(false);
     }
   }, []);
+
+  // --- Real-time WebSocket integration ---
+  const handleWsVoteUpdate = useCallback((payload: { pollId: number; options: { optionId: number; text: string; voteCount: number }[] }) => {
+    // Show live results to everyone when a vote comes in via WebSocket
+    setLiveVoteReceived(true);
+    setPoll(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        options: prev.options.map(opt => {
+          const updated = payload.options.find(o => o.optionId === opt.id);
+          return updated ? { ...opt, voteCount: updated.voteCount } : opt;
+        }),
+      };
+    });
+  }, []);
+
+  const handleWsNewComment = useCallback((newComment: Comment) => {
+    setComments(prev => {
+      // If it's a reply (has parentId), nest it under the parent
+      if (newComment.parentId) {
+        return prev.map(root => {
+          if (root.id === newComment.parentId) {
+            // Avoid duplicate
+            const alreadyExists = root.replies?.some(r => r.id === newComment.id);
+            if (alreadyExists) return root;
+            return { ...root, replies: [...(root.replies || []), newComment] };
+          }
+          return root;
+        });
+      }
+      // Top-level comment: add to top, avoid duplicate
+      if (prev.some(c => c.id === newComment.id)) return prev;
+      return [{ ...newComment, replies: newComment.replies || [] }, ...prev];
+    });
+  }, []);
+
+  usePollWebSocket({
+    pollId: id ? Number(id) : undefined,
+    onVoteUpdate: handleWsVoteUpdate,
+    onNewComment: handleWsNewComment,
+  });
 
   const handleCommentSubmit = async (content: string, isAnonymous: boolean) => {
     if (!poll) return;
@@ -194,7 +238,8 @@ const PollDetail = () => {
 
   const isActive = new Date(poll.endTime) > new Date();
   const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
-  const showResults = hasVoted || !isActive;
+  // Show results if: user has voted, poll ended, OR a live vote update arrived via WebSocket
+  const showResults = hasVoted || !isActive || liveVoteReceived;
 
   return (
     <div className="min-h-screen pb-12">

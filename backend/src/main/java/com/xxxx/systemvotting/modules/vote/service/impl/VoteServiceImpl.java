@@ -10,17 +10,30 @@ import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.common.service.RealTimeService;
+import com.xxxx.systemvotting.modules.vote.service.RateLimitService;
+import com.xxxx.systemvotting.modules.vote.service.RankingService;
 import com.xxxx.systemvotting.modules.vote.dto.request.VoteRequestDTO;
 import com.xxxx.systemvotting.modules.vote.dto.response.VoteResponseDTO;
 import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.mapper.VoteMapper;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.vote.service.VoteService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.redis.core.RedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.xxxx.systemvotting.modules.vote.dto.VoteEventDTO;
+import com.xxxx.systemvotting.common.utils.RedisKeyUtils;
+
 import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,30 +44,28 @@ public class VoteServiceImpl implements VoteService {
     private final PollRepository pollRepository;
     private final OptionRepository optionRepository;
     private final VoteMapper voteMapper;
-    private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, Object> redisService;
     private final RealTimeService realTimeService;
-
-    private static final String POLL_CACHE_PREFIX = "poll:details:";
+    
+    private final RateLimitService rateLimitService;
+    private final RankingService rankingService;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
+    @CacheEvict(value = "pollDetails", key = "#requestDTO.pollId")
     public VoteResponseDTO submitVote(VoteRequestDTO requestDTO) {
-        // 1. Verify Entities exist
-        User user = userRepository.findById(requestDTO.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requestDTO.getUserId()));
+        Long userId = requestDTO.getUserId();
+        Long pollId = requestDTO.getPollId();
+        Long newOptionId = requestDTO.getOptionId();
 
-        Poll poll = pollRepository.findById(requestDTO.getPollId())
-                .orElseThrow(() -> new ResourceNotFoundException("Poll not found: " + requestDTO.getPollId()));
+        // 1. Rate Limiting Check
+        rateLimitService.checkAndRecordVoteAttempt(userId);
 
-        Option option = optionRepository.findById(requestDTO.getOptionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Option not found: " + requestDTO.getOptionId()));
+        // 2. Validate Time Constraints directly from DB
+        Poll poll = pollRepository.findById(pollId)
+                .orElseThrow(() -> new ResourceNotFoundException("Poll not found: " + pollId));
 
-        // 2. Validate Option belongs to Poll
-        if (!option.getPoll().getId().equals(poll.getId())) {
-            throw new BadRequestException("Option does not belong to the specified Poll");
-        }
-
-        // 3. Validate Time Constraints
         LocalDateTime now = LocalDateTime.now();
         if (poll.getStartTime() != null && now.isBefore(poll.getStartTime())) {
             throw new BadRequestException("The poll has not started yet");
@@ -63,58 +74,124 @@ public class VoteServiceImpl implements VoteService {
             throw new BadRequestException("The poll has already ended");
         }
 
-        // 4. Prevent duplicate voting
-        if (voteRepository.existsByUserIdAndPollId(user.getId(), poll.getId())) {
-            throw new DuplicateResourceException("User has already voted for this poll");
+        Option newOption = optionRepository.findById(newOptionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Option not found: " + newOptionId));
+
+        if (!newOption.getPoll().getId().equals(poll.getId())) {
+            throw new BadRequestException("Option does not belong to the specified Poll");
         }
 
-        // 5. Create and save Vote first (DB unique constraint prevents race condition)
-        //    If we incremented option.voteCount first, a concurrent request could pass
-        //    the duplicate check and cause voteCount to be wrong when one save fails.
-        Vote vote = voteMapper.toEntity(requestDTO);
-        vote.setUser(user);
-        vote.setPoll(poll);
-        vote.setOption(option);
-
-        Vote savedVote = voteRepository.save(vote);
+        // 3. Atomically track user's choice in Redis Hash
+        String userVotesKey = RedisKeyUtils.getPollUserVotesKey(pollId);
+        String pollVotesKey = RedisKeyUtils.getPollVotesKey(pollId);
         
-        // 6. Update Option Vote Count using atomic query to prevent race conditions
-        optionRepository.incrementVoteCount(option.getId());
+        // Find if user already voted. HGET is O(1)
+        Object previousVoteObj = redisTemplate.opsForHash().get(userVotesKey, String.valueOf(userId));
+        Long oldOptionId = previousVoteObj != null ? Long.parseLong(previousVoteObj.toString()) : null;
 
-        // 7. Evict Poll Cache to ensure updated results are shown
-        redisService.delete(POLL_CACHE_PREFIX + poll.getId());
+        if (newOptionId.equals(oldOptionId)) {
+            throw new DuplicateResourceException("User has already voted for this option");
+        }
 
-        // 8. Broadcast updated vote counts to all WebSocket subscribers.
-        //    We do NOT reload from DB because pollRepository.findById() within the same @Transactional
-        //    returns the JPA first-level cache entity which still has the old voteCount
-        //    (incrementVoteCount is a JPQL bulk update that bypasses the cache).
-        //    Instead, we build the payload directly: +1 for the voted option, unchanged for others.
-        java.util.List<java.util.Map<String, Object>> optionUpdates = poll.getOptions().stream()
-                .map(o -> {
-                    java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
-                    m.put("optionId", o.getId());
-                    m.put("text", o.getText());
-                    int count = o.getId().equals(option.getId()) ? o.getVoteCount() + 1 : o.getVoteCount();
-                    m.put("voteCount", count);
-                    return m;
-                }).collect(java.util.stream.Collectors.toList());
-        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        // Set new vote in Hash
+        redisTemplate.opsForHash().put(userVotesKey, String.valueOf(userId), String.valueOf(newOptionId));
+
+        // 4. Update atomic option counts in Redis
+        // Decrement old option count if changing vote
+        if (oldOptionId != null) {
+            redisTemplate.opsForHash().increment(pollVotesKey, String.valueOf(oldOptionId), -1);
+        } else {
+            // First time voting on this poll, increment total poll score for ranking
+            rankingService.incrementPollScore(pollId, 1);
+        }
+        // Increment new option count
+        redisTemplate.opsForHash().increment(pollVotesKey, String.valueOf(newOptionId), 1);
+
+        // 5. Construct Vote Event for Async Processing to DB
+        VoteEventDTO voteEvent = VoteEventDTO.builder()
+                .userId(userId)
+                .pollId(pollId)
+                .optionId(newOptionId)
+                .oldOptionId(oldOptionId)
+                .timestamp(now)
+                .build();
+        
+        try {
+            String eventJson = objectMapper.writeValueAsString(voteEvent);
+            redisTemplate.opsForList().leftPush(RedisKeyUtils.getVoteEventQueueKey(), eventJson);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to queue vote event", e);
+        }
+
+        // 6. Broadcast updated vote counts to WebSocket subscribers seamlessly
+        broadcastVoteUpdates(poll, pollVotesKey);
+
+        // Immediately return mock saved format. No block for DB save.
+        Vote mockSave = new Vote();
+        mockSave.setId(-1L); // Async indicator
+        mockSave.setOption(newOption);
+        mockSave.setPoll(poll);
+        User mockUser = new User();
+        mockUser.setId(userId);
+        mockSave.setUser(mockUser);
+        mockSave.setCreatedAt(now);
+        return voteMapper.toDto(mockSave);
+    }
+
+    private void broadcastVoteUpdates(Poll poll, String pollVotesKey) {
+        // Fetch all option counts from redis to broadcast latest state
+        Map<Object, Object> allCounts = redisTemplate.opsForHash().entries(pollVotesKey);
+
+        List<Map<String, Object>> optionUpdates = poll.getOptions().stream().map(o -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("optionId", o.getId());
+            m.put("text", o.getText());
+            
+            Object redisCountObj = allCounts.get(String.valueOf(o.getId()));
+            int currentRedisCount = redisCountObj != null ? Integer.parseInt(redisCountObj.toString()) : o.getVoteCount();
+            
+            m.put("voteCount", currentRedisCount);
+            return m;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("pollId", poll.getId());
         payload.put("options", optionUpdates);
+        
+        // 1. Broadcast to specific poll detail page clients
         realTimeService.broadcast("/topic/polls/" + poll.getId() + "/votes", payload);
-
-        return voteMapper.toDto(savedVote);
-
+        
+        // 2. Broadcast to global dashboard clients
+        Map<String, Object> globalPayload = new LinkedHashMap<>();
+        globalPayload.put("type", "VOTED");
+        globalPayload.put("pollId", poll.getId());
+        globalPayload.put("options", optionUpdates);
+        realTimeService.broadcast("/topic/polls/events", globalPayload);
     }
 
     @Override
     @Transactional(readOnly = true)
     public com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkVote(Long userId, Long pollId) {
+        String userVotesKey = RedisKeyUtils.getPollUserVotesKey(pollId);
+        Object optionIdObj = redisTemplate.opsForHash().get(userVotesKey, String.valueOf(userId));
+
+        if (optionIdObj != null) {
+            return com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
+                    .hasVoted(true)
+                    .optionId(Long.parseLong(optionIdObj.toString()))
+                    .build();
+        }
+
+        // Fallback to database if redis key was cleared or not populated yet
         return voteRepository.findByUserIdAndPollId(userId, pollId)
-                .map(vote -> com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
-                        .hasVoted(true)
-                        .optionId(vote.getOption().getId())
-                        .build())
+                .map(vote -> {
+                    // Backfill Redis so next time it's fast
+                    redisTemplate.opsForHash().put(userVotesKey, String.valueOf(userId), String.valueOf(vote.getOption().getId()));
+                    return com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
+                            .hasVoted(true)
+                            .optionId(vote.getOption().getId())
+                            .build();
+                })
                 .orElse(com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
                         .hasVoted(false)
                         .build());

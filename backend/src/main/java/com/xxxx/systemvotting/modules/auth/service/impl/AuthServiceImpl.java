@@ -10,6 +10,7 @@ import com.xxxx.systemvotting.security.JwtService;
 import com.xxxx.systemvotting.exception.custom.TokenRefreshException;
 import com.xxxx.systemvotting.modules.auth.entity.RefreshToken;
 import com.xxxx.systemvotting.modules.auth.dto.request.TokenRefreshRequestDTO;
+import com.xxxx.systemvotting.security.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,7 +49,9 @@ public class AuthServiceImpl implements AuthService {
         extraClaims.put("email", user.getEmail());
         extraClaims.put("avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : "");
 
-        String jwtToken = jwtService.generateToken(extraClaims, user);
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+
+        String jwtToken = jwtService.generateToken(extraClaims, userDetails);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return AuthResponseDTO.builder()
@@ -71,7 +74,9 @@ public class AuthServiceImpl implements AuthService {
                     extraClaims.put("username", user.getUsername());
                     extraClaims.put("email", user.getEmail());
                     extraClaims.put("avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : "");
-                    String token = jwtService.generateToken(extraClaims, user);
+
+                    CustomUserDetails userDetails = new CustomUserDetails(user);
+                    String token = jwtService.generateToken(extraClaims, userDetails);
                     return AuthResponseDTO.builder()
                             .accessToken(token)
                             .refreshToken(requestRefreshToken)

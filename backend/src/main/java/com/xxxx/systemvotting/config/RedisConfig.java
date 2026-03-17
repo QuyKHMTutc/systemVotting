@@ -7,8 +7,13 @@ import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
@@ -18,11 +23,15 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.time.Duration;
 
 @Configuration
+@EnableCaching
 public class RedisConfig {
     @Value("${spring.data.redis.port}")
     private String redisPort;
@@ -78,5 +87,59 @@ public class RedisConfig {
     @Bean
     public <K, F, V> HashOperations<K, F, V> hashOperations(RedisTemplate<K, V> redisTemplate) {
         return redisTemplate.opsForHash();
+    }
+
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+
+        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
+
+        RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(60))
+                .disableCachingNullValues()
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
+
+        return RedisCacheManager.builder(redisConnectionFactory)
+                .cacheDefaults(cacheConfiguration)
+                .build();
+    }
+
+    // --- Redis Pub/Sub Configuration required for WebSockets Horizontal Scaling ---
+
+    @Bean
+    public ChannelTopic realTimeTopic() {
+        return new ChannelTopic("systemvotting:realtime:events");
+    }
+
+    @Bean
+    public MessageListenerAdapter messageListenerAdapter(RedisMessageSubscriber redisMessageSubscriber) {
+        // Prepare the serializer used in RedisTemplate to deserialize the messages
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
+
+        // Bind the handler method and apply the serializer
+        MessageListenerAdapter adapter = new MessageListenerAdapter(redisMessageSubscriber, "handleMessage");
+        adapter.setSerializer(serializer);
+        return adapter;
+    }
+
+    @Bean
+    public RedisMessageListenerContainer redisMessageListenerContainer(
+            RedisConnectionFactory connectionFactory,
+            MessageListenerAdapter messageListenerAdapter,
+            ChannelTopic realTimeTopic) {
+
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(connectionFactory);
+        container.addMessageListener(messageListenerAdapter, realTimeTopic);
+        return container;
     }
 }

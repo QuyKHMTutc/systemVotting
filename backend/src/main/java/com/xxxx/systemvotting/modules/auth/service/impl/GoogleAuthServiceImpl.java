@@ -11,6 +11,8 @@ import com.xxxx.systemvotting.modules.auth.service.RefreshTokenService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
+import com.xxxx.systemvotting.modules.user.repository.UserRepository;
+import com.xxxx.systemvotting.security.CustomUserDetails;
 import com.xxxx.systemvotting.security.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class GoogleAuthServiceImpl implements GoogleAuthService {
 
@@ -81,7 +86,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                 }
                 
                 // Check if account is locked before continuing
-                if (!user.isAccountNonLocked()) {
+                if (user.isLocked()) {
                     throw new com.xxxx.systemvotting.exception.custom.BadRequestException("Tài khoản của bạn đã bị khóa.");
                 }
 
@@ -93,7 +98,8 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                 extraClaims.put("email", user.getEmail());
                 extraClaims.put("avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : "");
 
-                String jwtToken = jwtService.generateToken(extraClaims, user);
+                CustomUserDetails userDetails = new CustomUserDetails(user);
+                String jwtToken = jwtService.generateToken(extraClaims, userDetails);
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
                 return AuthResponseDTO.builder()
@@ -102,12 +108,11 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                         .build();
 
             } else {
-                System.out.println("Google Token Verification Failed. The token might be expired, malformed, or the client ID doesn't match.");
+                log.error("Google Token Verification Failed. The token might be expired, malformed, or the client ID doesn't match.");
                 throw new RuntimeException("Invalid Google ID token.");
             }
         } catch (Exception e) {
-            System.err.println("Exception during Google Token Verification: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Exception during Google Token Verification: {}", e.getMessage(), e);
             throw new RuntimeException("Error verifying Google ID token: " + e.getMessage(), e);
         }
     }

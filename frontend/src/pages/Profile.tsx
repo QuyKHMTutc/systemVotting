@@ -8,6 +8,8 @@ import Navbar from '../components/Navbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import UserProfileModal from '../components/UserProfileModal';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
+import { useCallback } from 'react';
 
 export const Profile = () => {
   const { user } = useAuth();
@@ -53,7 +55,43 @@ export const Profile = () => {
     };
 
     if (user) fetchProfileData();
+    if (user) fetchProfileData();
   }, [user]);
+
+  const handlePollEvent = useCallback((payload: PollEventPayload) => {
+    const updateList = (prev: Poll[]) => {
+      let newContent = [...prev];
+
+      if (payload.type === 'CREATED') {
+        // Only add to 'createdPolls' if it belongs to the current user. But we don't have the user object in the payload easily right here except in poll.creator.id
+        // For simplicity, we can let them refresh, or check user.id
+        if (user && payload.poll.creator.id === user.id && !newContent.some(p => p.id === payload.poll.id)) {
+          newContent.unshift(payload.poll);
+        }
+      } else if (payload.type === 'DELETED') {
+        newContent = newContent.filter(p => p.id !== payload.pollId);
+      } else if (payload.type === 'VOTED') {
+        newContent = newContent.map(p => {
+          if (p.id === payload.pollId) {
+            return {
+              ...p,
+              options: p.options.map(opt => {
+                const updated = payload.options.find(o => o.optionId === opt.id);
+                return updated ? { ...opt, voteCount: updated.voteCount } : opt;
+              })
+            };
+          }
+          return p;
+        });
+      }
+      return newContent;
+    };
+
+    setCreatedPolls(prev => updateList(prev));
+    setVotedPolls(prev => updateList(prev));
+  }, [user]);
+
+  usePollEventsWebSocket({ onEvent: handlePollEvent });
 
   if (loading) return <LoadingSpinner />;
 

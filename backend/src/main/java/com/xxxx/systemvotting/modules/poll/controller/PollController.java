@@ -6,7 +6,7 @@ import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
-import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -15,9 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -43,9 +40,9 @@ public class PollController {
     @PostMapping
     public ResponseEntity<ApiResponse<PollResponseDTO>> createPoll(
             @Valid @RequestBody PollCreateRequestDTO requestDTO,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        requestDTO.setCreatorId(user.getId());
+        requestDTO.setCreatorId(userDetails.getId());
 
         PollResponseDTO createdPoll = pollService.createPoll(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -71,11 +68,7 @@ public class PollController {
             @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(name = "direction", defaultValue = "desc") String direction) {
 
-        Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, pageable);
+        Page<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, page, size, sortBy, direction);
         return ResponseEntity.ok(ApiResponse.success(polls));
     }
 
@@ -84,24 +77,24 @@ public class PollController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deletePoll(
             @PathVariable("id") Long id,
-            @AuthenticationPrincipal User user) {
-        pollService.deletePoll(id, user);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        pollService.deletePoll(id, userDetails);
         return ResponseEntity.ok(ApiResponse.success("Poll deleted successfully", null));
     }
 
     @Operation(summary = "Bình chọn của tôi", description = "Danh sách bình chọn do user hiện tại tạo", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-polls")
     public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getMyPolls(
-            @AuthenticationPrincipal User user) {
-        java.util.List<PollResponseDTO> polls = pollService.getMyPolls(user.getId());
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        java.util.List<PollResponseDTO> polls = pollService.getMyPolls(userDetails.getId());
         return ResponseEntity.ok(ApiResponse.success(polls));
     }
 
     @Operation(summary = "Đã bình chọn", description = "Danh sách bình chọn mà user đã vote", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-voted")
     public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getVotedPolls(
-            @AuthenticationPrincipal User user) {
-        java.util.List<PollResponseDTO> polls = pollService.getVotedPolls(user.getId());
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        java.util.List<PollResponseDTO> polls = pollService.getVotedPolls(userDetails.getId());
         return ResponseEntity.ok(ApiResponse.success(polls));
     }
 }

@@ -1,7 +1,7 @@
 package com.xxxx.systemvotting.modules.vote.controller;
 
 import com.xxxx.systemvotting.common.dto.ApiResponse;
-import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.security.CustomUserDetails;
 import com.xxxx.systemvotting.modules.vote.dto.request.VoteRequestDTO;
 import com.xxxx.systemvotting.modules.vote.dto.response.VoteResponseDTO;
 import com.xxxx.systemvotting.modules.vote.service.VoteService;
@@ -32,7 +32,7 @@ public class VoteController {
     @PostMapping
     public ResponseEntity<ApiResponse<VoteResponseDTO>> submitVote(
             @Valid @RequestBody VoteRequestDTO requestDTO,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal CustomUserDetails user) {
 
         // Security enhancement: enforce the vote belongs to the currently authenticated
         // user
@@ -48,7 +48,7 @@ public class VoteController {
     @org.springframework.web.bind.annotation.GetMapping("/check")
     public ResponseEntity<ApiResponse<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO>> checkVote(
             @org.springframework.web.bind.annotation.RequestParam Long pollId,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal CustomUserDetails user) {
         com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkResult = voteService.checkVote(user.getId(), pollId);
         return ResponseEntity.ok(ApiResponse.success("Vote check retrieved successfully", checkResult));
     }

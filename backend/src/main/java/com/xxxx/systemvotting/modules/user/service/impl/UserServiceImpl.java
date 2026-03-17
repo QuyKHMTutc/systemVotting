@@ -22,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -74,6 +76,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "users", key = "#id")
     public UserResponseDTO getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
@@ -88,6 +91,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public UserResponseDTO promoteToAdmin(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
@@ -99,6 +103,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public UserResponseDTO toggleLock(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
@@ -116,6 +121,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "users", key = "#userId")
     public UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO,
             MultipartFile avatarFile) {
         User user = userRepository.findById(userId)

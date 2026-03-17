@@ -27,6 +27,7 @@ public class AppConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return email -> userRepository.findByEmail(email)
+                .map(com.xxxx.systemvotting.security.CustomUserDetails::new)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 
