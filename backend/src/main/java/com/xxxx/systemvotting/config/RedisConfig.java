@@ -84,7 +84,7 @@ public class RedisConfig {
 
         LettuceClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
                 .poolConfig(poolConfig)
-                .commandTimeout(Duration.ofSeconds(2))
+                .commandTimeout(Duration.ofSeconds(10))
                 .build();
 
         return new LettuceConnectionFactory(config, clientConfig);
