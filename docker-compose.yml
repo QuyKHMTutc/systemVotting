@@ -11,13 +11,6 @@ services:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
@@ -34,6 +27,7 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - REDIS_URL=${REDIS_URL}
     ports:
       - "8080:8080"
     depends_on:
