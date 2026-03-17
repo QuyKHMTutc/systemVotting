@@ -17,7 +17,7 @@ public class FileStorageService {
     private final Path fileStorageLocation;
 
     public FileStorageService() {
-        this.fileStorageLocation = Paths.get("uploads/avatars").toAbsolutePath().normalize();
+        this.fileStorageLocation = Paths.get("avatars").toAbsolutePath().normalize();
 
         try {
             Files.createDirectories(this.fileStorageLocation);
@@ -52,7 +52,7 @@ public class FileStorageService {
             Path targetLocation = this.fileStorageLocation.resolve(newFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            return "/uploads/avatars/" + newFileName;
+            return "/avatars/" + newFileName;
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + originalFileName + ". Please try again!", ex);
         }

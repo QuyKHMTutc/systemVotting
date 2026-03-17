@@ -14,8 +14,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         Path uploadDir = Paths.get("uploads");
         String uploadPath = uploadDir.toFile().getAbsolutePath();
-
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + uploadPath + "/");
+
+        Path avatarDir = Paths.get("avatars");
+        String avatarPath = avatarDir.toFile().getAbsolutePath();
+        registry.addResourceHandler("/avatars/**")
+                .addResourceLocations("file:" + avatarPath + "/");
+        registry.addResourceHandler("/uploads/avatars/**")
+                .addResourceLocations("file:" + avatarPath + "/");
     }
 }

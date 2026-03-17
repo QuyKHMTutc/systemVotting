@@ -12,6 +12,8 @@ import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.common.service.RealTimeService;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,16 +31,17 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final PollRepository pollRepository;
     private final VoteRepository voteRepository;
-    private final com.xxxx.systemvotting.common.service.BaseRedisService<String, String, Object> redisService;
     private final RealTimeService realTimeService;
-
-    private static final String POLL_CACHE_PREFIX = "poll:details:";
 
     @Override
     @org.springframework.transaction.annotation.Transactional
-    public CommentResponseDTO createComment(CommentRequestDTO request, User currentUser) {
+    @CacheEvict(value = {"pollDetails", "pollComments"}, key = "#request.pollId")
+    public CommentResponseDTO createComment(CommentRequestDTO request, Long userId) {
         Poll poll = pollRepository.findById(request.getPollId())
                 .orElseThrow(() -> new ResourceNotFoundException("Poll not found with id: " + request.getPollId()));
+
+        User currentUser = com.xxxx.systemvotting.modules.user.repository.UserRepository.class.cast(org.springframework.beans.factory.BeanFactory.class.cast(org.springframework.web.context.support.WebApplicationContextUtils.getRequiredWebApplicationContext(((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext())).getBean(com.xxxx.systemvotting.modules.user.repository.UserRepository.class)).findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         Comment.CommentBuilder commentBuilder = Comment.builder()
                 .poll(poll)
@@ -75,9 +78,6 @@ public class CommentServiceImpl implements CommentService {
             anonymousDisplayNames = buildAnonymousDisplayNameMap(anonymousComments);
         }
 
-        // Evict Poll Cache because comment count changed
-        redisService.delete(POLL_CACHE_PREFIX + poll.getId());
-
         CommentResponseDTO responseDTO = mapToDTO(comment, voteStatus, anonymousDisplayNames);
 
         // Broadcast the new comment to all connected clients watching this poll
@@ -88,6 +88,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Cacheable(value = "pollComments", key = "#pollId")
     public List<CommentResponseDTO> getCommentsByPollId(Long pollId) {
         List<Comment> comments = commentRepository.findByPollIdOrderByCreatedAtDesc(pollId);
         

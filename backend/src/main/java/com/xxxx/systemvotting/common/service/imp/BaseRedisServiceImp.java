@@ -12,6 +12,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BaseRedisServiceImp<K, F, V> implements BaseRedisService<K, F, V> {
@@ -70,7 +73,7 @@ public class BaseRedisServiceImp<K, F, V> implements BaseRedisService<K, F, V> {
                 objects.add(entry.getValue());
             }
         } catch (Exception e) {
-            // Log or handle exceptions
+            log.error("Failed to execute hashGetByFieldPrefix on Redis for prefix: {}", fieldPrefix, e);
         }
         return objects;
     }

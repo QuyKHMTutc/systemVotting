@@ -7,6 +7,6 @@ import com.xxxx.systemvotting.modules.user.entity.User;
 import java.util.List;
 
 public interface CommentService {
-    CommentResponseDTO createComment(CommentRequestDTO request, User currentUser);
+    CommentResponseDTO createComment(CommentRequestDTO request, Long userId);
     List<CommentResponseDTO> getCommentsByPollId(Long pollId);
 }

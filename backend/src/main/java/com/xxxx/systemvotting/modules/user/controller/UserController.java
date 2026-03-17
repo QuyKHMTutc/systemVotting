@@ -4,7 +4,7 @@ import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserProfileUpdateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
-import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.security.CustomUserDetails;
 import com.xxxx.systemvotting.modules.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -52,7 +52,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponseDTO>> updateProfile(
             @RequestParam(required = false) String username,
             @RequestPart(value = "avatar", required = false) MultipartFile avatarFile,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal CustomUserDetails user) {
 
         UserProfileUpdateRequestDTO requestDTO = new UserProfileUpdateRequestDTO();
         requestDTO.setUsername(username);

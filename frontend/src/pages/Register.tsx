@@ -40,9 +40,9 @@ const Register = () => {
     useEffect(() => {
         if (stage === 'verify' && resendCooldown === 0) {
            startResendCooldown();
-           // Optionally, trigger an initial resend if the user navigates directly
            // to ensure they have a fresh code, but the backend handles that with the resend action
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Shake animation state

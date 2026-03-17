@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { commentService } from '../../services/comment.service';
 import type { Comment } from '../../services/comment.service';
 import CommentInput from './CommentInput';
@@ -23,7 +23,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
         try {
             const data = await commentService.getCommentsByPollId(pollId);
             setComments(data);
@@ -32,11 +32,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
         } finally {
             setLoading(false);
         }
-    };
+    }, [pollId]);
 
     useEffect(() => {
         fetchComments();
-    }, [pollId, voteTrigger]);
+    }, [fetchComments, voteTrigger]);
 
     const handleSubmit = async (content: string, isAnonymous: boolean) => {
         setError('');
@@ -44,8 +44,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
         try {
             await commentService.createComment({ pollId, content, isAnonymous });
             fetchComments();
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to post comment');
+        } catch (err) {
+            const error = err as Error | any;
+            setError(error.response?.data?.message || 'Failed to post comment');
         }
     };
 
@@ -58,7 +59,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
                 isAnonymous
             });
             fetchComments();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to post reply:', err);
         }
     };
