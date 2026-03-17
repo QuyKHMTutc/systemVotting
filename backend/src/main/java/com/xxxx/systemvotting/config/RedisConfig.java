@@ -33,16 +33,43 @@ import java.time.Duration;
 @Configuration
 @EnableCaching
 public class RedisConfig {
-    @Value("${spring.data.redis.port}")
+    @Value("${spring.data.redis.port:6379}")
     private String redisPort;
-    @Value("${spring.data.redis.host}")
+    @Value("${spring.data.redis.host:localhost}")
     private String redisHost;
+    @Value("${spring.data.redis.url:#{null}}")
+    private String redisUrl;
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory(RedisProperties redisProperties) {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
-        config.setHostName(redisHost);
-        config.setPort(Integer.parseInt(redisPort));
+        RedisStandaloneConfiguration config;
+        if (redisUrl != null && !redisUrl.isEmpty()) {
+            // Spring Data Redis can parse the URL (e.g., redis://red-xxxxx:6379)
+            // when using the RedisStandaloneConfiguration(String url) constructor (available in newer Spring Boot)
+            // Alternatively, we use LettuceConnectionFactory which handles URL if we don't pass the custom config
+            // But to keep it simple, we can construct LettuceConnectionFactory using the URL directly or parse it.
+            // A better way is to rely on Spring Boot's auto-configuration, OR parse the URL here.
+            
+            // Let's parse the URL manually to ensure compatibility
+             try {
+                java.net.URI uri = new java.net.URI(redisUrl);
+                config = new RedisStandaloneConfiguration();
+                config.setHostName(uri.getHost());
+                config.setPort(uri.getPort());
+                if (uri.getUserInfo() != null) {
+                    String[] userInfo = uri.getUserInfo().split(":", 2);
+                    if (userInfo.length == 2) {
+                        config.setPassword(userInfo[1]);
+                    }
+                }
+            } catch (Exception e) {
+                 throw new RuntimeException("Invalid Redis URL: " + redisUrl, e);
+            }
+        } else {
+            config = new RedisStandaloneConfiguration();
+            config.setHostName(redisHost);
+            config.setPort(Integer.parseInt(redisPort));
+        }
 
         GenericObjectPoolConfig<?> poolConfig = new GenericObjectPoolConfig<>();
         RedisProperties.Pool pool = redisProperties.getLettuce().getPool();
