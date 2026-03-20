@@ -9,7 +9,8 @@ import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.user.service.UserService;
 import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.common.service.FileStorageService;
-import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.common.service.EmailService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -17,7 +18,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import com.xxxx.systemvotting.common.service.BaseRedisService;
 import java.util.Optional;
-import com.xxxx.systemvotting.exception.custom.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,10 +47,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponseDTO createUser(UserCreateRequestDTO requestDTO) {
         if (userRepository.existsByUsername(requestDTO.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
         if (userRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new AppException(ErrorCode.USER_EXISTED);
         }
 
         User user = userMapper.toEntity(requestDTO);
@@ -79,7 +79,7 @@ public class UserServiceImpl implements UserService {
     @Cacheable(value = "users", key = "#id")
     public UserResponseDTO getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
         return userMapper.toDto(user);
     }
 
@@ -94,7 +94,7 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#id")
     public UserResponseDTO promoteToAdmin(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         user.setRole(Role.ADMIN);
         User updatedUser = userRepository.save(user);
@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#id")
     public UserResponseDTO toggleLock(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         user.setLocked(!user.isLocked());
 
@@ -125,13 +125,13 @@ public class UserServiceImpl implements UserService {
     public UserResponseDTO updateProfile(Long userId, UserProfileUpdateRequestDTO requestDTO,
             MultipartFile avatarFile) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         if (requestDTO.getUsername() != null && !requestDTO.getUsername().trim().isEmpty()) {
             String newUsername = requestDTO.getUsername().trim();
             // Check if another user already has this username
             if (!user.getUsername().equals(newUsername) && userRepository.existsByUsername(newUsername)) {
-                throw new com.xxxx.systemvotting.exception.custom.DuplicateResourceException("Username already taken");
+                throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
             }
             user.setUsername(newUsername);
         }
@@ -149,21 +149,21 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void verifyRegistrationOtp(String email, String otp) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         if (user.isVerified()) {
-            throw new BadRequestException("User is already verified");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         String redisKey = REDIS_OTP_PREFIX + email;
         String storedOtp = redisService.get(redisKey);
 
         if (storedOtp == null) {
-            throw new BadRequestException("OTP has expired or not requested");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         if (!storedOtp.equals(otp)) {
-            throw new BadRequestException("Invalid OTP");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         user.setVerified(true);
@@ -175,10 +175,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void resendRegistrationOtp(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         if (user.isVerified()) {
-            throw new BadRequestException("User is already verified");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         // Generate and store new OTP in Redis

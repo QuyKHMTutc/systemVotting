@@ -8,6 +8,8 @@ import com.xxxx.systemvotting.modules.auth.dto.response.AuthResponseDTO;
 import com.xxxx.systemvotting.modules.auth.entity.RefreshToken;
 import com.xxxx.systemvotting.modules.auth.service.GoogleAuthService;
 import com.xxxx.systemvotting.modules.auth.service.RefreshTokenService;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
@@ -87,7 +89,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                 
                 // Check if account is locked before continuing
                 if (user.isLocked()) {
-                    throw new com.xxxx.systemvotting.exception.custom.BadRequestException("Tài khoản của bạn đã bị khóa.");
+                    throw new AppException(ErrorCode.FORBIDDEN);
                 }
 
                 // Generate our JWT and Refresh tokens
@@ -109,11 +111,13 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
 
             } else {
                 log.error("Google Token Verification Failed. The token might be expired, malformed, or the client ID doesn't match.");
-                throw new RuntimeException("Invalid Google ID token.");
+                throw new AppException(ErrorCode.UNAUTHORIZED);
             }
+        } catch (AppException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Exception during Google Token Verification: {}", e.getMessage(), e);
-            throw new RuntimeException("Error verifying Google ID token: " + e.getMessage(), e);
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -7,7 +7,8 @@ import com.xxxx.systemvotting.modules.auth.service.RefreshTokenService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.security.JwtService;
-import com.xxxx.systemvotting.exception.custom.TokenRefreshException;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.auth.entity.RefreshToken;
 import com.xxxx.systemvotting.modules.auth.dto.request.TokenRefreshRequestDTO;
 import com.xxxx.systemvotting.security.CustomUserDetails;
@@ -82,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
                             .refreshToken(requestRefreshToken)
                             .build();
                 })
-                .orElseThrow(() -> new TokenRefreshException("Refresh token is invalid or expired"));
+                .orElseThrow(() -> new AppException(ErrorCode.TOKEN_REFRESH_EXPIRED));
     }
 
     @Override

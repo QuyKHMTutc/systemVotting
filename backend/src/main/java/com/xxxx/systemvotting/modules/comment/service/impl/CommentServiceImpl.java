@@ -1,6 +1,7 @@
 package com.xxxx.systemvotting.modules.comment.service.impl;
 
-import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.entity.Comment;
@@ -38,10 +39,10 @@ public class CommentServiceImpl implements CommentService {
     @CacheEvict(value = {"pollDetails", "pollComments"}, key = "#request.pollId")
     public CommentResponseDTO createComment(CommentRequestDTO request, Long userId) {
         Poll poll = pollRepository.findById(request.getPollId())
-                .orElseThrow(() -> new ResourceNotFoundException("Poll not found with id: " + request.getPollId()));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         User currentUser = com.xxxx.systemvotting.modules.user.repository.UserRepository.class.cast(org.springframework.beans.factory.BeanFactory.class.cast(org.springframework.web.context.support.WebApplicationContextUtils.getRequiredWebApplicationContext(((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext())).getBean(com.xxxx.systemvotting.modules.user.repository.UserRepository.class)).findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         Comment.CommentBuilder commentBuilder = Comment.builder()
                 .poll(poll)
@@ -51,7 +52,7 @@ public class CommentServiceImpl implements CommentService {
 
         if (request.getParentId() != null) {
             Comment parent = commentRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Parent comment not found with id: " + request.getParentId()));
+                    .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
             // Business rule: To prevent deep nesting, if the parent itself is a reply, we link to the root parent.
             if (parent.getParent() != null) {
                 commentBuilder.parent(parent.getParent());
