@@ -12,7 +12,7 @@ public interface PollService {
 
     PollResponseDTO getPollById(Long id);
 
-    Page<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction);
+    com.xxxx.systemvotting.common.dto.PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction);
 
     void deletePoll(Long pollId, CustomUserDetails authenticatedUser);
 

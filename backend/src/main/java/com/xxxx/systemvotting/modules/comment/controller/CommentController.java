@@ -35,19 +35,26 @@ public class CommentController {
     @Operation(summary = "Tạo bình luận", description = "Thêm bình luận cho một bình chọn (yêu cầu đăng nhập)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tạo thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
     @PostMapping
-    public ResponseEntity<ApiResponse<CommentResponseDTO>> createComment(
+    public ApiResponse<CommentResponseDTO> createComment(
             @Valid @RequestBody CommentRequestDTO request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         CommentResponseDTO response = commentService.createComment(request, userDetails.getId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Comment created successfully", response));
+        return ApiResponse.<CommentResponseDTO>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Comment created successfully")
+                .data(response)
+                .build();
     }
 
     @Operation(summary = "Bình luận theo poll", description = "Lấy danh sách bình luận của một bình chọn theo pollId")
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công") })
     @GetMapping("/poll/{pollId}")
-    public ResponseEntity<ApiResponse<List<CommentResponseDTO>>> getCommentsByPollId(@PathVariable Long pollId) {
+    public ApiResponse<List<CommentResponseDTO>> getCommentsByPollId(@PathVariable Long pollId) {
         List<CommentResponseDTO> response = commentService.getCommentsByPollId(pollId);
-        return ResponseEntity.ok(ApiResponse.success("Comments retrieved successfully", response));
+        return ApiResponse.<List<CommentResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Comments retrieved successfully")
+                .data(response)
+                .build();
     }
 }

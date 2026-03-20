@@ -38,28 +38,35 @@ public class PollController {
     @Operation(summary = "Tạo bình chọn", description = "Tạo bình chọn mới (yêu cầu đăng nhập)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tạo thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
     @PostMapping
-    public ResponseEntity<ApiResponse<PollResponseDTO>> createPoll(
+    public ApiResponse<PollResponseDTO> createPoll(
             @Valid @RequestBody PollCreateRequestDTO requestDTO,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         requestDTO.setCreatorId(userDetails.getId());
 
         PollResponseDTO createdPoll = pollService.createPoll(requestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Poll created successfully", createdPoll));
+        return ApiResponse.<PollResponseDTO>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Poll created successfully")
+                .data(createdPoll)
+                .build();
     }
 
     @Operation(summary = "Chi tiết bình chọn", description = "Lấy thông tin một bình chọn theo ID")
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy") })
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PollResponseDTO>> getPoll(@PathVariable("id") Long id) {
+    public ApiResponse<PollResponseDTO> getPoll(@PathVariable("id") Long id) {
         PollResponseDTO poll = pollService.getPollById(id);
-        return ResponseEntity.ok(ApiResponse.success(poll));
+        return ApiResponse.<PollResponseDTO>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(poll)
+                .build();
     }
 
     @Operation(summary = "Danh sách bình chọn", description = "Lấy danh sách có phân trang, lọc theo title/tag/status, sắp xếp")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<PollResponseDTO>>> getAllPolls(
+    public ApiResponse<com.xxxx.systemvotting.common.dto.PageResponse<PollResponseDTO>> getAllPolls(
             @RequestParam(name = "title", required = false) String title,
             @RequestParam(name = "tag", required = false, defaultValue = "ALL") String tag,
             @RequestParam(name = "status", required = false, defaultValue = "ALL") String status,
@@ -68,33 +75,49 @@ public class PollController {
             @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(name = "direction", defaultValue = "desc") String direction) {
 
-        Page<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, page, size, sortBy, direction);
-        return ResponseEntity.ok(ApiResponse.success(polls));
+        com.xxxx.systemvotting.common.dto.PageResponse<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, page, size, sortBy, direction);
+        return ApiResponse.<com.xxxx.systemvotting.common.dto.PageResponse<PollResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(polls)
+                .build();
     }
 
     @Operation(summary = "Xóa bình chọn", description = "Chỉ creator hoặc admin mới xóa được", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xóa thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền") })
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deletePoll(
+    public ApiResponse<Void> deletePoll(
             @PathVariable("id") Long id,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         pollService.deletePoll(id, userDetails);
-        return ResponseEntity.ok(ApiResponse.success("Poll deleted successfully", null));
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Poll deleted successfully")
+                .data(null)
+                .build();
     }
 
     @Operation(summary = "Bình chọn của tôi", description = "Danh sách bình chọn do user hiện tại tạo", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-polls")
-    public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getMyPolls(
+    public ApiResponse<java.util.List<PollResponseDTO>> getMyPolls(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         java.util.List<PollResponseDTO> polls = pollService.getMyPolls(userDetails.getId());
-        return ResponseEntity.ok(ApiResponse.success(polls));
+        return ApiResponse.<java.util.List<PollResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(polls)
+                .build();
     }
 
     @Operation(summary = "Đã bình chọn", description = "Danh sách bình chọn mà user đã vote", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-voted")
-    public ResponseEntity<ApiResponse<java.util.List<PollResponseDTO>>> getVotedPolls(
+    public ApiResponse<java.util.List<PollResponseDTO>> getVotedPolls(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         java.util.List<PollResponseDTO> polls = pollService.getVotedPolls(userDetails.getId());
-        return ResponseEntity.ok(ApiResponse.success(polls));
+        return ApiResponse.<java.util.List<PollResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(polls)
+                .build();
     }
 }
