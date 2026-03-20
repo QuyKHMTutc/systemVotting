@@ -1,4 +1,4 @@
-package com.xxxx.systemvotting.common.service;
+package com.xxxx.systemvotting.common.service.imp;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

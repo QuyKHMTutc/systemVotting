@@ -8,16 +8,14 @@ import com.xxxx.systemvotting.modules.user.mapper.UserMapper;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.user.service.UserService;
 import com.xxxx.systemvotting.modules.user.enums.Role;
-import com.xxxx.systemvotting.common.service.FileStorageService;
+import com.xxxx.systemvotting.common.service.imp.FileStorageService;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
-import com.xxxx.systemvotting.common.service.EmailService;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import com.xxxx.systemvotting.common.service.imp.EmailService;
+
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import com.xxxx.systemvotting.common.service.BaseRedisService;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,7 +48,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
         if (userRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new AppException(ErrorCode.USER_EXISTED);
+            throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
         User user = userMapper.toEntity(requestDTO);

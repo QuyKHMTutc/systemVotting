@@ -117,7 +117,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
             throw e;
         } catch (Exception e) {
             log.error("Exception during Google Token Verification: {}", e.getMessage(), e);
-            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new AppException(ErrorCode.INTERNAL_ERROR);
         }
     }
 }

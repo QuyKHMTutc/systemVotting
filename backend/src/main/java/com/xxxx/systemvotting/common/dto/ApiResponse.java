@@ -1,26 +1,20 @@
 package com.xxxx.systemvotting.common.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Schema(description = "Cấu trúc phản hồi chuẩn của API")
-public class ApiResponse<T> {
+public record ApiResponse<T>(
     @Schema(description = "Mã trạng thái HTTP (để tiện theo dõi trong data)", example = "200")
-    private int status;
+    int status,
 
     @Schema(description = "Thông báo phản hồi", example = "Thao tác thành công")
-    private String message;
+    String message,
 
     @Schema(description = "Dữ liệu trả về (có thể là object, list hoặc null)")
-    private T data;
-
+    T data
+) {
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
                 .status(200)

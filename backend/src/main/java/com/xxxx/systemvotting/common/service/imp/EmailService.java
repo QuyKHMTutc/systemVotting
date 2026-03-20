@@ -1,4 +1,4 @@
-package com.xxxx.systemvotting.common.service;
+package com.xxxx.systemvotting.common.service.imp;
 
 import com.sendgrid.Method;
 import com.sendgrid.Request;

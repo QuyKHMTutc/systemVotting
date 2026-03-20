@@ -36,12 +36,12 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponseDTO login(AuthRequestDTO requestDTO) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        requestDTO.getEmail(),
-                        requestDTO.getPassword()));
+                        requestDTO.email(),
+                        requestDTO.password()));
 
-        User user = userRepository.findByEmail(requestDTO.getEmail())
+        User user = userRepository.findByEmail(requestDTO.email())
                 .orElseThrow(() -> new UsernameNotFoundException(
-                        "User not found: " + requestDTO.getEmail()));
+                        "User not found: " + requestDTO.email()));
 
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("role", user.getRole().name());
@@ -63,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponseDTO refreshToken(TokenRefreshRequestDTO request) {
-        String requestRefreshToken = request.getRefreshToken();
+        String requestRefreshToken = request.refreshToken();
 
         return refreshTokenService.findByToken(requestRefreshToken)
                 .map(refreshTokenService::verifyExpiration)

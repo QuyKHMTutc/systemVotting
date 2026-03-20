@@ -9,6 +9,7 @@ public record ErrorResponse(
         int status,
         String message,
         String error,
+        long timestamp,
         String path
 ) {
 }
