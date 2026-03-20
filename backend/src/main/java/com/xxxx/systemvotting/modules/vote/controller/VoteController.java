@@ -30,7 +30,7 @@ public class VoteController {
     @Operation(summary = "Bỏ phiếu", description = "Gửi phiếu bầu cho một lựa chọn trong bình chọn (yêu cầu đăng nhập)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Bỏ phiếu thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Đã vote rồi hoặc dữ liệu không hợp lệ"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
     @PostMapping
-    public ResponseEntity<ApiResponse<VoteResponseDTO>> submitVote(
+    public ApiResponse<VoteResponseDTO> submitVote(
             @Valid @RequestBody VoteRequestDTO requestDTO,
             @AuthenticationPrincipal CustomUserDetails user) {
 
@@ -39,17 +39,24 @@ public class VoteController {
         requestDTO.setUserId(user.getId());
 
         VoteResponseDTO voteResult = voteService.submitVote(requestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Vote submitted successfully", voteResult));
+        return ApiResponse.<VoteResponseDTO>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Vote submitted successfully")
+                .data(voteResult)
+                .build();
     }
 
     @Operation(summary = "Kiểm tra đã vote", description = "Kiểm tra user hiện tại đã bỏ phiếu cho poll chưa (yêu cầu đăng nhập)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
     @org.springframework.web.bind.annotation.GetMapping("/check")
-    public ResponseEntity<ApiResponse<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO>> checkVote(
+    public ApiResponse<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO> checkVote(
             @org.springframework.web.bind.annotation.RequestParam Long pollId,
             @AuthenticationPrincipal CustomUserDetails user) {
         com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkResult = voteService.checkVote(user.getId(), pollId);
-        return ResponseEntity.ok(ApiResponse.success("Vote check retrieved successfully", checkResult));
+        return ApiResponse.<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO>builder()
+                .code(HttpStatus.OK.value())
+                .message("Vote check retrieved successfully")
+                .data(checkResult)
+                .build();
     }
 }

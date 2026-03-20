@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.poll.service.impl;
 
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.poll.dto.OptionRequestDTO;
@@ -12,6 +13,7 @@ import com.xxxx.systemvotting.modules.poll.mapper.PollMapper;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.poll.repository.TagRepository;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
+import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.security.CustomUserDetails;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
@@ -63,7 +65,7 @@ public class PollServiceImpl implements PollService {
     @Transactional
     public PollResponseDTO createPoll(PollCreateRequestDTO requestDTO) {
         // Validate creator
-        com.xxxx.systemvotting.modules.user.entity.User creator = userRepository.findById(requestDTO.getCreatorId())
+        User creator = userRepository.findById(requestDTO.getCreatorId())
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
@@ -125,17 +127,32 @@ public class PollServiceImpl implements PollService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction) {
+    public PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        // Ensure 1-based and 0-based compatibility for the frontend
+        int pageNumber = page > 0 ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageNumber, size, sort);
         Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, java.time.LocalDateTime.now(), pageable);
-        return pollPage.map(poll -> {
+        
+        Page<PollResponseDTO> mappedPage = pollPage.map(poll -> {
             PollResponseDTO dto = pollMapper.toDto(poll);
             dto.setCommentCount(getCommentCountForPoll(poll.getId()));
             enrichPollWithRedisData(dto);
             return dto;
         });
+        
+        // Return 1-based page number for client if it requested 1-based, or match zero-based
+        int responsePage = page > 0 ? page : (mappedPage.getNumber() == 0 && page == 0 ? 0 : mappedPage.getNumber() + 1);
+
+        return PageResponse.<PollResponseDTO>builder()
+                .currentPage(responsePage)
+                .pageSize(mappedPage.getSize())
+                .totalPages(mappedPage.getTotalPages())
+                .totalElements(mappedPage.getTotalElements())
+                .content(mappedPage.getContent())
+                .build();
     }
 
     @Override

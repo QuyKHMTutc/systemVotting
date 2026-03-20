@@ -40,83 +40,118 @@ public class AuthController {
         @Operation(summary = "Đăng ký tài khoản", description = "Tạo tài khoản mới, hệ thống gửi OTP qua email để xác thực")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Đăng ký thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ") })
         @PostMapping("/register")
-        public ResponseEntity<ApiResponse<UserResponseDTO>> register(
+        public ApiResponse<UserResponseDTO> register(
                         @Valid @RequestBody UserCreateRequestDTO requestDTO) {
                 UserResponseDTO createdUser = userService.createUser(requestDTO);
-                return ResponseEntity.status(HttpStatus.CREATED)
-                                .body(ApiResponse.success("User registered successfully", createdUser));
+                return ApiResponse.<UserResponseDTO>builder()
+                                .code(HttpStatus.CREATED.value())
+                                .message("User registered successfully")
+                                .data(createdUser)
+                                .build();
         }
 
         @Operation(summary = "Đăng nhập", description = "Đăng nhập bằng email và mật khẩu, trả về access token và refresh token")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng nhập thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Sai email hoặc mật khẩu") })
         @PostMapping("/login")
-        public ResponseEntity<ApiResponse<AuthResponseDTO>> login(
+        public ApiResponse<AuthResponseDTO> login(
                         @Valid @RequestBody AuthRequestDTO requestDTO) {
                 AuthResponseDTO authResponse = authService.login(requestDTO);
-                return ResponseEntity.ok(ApiResponse.success(authResponse));
+                return ApiResponse.<AuthResponseDTO>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("Success")
+                                .data(authResponse)
+                                .build();
         }
         
         @Operation(summary = "Đăng nhập Google", description = "Đăng nhập bằng Google ID token (OAuth2)")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng nhập thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Token không hợp lệ") })
         @PostMapping("/google")
-        public ResponseEntity<ApiResponse<AuthResponseDTO>> loginWithGoogle(
+        public ApiResponse<AuthResponseDTO> loginWithGoogle(
                         @Valid @RequestBody com.xxxx.systemvotting.modules.auth.dto.request.GoogleAuthRequestDTO requestDTO) {
                 AuthResponseDTO authResponse = googleAuthService.authenticateWithGoogle(requestDTO.idToken());
-                return ResponseEntity.ok(ApiResponse.success(authResponse));
+                return ApiResponse.<AuthResponseDTO>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("Success")
+                                .data(authResponse)
+                                .build();
         }
 
         @Operation(summary = "Làm mới token", description = "Dùng refresh token để lấy access token mới")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token mới trả về thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Refresh token hết hạn hoặc không hợp lệ") })
         @PostMapping("/refreshToken")
-        public ResponseEntity<ApiResponse<AuthResponseDTO>> refreshToken(
+        public ApiResponse<AuthResponseDTO> refreshToken(
                         @Valid @RequestBody TokenRefreshRequestDTO request) {
                 AuthResponseDTO authResponse = authService.refreshToken(request);
-                return ResponseEntity.ok(ApiResponse.success(authResponse));
+                return ApiResponse.<AuthResponseDTO>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("Success")
+                                .data(authResponse)
+                                .build();
         }
 
         @Operation(summary = "Quên mật khẩu", description = "Gửi OTP đặt lại mật khẩu về email")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP đã gửi"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Email không tồn tại hoặc không hợp lệ") })
         @PostMapping("/forgot-password")
-        public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
+        public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
                 passwordResetService.processForgotPassword(request.email());
-                return ResponseEntity.ok(ApiResponse.success("OTP sent to your email successfully", null));
+                return ApiResponse.<Void>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("OTP sent to your email successfully")
+                                .data(null)
+                                .build();
         }
 
         @Operation(summary = "Đặt lại mật khẩu", description = "Xác thực OTP và cập nhật mật khẩu mới")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đổi mật khẩu thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP sai hoặc hết hạn") })
         @PostMapping("/reset-password")
-        public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
+        public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
                 passwordResetService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
-                return ResponseEntity.ok(ApiResponse.success("Password reset successfully", null));
+                return ApiResponse.<Void>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("Password reset successfully")
+                                .data(null)
+                                .build();
         }
 
         @Operation(summary = "Xác thực đăng ký", description = "Xác thực OTP sau khi đăng ký để kích hoạt tài khoản")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xác thực thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP sai hoặc hết hạn") })
         @PostMapping("/verify-registration")
-        public ResponseEntity<ApiResponse<Void>> verifyRegistration(
+        public ApiResponse<Void> verifyRegistration(
                         @Valid @RequestBody VerifyRegistrationRequestDTO request) {
                 userService.verifyRegistrationOtp(request.getEmail(), request.getOtp());
-                return ResponseEntity.ok(ApiResponse.success("Registration verified successfully. You can now log in.", null));
+                return ApiResponse.<Void>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("Registration verified successfully. You can now log in.")
+                                .data(null)
+                                .build();
         }
 
         @Operation(summary = "Gửi lại OTP đăng ký", description = "Gửi lại mã OTP xác thực đăng ký qua email")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP mới đã gửi"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Email không tồn tại hoặc đã xác thực") })
         @PostMapping("/resend-registration-otp")
-        public ResponseEntity<ApiResponse<Void>> resendRegistrationOtp(
+        public ApiResponse<Void> resendRegistrationOtp(
                         @Valid @RequestBody ResendRegistrationOtpRequestDTO request) {
                 userService.resendRegistrationOtp(request.getEmail());
-                return ResponseEntity.ok(ApiResponse.success("A new OTP has been sent to your email", null));
+                return ApiResponse.<Void>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("A new OTP has been sent to your email")
+                                .data(null)
+                                .build();
         }
 
         @Operation(summary = "Đăng xuất", description = "Hủy token truy cập và refresh token hiện tại", security = { @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "Bearer Authentication") })
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng xuất thành công") })
         @PostMapping("/logout")
-        public ResponseEntity<ApiResponse<Void>> logout(jakarta.servlet.http.HttpServletRequest request) {
+        public ApiResponse<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
                 String authHeader = request.getHeader("Authorization");
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
                         String jwt = authHeader.substring(7);
                         authService.logout(jwt);
                 }
-                return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+                return ApiResponse.<Void>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("Logged out successfully")
+                                .data(null)
+                                .build();
         }
 }
