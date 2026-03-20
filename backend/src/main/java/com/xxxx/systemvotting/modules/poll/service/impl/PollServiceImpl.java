@@ -1,7 +1,7 @@
 package com.xxxx.systemvotting.modules.poll.service.impl;
 
-import com.xxxx.systemvotting.exception.custom.BadRequestException;
-import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.poll.dto.OptionRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
@@ -65,7 +65,7 @@ public class PollServiceImpl implements PollService {
         // Validate creator
         com.xxxx.systemvotting.modules.user.entity.User creator = userRepository.findById(requestDTO.getCreatorId())
                 .orElseThrow(
-                        () -> new ResourceNotFoundException("User not found with id: " + requestDTO.getCreatorId()));
+                        () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         Poll poll = pollMapper.toEntity(requestDTO);
         poll.setCreator(creator);
@@ -76,7 +76,7 @@ public class PollServiceImpl implements PollService {
             poll.setStartTime(startTime);
         }
         if (endTime != null && !endTime.isAfter(startTime)) {
-            throw new BadRequestException("End time must be after start time");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         // Handle tags dynamic creation/mapping
@@ -116,7 +116,7 @@ public class PollServiceImpl implements PollService {
     @Cacheable(value = "pollDetails", key = "#id")
     public PollResponseDTO getPollById(Long id) {
         Poll poll = pollRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Poll not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
         PollResponseDTO dto = pollMapper.toDto(poll);
         dto.setCommentCount(getCommentCountForPoll(id));
         enrichPollWithRedisData(dto);
@@ -143,7 +143,7 @@ public class PollServiceImpl implements PollService {
     @CacheEvict(value = "pollDetails", key = "#pollId")
     public void deletePoll(Long pollId, CustomUserDetails authenticatedUser) {
         Poll poll = pollRepository.findById(pollId)
-                .orElseThrow(() -> new ResourceNotFoundException("Poll not found with id: " + pollId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         boolean isAdmin = authenticatedUser.getRole().name().equals("ADMIN");
         boolean isCreator = poll.getCreator().getId().equals(authenticatedUser.getId());

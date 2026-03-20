@@ -1,8 +1,7 @@
 package com.xxxx.systemvotting.modules.vote.service.impl;
 
-import com.xxxx.systemvotting.exception.custom.BadRequestException;
-import com.xxxx.systemvotting.exception.custom.DuplicateResourceException;
-import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.poll.entity.Option;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.repository.OptionRepository;
@@ -64,21 +63,21 @@ public class VoteServiceImpl implements VoteService {
 
         // 2. Validate Time Constraints directly from DB
         Poll poll = pollRepository.findById(pollId)
-                .orElseThrow(() -> new ResourceNotFoundException("Poll not found: " + pollId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
         if (poll.getStartTime() != null && now.isBefore(poll.getStartTime())) {
-            throw new BadRequestException("The poll has not started yet");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         if (poll.getEndTime() != null && now.isAfter(poll.getEndTime())) {
-            throw new BadRequestException("The poll has already ended");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         Option newOption = optionRepository.findById(newOptionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Option not found: " + newOptionId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         if (!newOption.getPoll().getId().equals(poll.getId())) {
-            throw new BadRequestException("Option does not belong to the specified Poll");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         // 3. Atomically track user's choice in Redis Hash
@@ -90,7 +89,7 @@ public class VoteServiceImpl implements VoteService {
         Long oldOptionId = previousVoteObj != null ? Long.parseLong(previousVoteObj.toString()) : null;
 
         if (newOptionId.equals(oldOptionId)) {
-            throw new DuplicateResourceException("User has already voted for this option");
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
 
         // Set new vote in Hash

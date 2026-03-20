@@ -1,7 +1,7 @@
 package com.xxxx.systemvotting.modules.auth.service.impl;
 
-import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
-import com.xxxx.systemvotting.exception.custom.TokenRefreshException;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.auth.entity.RefreshToken;
 import com.xxxx.systemvotting.modules.auth.repository.RefreshTokenRepository;
 import com.xxxx.systemvotting.modules.auth.service.RefreshTokenService;
@@ -34,7 +34,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Transactional
     public RefreshToken createRefreshToken(Long userId) {
         com.xxxx.systemvotting.modules.user.entity.User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
                 .orElse(new RefreshToken());
@@ -50,7 +50,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
-            throw new TokenRefreshException("Refresh token has expired. Please sign in again");
+            throw new AppException(ErrorCode.TOKEN_REFRESH_EXPIRED);
         }
         return token;
     }

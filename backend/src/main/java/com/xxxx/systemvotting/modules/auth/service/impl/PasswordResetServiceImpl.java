@@ -1,8 +1,8 @@
 package com.xxxx.systemvotting.modules.auth.service.impl;
 
-import com.xxxx.systemvotting.common.service.EmailService;
-import com.xxxx.systemvotting.exception.custom.BadRequestException;
-import com.xxxx.systemvotting.exception.custom.ResourceNotFoundException;
+import com.xxxx.systemvotting.common.service.imp.EmailService;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.auth.service.PasswordResetService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
@@ -13,8 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.TimeUnit;
 import com.xxxx.systemvotting.common.service.BaseRedisService;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+
 import java.util.Random;
 
 @Service
@@ -59,17 +58,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional
     public void resetPassword(String email, String otp, String newPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         String redisKey = REDIS_OTP_PREFIX + email;
         String storedOtp = redisService.get(redisKey);
 
         if (storedOtp == null) {
-            throw new BadRequestException("OTP has expired or not requested");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         if (!storedOtp.equals(otp)) {
-            throw new BadRequestException("Invalid OTP");
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         // OTP Valid - Update password and set user as verified

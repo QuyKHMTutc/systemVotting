@@ -61,7 +61,7 @@ public class AuthController {
         @PostMapping("/google")
         public ResponseEntity<ApiResponse<AuthResponseDTO>> loginWithGoogle(
                         @Valid @RequestBody com.xxxx.systemvotting.modules.auth.dto.request.GoogleAuthRequestDTO requestDTO) {
-                AuthResponseDTO authResponse = googleAuthService.authenticateWithGoogle(requestDTO.getIdToken());
+                AuthResponseDTO authResponse = googleAuthService.authenticateWithGoogle(requestDTO.idToken());
                 return ResponseEntity.ok(ApiResponse.success(authResponse));
         }
 
@@ -78,7 +78,7 @@ public class AuthController {
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP đã gửi"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Email không tồn tại hoặc không hợp lệ") })
         @PostMapping("/forgot-password")
         public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
-                passwordResetService.processForgotPassword(request.getEmail());
+                passwordResetService.processForgotPassword(request.email());
                 return ResponseEntity.ok(ApiResponse.success("OTP sent to your email successfully", null));
         }
 

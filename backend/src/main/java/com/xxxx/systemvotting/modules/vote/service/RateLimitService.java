@@ -1,7 +1,8 @@
 package com.xxxx.systemvotting.modules.vote.service;
 
 import com.xxxx.systemvotting.common.utils.RedisKeyUtils;
-import com.xxxx.systemvotting.exception.custom.RateLimitExceededException;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -36,7 +37,7 @@ public class RateLimitService {
 
         if (currentCount != null && currentCount > MAX_VOTES_PER_WINDOW) {
             log.warn("Rate limit exceeded for user: {}. Current count: {}", userId, currentCount);
-            throw new RateLimitExceededException("Bạn đang thao tác quá nhanh. Vui lòng thử lại sau 1 phút.");
+            throw new AppException(ErrorCode.RATE_LIMIT_EXCEEDED);
         }
     }
 }
