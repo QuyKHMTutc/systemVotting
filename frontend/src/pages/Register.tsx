@@ -106,7 +106,7 @@ const Register = () => {
         try {
             const response = await authService.register({ username, email, password });
 
-            if (response.status === 200 || response.status === 201) {
+            if (response.code === 200 || response.code === 201) {
                 setSuccess('Account created! Please check your email for the OTP verification code.');
                 setStage('verify');
                 startResendCooldown();
@@ -130,7 +130,7 @@ const Register = () => {
         try {
             const response = await authService.verifyRegistration(email, otp);
 
-            if (response.status === 200) {
+            if (response.code === 200) {
                 setSuccess('Email verified! Redirecting to dashboard...');
                 
                 // Fire confetti on success
