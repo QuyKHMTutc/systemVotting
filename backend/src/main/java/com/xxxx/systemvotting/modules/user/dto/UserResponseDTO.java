@@ -21,7 +21,7 @@ public class UserResponseDTO implements Serializable {
     @Schema(description = "Tên hiển thị", example = "tranquy")
     private String username;
 
-    @Schema(description = "Địa chỉ email", example = "user@example.com")
+    @Schema(description = "Địa chỉ email", example = "user@gmail.com")
     private String email;
 
     @Schema(description = "Đường dẫn ảnh đại diện", example = "https://example.com/avatars/1.jpg")

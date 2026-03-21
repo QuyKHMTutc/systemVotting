@@ -131,7 +131,7 @@ export const Profile = () => {
               {/* Avatar - 80–100px, ring, shadow */}
               <div className="relative mb-4">
                 <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full ring-4 ring-white/20 sm:ring-purple-400/30 bg-white/10 flex items-center justify-center overflow-hidden shadow-xl shadow-black/30">
-                  {user?.avatarUrl ? (
+                  {user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? (
                     <img
                       src={
                         user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')

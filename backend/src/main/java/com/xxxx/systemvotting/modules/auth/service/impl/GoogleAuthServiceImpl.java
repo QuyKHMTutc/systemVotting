@@ -78,6 +78,14 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                             .isVerified(true)
                             .build();
                     user = userRepository.save(user);
+                } else {
+                    // If user exists but has no avatar, update it with Google's picture
+                    if (user.getAvatarUrl() == null || user.getAvatarUrl().trim().isEmpty()) {
+                        if (pictureUrl != null && !pictureUrl.isEmpty()) {
+                            user.setAvatarUrl(pictureUrl);
+                            user = userRepository.save(user);
+                        }
+                    }
                 }
                 
                 if (user.isLocked()) {
@@ -85,7 +93,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                 }
 
                 Set<String> roles = Set.of(user.getRole().name());
-                String jwtToken = jwtService.generateAccessToken(user.getId().toString(), roles);
+                String jwtToken = jwtService.generateAccessToken(user, roles);
                 TokenDetails refreshToken = jwtService.generateRefreshToken(user.getId().toString());
                 
                 return AuthResponseDTO.builder()

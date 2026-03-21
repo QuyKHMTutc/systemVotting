@@ -55,7 +55,7 @@ export default function CommentItem({
           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 ring-2 ring-white/10 shadow-lg shadow-black/20">
             <User className="w-5 h-5" />
           </div>
-        ) : comment.avatarUrl ? (
+        ) : comment.avatarUrl && comment.avatarUrl !== 'null' && comment.avatarUrl.trim() !== '' ? (
           <img
             src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`}
             alt={comment.username}
@@ -129,7 +129,7 @@ export default function CommentItem({
               }}
               placeholder={`Reply to ${comment.username}...`}
               username={user?.username || "You"}
-              avatarUrl={user?.avatarUrl && (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : user?.avatarUrl ? `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}` : undefined}
+              avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
               isReply
               autoFocus
             />

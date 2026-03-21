@@ -19,7 +19,7 @@ const Navbar = () => {
                             aria-label="View Profile"
                         >
                             <div className="w-8 h-8 rounded-full ring-2 ring-indigo-500/30 overflow-hidden bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0">
-                                {user?.avatarUrl ? (
+                                {user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? (
                                     <img src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} alt={user.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} />
                                 ) : (
                                     <span className="text-sm font-bold text-indigo-300">{user?.username?.charAt(0).toUpperCase()}</span>

@@ -283,7 +283,7 @@ const PollDetail = () => {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
-                  {poll.creator.avatarUrl ? (
+                  {poll.creator.avatarUrl && poll.creator.avatarUrl !== 'null' && poll.creator.avatarUrl.trim() !== '' ? (
                     <img 
                       src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`} 
                       alt={poll.creator.username} 
@@ -435,7 +435,7 @@ const PollDetail = () => {
                 <CommentInput 
                   onSubmit={handleCommentSubmit} 
                   placeholder="Write a comment..." 
-                  avatarUrl={user?.avatarUrl && (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : user?.avatarUrl ? `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}` : undefined}
+                  avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
                   username={user?.username}
                 />
               </div>
