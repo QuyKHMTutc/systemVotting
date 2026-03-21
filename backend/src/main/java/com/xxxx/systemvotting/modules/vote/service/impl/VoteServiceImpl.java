@@ -198,10 +198,10 @@ public class VoteServiceImpl implements VoteService {
         Object optionIdObj = redisTemplate.opsForHash().get(userVotesKey, String.valueOf(userId));
 
         if (optionIdObj != null) {
-            return com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
-                    .hasVoted(true)
-                    .optionId(Long.parseLong(optionIdObj.toString()))
-                    .build();
+            return new com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO(
+                    true,
+                    Long.parseLong(optionIdObj.toString())
+            );
         }
 
         // Fallback to database if redis key was cleared or not populated yet
@@ -209,13 +209,14 @@ public class VoteServiceImpl implements VoteService {
                 .map(vote -> {
                     // Backfill Redis so next time it's fast
                     redisTemplate.opsForHash().put(userVotesKey, String.valueOf(userId), String.valueOf(vote.getOption().getId()));
-                    return com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
-                            .hasVoted(true)
-                            .optionId(vote.getOption().getId())
-                            .build();
+                    return new com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO(
+                            true,
+                            vote.getOption().getId()
+                    );
                 })
-                .orElse(com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO.builder()
-                        .hasVoted(false)
-                        .build());
+                .orElse(new com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO(
+                        false,
+                        null
+                ));
     }
 }

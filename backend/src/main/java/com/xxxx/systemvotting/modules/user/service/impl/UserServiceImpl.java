@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.user.service.impl;
 
+import com.xxxx.systemvotting.modules.user.dto.ChangePasswordRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserProfileUpdateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
@@ -17,6 +18,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -190,16 +193,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void changePassword(Long userId, com.xxxx.systemvotting.modules.user.dto.ChangePasswordRequestDTO requestDTO) {
+    public void changePassword(Long userId, ChangePasswordRequestDTO request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if (!passwordEncoder.matches(requestDTO.getOldPassword(), user.getPassword())) {
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        user.setPassword(passwordEncoder.encode(requestDTO.getNewPassword()));
+        // Cập nhật mật khẩu mới
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+
+        log.info("User {} changed password successfully", userId);
 
         // Invalidate active JWT tokens globally across all devices
         String invalidBeforeKey = "user:jwt:invalid_before:" + userId;
