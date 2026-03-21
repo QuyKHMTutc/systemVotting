@@ -20,6 +20,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setAllowedOrigins("http://localhost:5173")
+                .setAllowedOrigins("https://system-votting.vercel.app/")
                 .addInterceptors(websocketHandshake);
     }
 
