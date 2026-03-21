@@ -114,7 +114,7 @@ public class AuthController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP sai hoặc hết hạn") })
         @PostMapping("/reset-password")
         public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
-                passwordResetService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+                passwordResetService.resetPassword(request.email(), request.otp(), request.newPassword());
                 return ApiResponse.<Void>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Password reset successfully")
@@ -128,7 +128,7 @@ public class AuthController {
         @PostMapping("/verify-registration")
         public ApiResponse<Void> verifyRegistration(
                         @Valid @RequestBody VerifyRegistrationRequestDTO request) {
-                userService.verifyRegistrationOtp(request.getEmail(), request.getOtp());
+                userService.verifyRegistrationOtp(request.email(), request.otp());
                 return ApiResponse.<Void>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Registration verified successfully. You can now log in.")

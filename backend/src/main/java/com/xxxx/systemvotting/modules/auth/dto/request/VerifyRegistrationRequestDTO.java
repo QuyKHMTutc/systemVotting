@@ -4,12 +4,11 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-@Data
-public class VerifyRegistrationRequestDTO {
+public record VerifyRegistrationRequestDTO(
     @NotBlank(message = "Email is required")
     @Email(message = "Email is invalid")
-    private String email;
+    String email,
 
     @NotBlank(message = "OTP is required")
-    private String otp;
-}
+    String otp
+) {}
