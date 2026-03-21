@@ -89,7 +89,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                 }
                 
                 if (user.isLocked()) {
-                    throw new AppException(ErrorCode.FORBIDDEN);
+                    throw new AppException(ErrorCode.USER_LOCKED);
                 }
 
                 Set<String> roles = Set.of(user.getRole().name());

@@ -107,7 +107,7 @@ const PollDetail = () => {
     setCommentError('');
     try {
       await commentService.createComment({ pollId: poll.id, content, isAnonymous });
-      fetchComments(poll.id);
+      // Comment will appear via WebSocket broadcast (handleWsNewComment)
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post comment');
     }
@@ -117,7 +117,7 @@ const PollDetail = () => {
     if (!poll) return;
     try {
       await commentService.createComment({ pollId: poll.id, parentId, content, isAnonymous });
-      fetchComments(poll.id);
+      // Reply will appear via WebSocket broadcast (handleWsNewComment)
     } catch (err: any) {
       console.error('Failed to post reply:', err);
     }

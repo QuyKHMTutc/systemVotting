@@ -4,7 +4,6 @@ import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.service.CommentService;
-import com.xxxx.systemvotting.modules.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

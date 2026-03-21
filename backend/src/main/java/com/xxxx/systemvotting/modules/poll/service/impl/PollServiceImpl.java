@@ -15,7 +15,6 @@ import com.xxxx.systemvotting.modules.poll.repository.TagRepository;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
-import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import org.springframework.cache.annotation.Cacheable;

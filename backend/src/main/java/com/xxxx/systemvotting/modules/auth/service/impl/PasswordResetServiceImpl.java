@@ -58,7 +58,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional
     public void resetPassword(String email, String otp, String newPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         String redisKey = REDIS_OTP_PREFIX + email;
         String storedOtp = redisTemplate.opsForValue().get(redisKey);

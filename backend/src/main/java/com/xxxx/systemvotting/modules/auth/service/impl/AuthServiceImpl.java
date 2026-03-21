@@ -42,18 +42,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponseDTO login(AuthRequestDTO requestDTO) {
-        String email = requestDTO.email();
-        String password = requestDTO.password();
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email,
-                password);
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(requestDTO.email(), requestDTO.password());
         try {
             Authentication authenticate = authenticationManager.authenticate(authenticationToken);
 
             User user = (User) authenticate.getPrincipal();
-            if (user == null) {
-                throw new AppException(ErrorCode.USER_NOT_FOUND);
-            }
 
             Set<String> roles = Set.of(user.getRole().name());
 
@@ -68,6 +62,8 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.USER_NOT_VERIFIED);
         } catch (org.springframework.security.authentication.LockedException e) {
             throw new AppException(ErrorCode.USER_LOCKED);
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
     }
 
@@ -113,7 +109,7 @@ public class AuthServiceImpl implements AuthService {
                     .refreshToken(request.refreshToken())
                     .build();
 
-        } catch (ParseException | JOSEException | AppException e) {
+        } catch (ParseException | JOSEException e) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
     }
