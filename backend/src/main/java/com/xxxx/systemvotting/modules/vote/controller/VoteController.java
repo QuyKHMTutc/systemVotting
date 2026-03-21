@@ -1,8 +1,8 @@
 package com.xxxx.systemvotting.modules.vote.controller;
 
 import com.xxxx.systemvotting.common.dto.ApiResponse;
-import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.vote.dto.request.VoteRequestDTO;
+import com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO;
 import com.xxxx.systemvotting.modules.vote.dto.response.VoteResponseDTO;
 import com.xxxx.systemvotting.modules.vote.service.VoteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,11 +13,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.springframework.security.oauth2.jwt.Jwt;
 
 @Tag(name = "Votes", description = "Bỏ phiếu và kiểm tra đã vote")
@@ -49,12 +50,12 @@ public class VoteController {
 
     @Operation(summary = "Kiểm tra đã vote", description = "Kiểm tra user hiện tại đã bỏ phiếu cho poll chưa (yêu cầu đăng nhập)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Chưa đăng nhập") })
-    @org.springframework.web.bind.annotation.GetMapping("/check")
-    public ApiResponse<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO> checkVote(
-            @org.springframework.web.bind.annotation.RequestParam Long pollId,
+    @GetMapping("/check")
+    public ApiResponse<VoteCheckResponseDTO> checkVote(
+            @RequestParam Long pollId,
             @AuthenticationPrincipal Jwt jwt) {
-        com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkResult = voteService.checkVote(Long.valueOf(jwt.getSubject()), pollId);
-        return ApiResponse.<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO>builder()
+        VoteCheckResponseDTO checkResult = voteService.checkVote(Long.valueOf(jwt.getSubject()), pollId);
+        return ApiResponse.<VoteCheckResponseDTO>builder()
                 .code(HttpStatus.OK.value())
                 .message("Vote check retrieved successfully")
                 .data(checkResult)

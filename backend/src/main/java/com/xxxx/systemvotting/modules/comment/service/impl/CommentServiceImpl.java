@@ -36,7 +36,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @org.springframework.transaction.annotation.Transactional
-    @CacheEvict(value = {"pollDetails", "pollComments"}, key = "#request.pollId")
+    @CacheEvict(value = "pollDetails", key = "#request.pollId")
     public CommentResponseDTO createComment(CommentRequestDTO request, Long userId) {
         Poll poll = pollRepository.findById(request.getPollId())
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
@@ -89,7 +89,6 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    @Cacheable(value = "pollComments", key = "#pollId")
     public List<CommentResponseDTO> getCommentsByPollId(Long pollId) {
         List<Comment> comments = commentRepository.findByPollIdOrderByCreatedAtDesc(pollId);
         

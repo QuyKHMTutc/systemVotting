@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
-import java.util.Set;
 import java.util.UUID;
 import com.xxxx.systemvotting.modules.user.entity.User;
 
@@ -111,11 +110,11 @@ public class JwtService {
         Date expiration = signedJWT.getJWTClaimsSet().getExpirationTime();
 
         if (expiration.before(new Date()))
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.TOKEN_EXPIRED);
 
         boolean verify = signedJWT.verify(new MACVerifier(secretKey));
         if (!verify)
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.TOKEN_INVALID);
 
         return signedJWT;
     }

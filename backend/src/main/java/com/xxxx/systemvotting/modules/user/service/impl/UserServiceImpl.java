@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
         if (userRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
 
         User user = userMapper.toEntity(requestDTO);
@@ -195,7 +195,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         if (!passwordEncoder.matches(requestDTO.getOldPassword(), user.getPassword())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED); 
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         user.setPassword(passwordEncoder.encode(requestDTO.getNewPassword()));

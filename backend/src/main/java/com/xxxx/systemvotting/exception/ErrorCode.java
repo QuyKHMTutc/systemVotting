@@ -20,6 +20,7 @@ public enum ErrorCode {
     MISSING_LOGOUT_INFO(400, "Authorization header or refresh token is missing", HttpStatus.BAD_REQUEST),
 
     UNAUTHORIZED(401, "Unauthorized", HttpStatus.UNAUTHORIZED),
+    INVALID_CREDENTIALS(401, "Invalid email or password", HttpStatus.UNAUTHORIZED),
     FORBIDDEN(403, "Forbidden", HttpStatus.FORBIDDEN),
 
     RESOURCE_NOT_FOUND(404, "Resource not found", HttpStatus.NOT_FOUND),

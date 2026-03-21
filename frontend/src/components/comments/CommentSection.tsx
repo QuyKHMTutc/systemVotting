@@ -24,6 +24,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
     const [error, setError] = useState('');
 
     const fetchComments = useCallback(async () => {
+        setLoading(true);
         try {
             const data = await commentService.getCommentsByPollId(pollId);
             setComments(data);
