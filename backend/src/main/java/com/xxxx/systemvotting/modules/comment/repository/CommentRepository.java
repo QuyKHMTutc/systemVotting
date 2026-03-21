@@ -13,4 +13,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     void deleteByPoll_Id(Long pollId);
 
     long countByPollId(Long pollId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT c.poll.id, COUNT(c) FROM Comment c WHERE c.poll.id IN :pollIds GROUP BY c.poll.id")
+    List<Object[]> countCommentsByPollIds(@org.springframework.data.repository.query.Param("pollIds") List<Long> pollIds);
 }

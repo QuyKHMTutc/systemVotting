@@ -1,12 +1,10 @@
 package com.xxxx.systemvotting.modules.poll.controller;
 
-import java.util.List;
-
 import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
-import com.xxxx.systemvotting.security.CustomUserDetails;
+import com.xxxx.systemvotting.modules.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -14,9 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,7 +36,7 @@ public class PollController {
     @PostMapping
     public ApiResponse<PollResponseDTO> createPoll(
             @Valid @RequestBody PollCreateRequestDTO requestDTO,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal User userDetails) {
 
         requestDTO.setCreatorId(userDetails.getId());
 
@@ -88,7 +84,7 @@ public class PollController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deletePoll(
             @PathVariable("id") Long id,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal User userDetails) {
         pollService.deletePoll(id, userDetails);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
@@ -100,7 +96,7 @@ public class PollController {
     @Operation(summary = "Bình chọn của tôi", description = "Danh sách bình chọn do user hiện tại tạo", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-polls")
     public ApiResponse<java.util.List<PollResponseDTO>> getMyPolls(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal User userDetails) {
         java.util.List<PollResponseDTO> polls = pollService.getMyPolls(userDetails.getId());
         return ApiResponse.<java.util.List<PollResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
@@ -112,7 +108,7 @@ public class PollController {
     @Operation(summary = "Đã bình chọn", description = "Danh sách bình chọn mà user đã vote", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-voted")
     public ApiResponse<java.util.List<PollResponseDTO>> getVotedPolls(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal User userDetails) {
         java.util.List<PollResponseDTO> polls = pollService.getVotedPolls(userDetails.getId());
         return ApiResponse.<java.util.List<PollResponseDTO>>builder()
                 .code(HttpStatus.OK.value())

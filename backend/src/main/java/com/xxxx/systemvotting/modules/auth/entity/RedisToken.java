@@ -1,27 +1,26 @@
 package com.xxxx.systemvotting.modules.auth.entity;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.TimeToLive;
-import org.springframework.data.redis.core.index.Indexed;
 
-import java.util.concurrent.TimeUnit;
-
-@RedisHash("redis_token")
-@NoArgsConstructor
-@AllArgsConstructor
+@RedisHash("jwt_blocklist")
+@Builder
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RedisToken {
-
     @Id
     private String jwtId;
-
-    @Indexed
-    private String userId;
-
-    @TimeToLive(unit = TimeUnit.SECONDS)
-    private Long expiration;
+    
+    private Long userId;
+    
+    @TimeToLive
+    private long expiration;
 }

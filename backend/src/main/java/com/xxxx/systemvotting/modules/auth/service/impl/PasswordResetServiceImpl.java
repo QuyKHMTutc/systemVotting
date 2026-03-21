@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.TimeUnit;
-import com.xxxx.systemvotting.common.service.BaseRedisService;
 
 import java.util.Random;
 
@@ -23,7 +22,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
-    private final BaseRedisService<String, String, String> redisService;
+    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
 
     // Token valid for 10 minutes
     private static final int EXPIRATION_MINUTES = 10;
@@ -32,10 +31,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public void processForgotPassword(String email) {
-        // Do not reveal whether email exists (security: prevents user enumeration)
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null || !user.isVerified()) {
-            return; // Same success response - do not reveal if email exists or verification status
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                
+        if (!user.isVerified()) {
+            throw new AppException(ErrorCode.USER_NOT_VERIFIED);
         }
 
         // Generate 6-digit OTP
@@ -43,8 +43,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         // Store in Redis
         String redisKey = REDIS_OTP_PREFIX + email;
-        redisService.set(redisKey, otp);
-        redisService.setTimeToLive(redisKey, EXPIRATION_MINUTES, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(redisKey, otp);
+        redisTemplate.expire(redisKey, EXPIRATION_MINUTES, TimeUnit.MINUTES);
 
         // Send Email
         String subject = "Password Reset Request";
@@ -61,7 +61,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         String redisKey = REDIS_OTP_PREFIX + email;
-        String storedOtp = redisService.get(redisKey);
+        String storedOtp = redisTemplate.opsForValue().get(redisKey);
 
         if (storedOtp == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
@@ -76,7 +76,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         user.setVerified(true);
         userRepository.save(user);
 
+        // Invalidate active JWT tokens globally across all devices
+        String invalidBeforeKey = "user:jwt:invalid_before:" + user.getId();
+        redisTemplate.opsForValue().set(invalidBeforeKey, String.valueOf(System.currentTimeMillis()), 7, TimeUnit.DAYS);
+
         // Delete OTP after successful reset
-        redisService.delete(redisKey);
+        redisTemplate.delete(redisKey);
     }
 }

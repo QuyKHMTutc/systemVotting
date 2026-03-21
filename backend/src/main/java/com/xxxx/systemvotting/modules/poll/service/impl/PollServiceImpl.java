@@ -15,7 +15,7 @@ import com.xxxx.systemvotting.modules.poll.repository.TagRepository;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
-import com.xxxx.systemvotting.security.CustomUserDetails;
+import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import org.springframework.cache.annotation.Cacheable;
@@ -43,6 +43,17 @@ public class PollServiceImpl implements PollService {
 
     private int getCommentCountForPoll(Long pollId) {
         return (int) commentRepository.countByPollId(pollId);
+    }
+
+    private java.util.Map<Long, Integer> getCommentCountsForPolls(java.util.List<Long> pollIds) {
+        java.util.Map<Long, Integer> commentCountMap = new java.util.HashMap<>();
+        if (pollIds == null || pollIds.isEmpty()) return commentCountMap;
+        
+        java.util.List<Object[]> results = commentRepository.countCommentsByPollIds(pollIds);
+        for (Object[] result : results) {
+            commentCountMap.put(((Number) result[0]).longValue(), ((Number) result[1]).intValue());
+        }
+        return commentCountMap;
     }
 
     private void enrichPollWithRedisData(PollResponseDTO dto) {
@@ -136,9 +147,12 @@ public class PollServiceImpl implements PollService {
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
         Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, java.time.LocalDateTime.now(), pageable);
         
+        java.util.List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
+        java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
+        
         Page<PollResponseDTO> mappedPage = pollPage.map(poll -> {
             PollResponseDTO dto = pollMapper.toDto(poll);
-            dto.setCommentCount(getCommentCountForPoll(poll.getId()));
+            dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
             enrichPollWithRedisData(dto);
             return dto;
         });
@@ -158,7 +172,7 @@ public class PollServiceImpl implements PollService {
     @Override
     @Transactional
     @CacheEvict(value = "pollDetails", key = "#pollId")
-    public void deletePoll(Long pollId, CustomUserDetails authenticatedUser) {
+    public void deletePoll(Long pollId, User authenticatedUser) {
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
@@ -187,10 +201,14 @@ public class PollServiceImpl implements PollService {
     @Transactional(readOnly = true)
     public java.util.List<PollResponseDTO> getMyPolls(Long userId) {
         java.util.List<Poll> polls = pollRepository.findByCreatorIdOrderByIdDesc(userId);
+        
+        java.util.List<Long> pollIds = polls.stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
+        java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
+
         return polls.stream()
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
-                    dto.setCommentCount(getCommentCountForPoll(poll.getId()));
+                    dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
                     enrichPollWithRedisData(dto);
                     return dto;
                 })
@@ -201,10 +219,14 @@ public class PollServiceImpl implements PollService {
     @Transactional(readOnly = true)
     public java.util.List<PollResponseDTO> getVotedPolls(Long userId) {
         java.util.List<Poll> polls = pollRepository.findPollsVotedByUser(userId);
+
+        java.util.List<Long> pollIds = polls.stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
+        java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
+
         return polls.stream()
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
-                    dto.setCommentCount(getCommentCountForPoll(poll.getId()));
+                    dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
                     enrichPollWithRedisData(dto);
                     return dto;
                 })

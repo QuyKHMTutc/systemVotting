@@ -1,7 +1,7 @@
 package com.xxxx.systemvotting.modules.vote.controller;
 
 import com.xxxx.systemvotting.common.dto.ApiResponse;
-import com.xxxx.systemvotting.security.CustomUserDetails;
+import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.vote.dto.request.VoteRequestDTO;
 import com.xxxx.systemvotting.modules.vote.dto.response.VoteResponseDTO;
 import com.xxxx.systemvotting.modules.vote.service.VoteService;
@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,7 +31,7 @@ public class VoteController {
     @PostMapping
     public ApiResponse<VoteResponseDTO> submitVote(
             @Valid @RequestBody VoteRequestDTO requestDTO,
-            @AuthenticationPrincipal CustomUserDetails user) {
+            @AuthenticationPrincipal User user) {
 
         // Security enhancement: enforce the vote belongs to the currently authenticated
         // user
@@ -51,7 +50,7 @@ public class VoteController {
     @org.springframework.web.bind.annotation.GetMapping("/check")
     public ApiResponse<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO> checkVote(
             @org.springframework.web.bind.annotation.RequestParam Long pollId,
-            @AuthenticationPrincipal CustomUserDetails user) {
+            @AuthenticationPrincipal User user) {
         com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkResult = voteService.checkVote(user.getId(), pollId);
         return ApiResponse.<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO>builder()
                 .code(HttpStatus.OK.value())

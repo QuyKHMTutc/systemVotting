@@ -4,7 +4,7 @@ import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserProfileUpdateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
-import com.xxxx.systemvotting.security.CustomUserDetails;
+import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,7 +54,7 @@ public class UserController {
     public ApiResponse<UserResponseDTO> updateProfile(
             @RequestParam(required = false) String username,
             @RequestPart(value = "avatar", required = false) MultipartFile avatarFile,
-            @AuthenticationPrincipal CustomUserDetails user) {
+            @AuthenticationPrincipal User user) {
 
         UserProfileUpdateRequestDTO requestDTO = new UserProfileUpdateRequestDTO();
         requestDTO.setUsername(username);
@@ -114,6 +113,20 @@ public class UserController {
                 .code(HttpStatus.OK.value())
                 .message("Success")
                 .data(users)
+                .build();
+    }
+
+    @Operation(summary = "Đổi mật khẩu", description = "Đổi mật khẩu cho người dùng hiện tại", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đổi mật khẩu thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Mật khẩu cũ không đúng") })
+    @PutMapping("/me/password")
+    public ApiResponse<Void> changePassword(
+            @Valid @RequestBody com.xxxx.systemvotting.modules.user.dto.ChangePasswordRequestDTO requestDTO,
+            @AuthenticationPrincipal User user) {
+        
+        userService.changePassword(user.getId(), requestDTO);
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Password changed successfully")
                 .build();
     }
 }
