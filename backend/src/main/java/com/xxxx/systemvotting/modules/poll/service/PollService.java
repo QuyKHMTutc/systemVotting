@@ -4,8 +4,7 @@ import java.util.List;
 
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
-import com.xxxx.systemvotting.security.CustomUserDetails;
-import org.springframework.data.domain.Page;
+import com.xxxx.systemvotting.modules.user.entity.User;
 
 public interface PollService {
     PollResponseDTO createPoll(PollCreateRequestDTO requestDTO);
@@ -14,7 +13,7 @@ public interface PollService {
 
     com.xxxx.systemvotting.common.dto.PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction);
 
-    void deletePoll(Long pollId, CustomUserDetails authenticatedUser);
+    void deletePoll(Long pollId, User authenticatedUser);
 
     List<PollResponseDTO> getMyPolls(Long userId);
 

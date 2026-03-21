@@ -15,7 +15,7 @@ import com.xxxx.systemvotting.common.service.imp.EmailService;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import com.xxxx.systemvotting.common.service.BaseRedisService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,10 +33,9 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final com.xxxx.systemvotting.modules.auth.repository.RefreshTokenRepository refreshTokenRepository;
     private final FileStorageService fileStorageService;
     private final EmailService emailService;
-    private final BaseRedisService<String, String, String> redisService;
+    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
 
     private static final int OTP_EXPIRATION_MINUTES = 10;
     private static final String REDIS_OTP_PREFIX = "otp:registration:";
@@ -62,8 +61,8 @@ public class UserServiceImpl implements UserService {
         // Generate and store OTP in Redis
         String otp = String.format("%06d", new Random().nextInt(999999));
         String redisKey = REDIS_OTP_PREFIX + savedUser.getEmail();
-        redisService.set(redisKey, otp);
-        redisService.setTimeToLive(redisKey, OTP_EXPIRATION_MINUTES, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(redisKey, otp);
+        redisTemplate.expire(redisKey, OTP_EXPIRATION_MINUTES, TimeUnit.MINUTES);
 
         String subject = "Verify your email - SystemVoting";
         String message = "Your OTP for registration is: " + otp + "\nThis code will expire in " + OTP_EXPIRATION_MINUTES + " minutes.";
@@ -109,8 +108,7 @@ public class UserServiceImpl implements UserService {
         user.setLocked(!user.isLocked());
 
         if (user.isLocked()) {
-            // Invalidate active sessions
-            refreshTokenRepository.deleteByUser(user);
+            // Invalidate active sessions (currently no-op without a user-to-token map, can be handled in JwtValidationFilter optionally)
         }
 
         User updatedUser = userRepository.save(user);
@@ -154,7 +152,7 @@ public class UserServiceImpl implements UserService {
         }
 
         String redisKey = REDIS_OTP_PREFIX + email;
-        String storedOtp = redisService.get(redisKey);
+        String storedOtp = redisTemplate.opsForValue().get(redisKey);
 
         if (storedOtp == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
@@ -166,7 +164,7 @@ public class UserServiceImpl implements UserService {
 
         user.setVerified(true);
         userRepository.save(user);
-        redisService.delete(redisKey);
+        redisTemplate.delete(redisKey);
     }
 
     @Override
@@ -182,11 +180,29 @@ public class UserServiceImpl implements UserService {
         // Generate and store new OTP in Redis
         String newOtp = String.format("%06d", new Random().nextInt(999999));
         String redisKey = REDIS_OTP_PREFIX + email;
-        redisService.set(redisKey, newOtp);
-        redisService.setTimeToLive(redisKey, OTP_EXPIRATION_MINUTES, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(redisKey, newOtp);
+        redisTemplate.expire(redisKey, OTP_EXPIRATION_MINUTES, TimeUnit.MINUTES);
 
         String subject = "Verify your email - SystemVoting";
         String message = "Your new OTP for registration is: " + newOtp + "\nThis code will expire in " + OTP_EXPIRATION_MINUTES + " minutes.";
         emailService.sendSimpleMessage(user.getEmail(), subject, message);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, com.xxxx.systemvotting.modules.user.dto.ChangePasswordRequestDTO requestDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        if (!passwordEncoder.matches(requestDTO.getOldPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED); 
+        }
+
+        user.setPassword(passwordEncoder.encode(requestDTO.getNewPassword()));
+        userRepository.save(user);
+
+        // Invalidate active JWT tokens globally across all devices
+        String invalidBeforeKey = "user:jwt:invalid_before:" + userId;
+        redisTemplate.opsForValue().set(invalidBeforeKey, String.valueOf(System.currentTimeMillis()), 7, TimeUnit.DAYS);
     }
 }

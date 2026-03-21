@@ -24,4 +24,6 @@ public interface UserService {
     void verifyRegistrationOtp(String email, String otp);
 
     void resendRegistrationOtp(String email);
+
+    void changePassword(Long userId, com.xxxx.systemvotting.modules.user.dto.ChangePasswordRequestDTO requestDTO);
 }

@@ -13,27 +13,33 @@ import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
-public class DataInitializer implements CommandLineRunner {
+@Slf4j(topic = "USER-INIT-DATA")
+public class AppInitialDataConfiguration implements CommandLineRunner {
+
+    private static final String ADMIN_EMAIL = "admin@gmail.com";
+    private static final String ADMIN_PASSWORD = "admin";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
-        if (userRepository.count() == 0) {
-            log.info("No users found in database. Initializing default SuperAdmin account.");
+        if (!userRepository.existsByEmail(ADMIN_EMAIL)) {
             User admin = User.builder()
                     .username("admin")
-                    .email("admin@gmail.com")
-                    .password(passwordEncoder.encode("admin"))
+                    .email(ADMIN_EMAIL)
+                    .password(passwordEncoder.encode(ADMIN_PASSWORD))
                     .role(Role.ADMIN)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
 
             userRepository.save(admin);
-            log.info("SuperAdmin account created: admin / admin");
+            log.info("SuperAdmin account created: {}", ADMIN_EMAIL);
         }
+
+
+
+        log.info("Initial data created successfully");
     }
 }

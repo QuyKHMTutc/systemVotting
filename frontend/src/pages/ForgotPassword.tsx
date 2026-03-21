@@ -48,7 +48,7 @@ const ForgotPassword = () => {
 
         try {
             const response = await authService.forgotPassword(email);
-            if (response.status === 200) {
+            if (response.code === 200) {
                 navigate('/reset-password', { 
                     state: { 
                         email, 
@@ -60,7 +60,12 @@ const ForgotPassword = () => {
                 triggerShake();
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to send OTP. Please check the email address.');
+            const msg = err.response?.data?.message || '';
+            if (msg.toLowerCase().includes('verified') || msg.toLowerCase().includes('disabled')) {
+                navigate('/register', { state: { email, stage: 'verify' } });
+                return;
+            }
+            setError(msg || 'Failed to send OTP. Please check the email address.');
             triggerShake();
         } finally {
             setLoading(false);

@@ -43,7 +43,7 @@ const ResetPassword = () => {
         setSuccess('');
         try {
             const response = await authService.forgotPassword(email);
-            if (response.status === 200) {
+            if (response.code === 200) {
                 setSuccess('OTP has been re-sent to your email.');
                 setCountdown(60);
             } else {
@@ -75,7 +75,7 @@ const ResetPassword = () => {
         setLoading(true);
         try {
             const response = await authService.resetPassword({ email, otp, newPassword });
-            if (response.status === 200) {
+            if (response.code === 200) {
                 setSuccess('Password reset successfully! Redirecting to login...');
                 setTimeout(() => navigate('/login'), 2500);
             } else {

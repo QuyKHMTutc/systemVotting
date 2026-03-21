@@ -65,7 +65,7 @@ const Login = () => {
         try {
             const response = await authService.login({ email, password });
 
-            if (response.status === 200 && response.data) {
+            if (response.code === 200 && response.data) {
                 const tokenPayload = decodeJwtPayload(response.data.accessToken);
                 const userData = {
                     id: tokenPayload.id || 0,
@@ -211,7 +211,7 @@ const Login = () => {
                                                 setLoading(true);
                                                 setError('');
                                                 const res = await authService.loginWithGoogle(credentialResponse.credential);
-                                                if (res.status === 200 && res.data) {
+                                                if (res.code === 200 && res.data) {
                                                     const tokenPayload = decodeJwtPayload(res.data.accessToken);
                                                     const userData = {
                                                         id: tokenPayload.id || 0,

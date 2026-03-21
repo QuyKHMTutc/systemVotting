@@ -7,5 +7,5 @@ import com.xxxx.systemvotting.modules.auth.dto.request.TokenRefreshRequestDTO;
 public interface AuthService {
     AuthResponseDTO login(AuthRequestDTO requestDTO);
     AuthResponseDTO refreshToken(TokenRefreshRequestDTO requestDTO);
-    void logout(String accessToken);
+    void logout(String accessToken, String refreshToken);
 }
