@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.security.oauth2.jwt.Jwt;
+
 @Tag(name = "Votes", description = "Bỏ phiếu và kiểm tra đã vote")
 @RestController
 @RequestMapping("/api/v1/votes")
@@ -31,11 +33,11 @@ public class VoteController {
     @PostMapping
     public ApiResponse<VoteResponseDTO> submitVote(
             @Valid @RequestBody VoteRequestDTO requestDTO,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal Jwt jwt) {
 
         // Security enhancement: enforce the vote belongs to the currently authenticated
         // user
-        requestDTO.setUserId(user.getId());
+        requestDTO.setUserId(Long.valueOf(jwt.getSubject()));
 
         VoteResponseDTO voteResult = voteService.submitVote(requestDTO);
         return ApiResponse.<VoteResponseDTO>builder()
@@ -50,8 +52,8 @@ public class VoteController {
     @org.springframework.web.bind.annotation.GetMapping("/check")
     public ApiResponse<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO> checkVote(
             @org.springframework.web.bind.annotation.RequestParam Long pollId,
-            @AuthenticationPrincipal User user) {
-        com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkResult = voteService.checkVote(user.getId(), pollId);
+            @AuthenticationPrincipal Jwt jwt) {
+        com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO checkResult = voteService.checkVote(Long.valueOf(jwt.getSubject()), pollId);
         return ApiResponse.<com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO>builder()
                 .code(HttpStatus.OK.value())
                 .message("Vote check retrieved successfully")

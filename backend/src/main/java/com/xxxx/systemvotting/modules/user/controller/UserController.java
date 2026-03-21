@@ -27,6 +27,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
+import org.springframework.security.oauth2.jwt.Jwt;
+
 @Tag(name = "Users", description = "Quản lý user: profile, admin (promote, lock), danh sách user")
 @RestController
 @RequestMapping("/api/v1/users")
@@ -54,12 +56,12 @@ public class UserController {
     public ApiResponse<UserResponseDTO> updateProfile(
             @RequestParam(required = false) String username,
             @RequestPart(value = "avatar", required = false) MultipartFile avatarFile,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal Jwt jwt) {
 
         UserProfileUpdateRequestDTO requestDTO = new UserProfileUpdateRequestDTO();
         requestDTO.setUsername(username);
 
-        UserResponseDTO updatedUser = userService.updateProfile(user.getId(), requestDTO, avatarFile);
+        UserResponseDTO updatedUser = userService.updateProfile(Long.valueOf(jwt.getSubject()), requestDTO, avatarFile);
         return ApiResponse.<UserResponseDTO>builder()
                 .code(HttpStatus.OK.value())
                 .message("Profile updated successfully")
@@ -121,9 +123,9 @@ public class UserController {
     @PutMapping("/me/password")
     public ApiResponse<Void> changePassword(
             @Valid @RequestBody com.xxxx.systemvotting.modules.user.dto.ChangePasswordRequestDTO requestDTO,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal Jwt jwt) {
         
-        userService.changePassword(user.getId(), requestDTO);
+        userService.changePassword(Long.valueOf(jwt.getSubject()), requestDTO);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("Password changed successfully")
