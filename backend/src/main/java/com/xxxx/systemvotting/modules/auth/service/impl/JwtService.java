@@ -21,7 +21,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
+import java.util.Set;
 import java.util.UUID;
+import com.xxxx.systemvotting.modules.user.entity.User;
 
 @Service
 public class JwtService {
@@ -33,7 +35,7 @@ public class JwtService {
     private static final String ROLES = "roles";
     private static final String TOKEN_TYPE = "token_type";
 
-    public String generateAccessToken(String userId, Set<String> roles) {
+    public String generateAccessToken(User user, Set<String> roles) {
         // Header
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
@@ -42,9 +44,12 @@ public class JwtService {
         String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(userId)
+                .subject(user.getId().toString())
                 .issuer(JWT_ISSUER)
                 .claim(ROLES, roles)
+                .claim("username", user.getUsername())
+                .claim("email", user.getEmail())
+                .claim("avatarUrl", user.getAvatarUrl())
                 .issueTime(issueTime)
                 .expirationTime(expiredTime)
                 .jwtID(jwtId)

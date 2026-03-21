@@ -57,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
 
             Set<String> roles = Set.of(user.getRole().name());
 
-            String accessToken = jwtService.generateAccessToken(user.getId().toString(), roles);
+            String accessToken = jwtService.generateAccessToken(user, roles);
             TokenDetails refreshToken = jwtService.generateRefreshToken(user.getId().toString());
 
             return AuthResponseDTO.builder()
@@ -106,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
 
             Set<String> roles = Set.of(user.getRole().name());
 
-            String newAccessToken = jwtService.generateAccessToken(userId, roles);
+            String newAccessToken = jwtService.generateAccessToken(user, roles);
 
             return AuthResponseDTO.builder()
                     .accessToken(newAccessToken)

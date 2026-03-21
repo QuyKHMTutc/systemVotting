@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/auth.service';
 
 interface User {
     id: number;
@@ -58,6 +59,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
     };
+
+    useEffect(() => {
+        if (token) {
+            authService.me()
+                .then(res => {
+                    if (res?.code === 200 && res.data) {
+                        updateUser(res.data);
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to sync user profile:', err);
+                });
+        }
+    }, [token]);
 
     return (
         <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}>

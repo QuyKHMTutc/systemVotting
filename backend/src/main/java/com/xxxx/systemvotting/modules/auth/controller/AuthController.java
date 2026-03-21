@@ -22,9 +22,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @Tag(name = "Auth", description = "Đăng ký, đăng nhập, refresh token, quên mật khẩu, xác thực OTP")
 @RestController
@@ -163,6 +166,18 @@ public class AuthController {
                                 .code(HttpStatus.OK.value())
                                 .message("Logged out successfully")
                                 .data(null)
+                                .build();
+        }
+        @Operation(summary = "Lấy thông tin profile", description = "Lấy thông tin người dùng hiện tại", security = {
+                        @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "Bearer Authentication") })
+        @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lấy thông tin thành công") })
+        @GetMapping("/me")
+        public ApiResponse<UserResponseDTO> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
+                UserResponseDTO user = userService.getUserById(Long.valueOf(jwt.getSubject()));
+                return ApiResponse.<UserResponseDTO>builder()
+                                .code(HttpStatus.OK.value())
+                                .message("Success")
+                                .data(user)
                                 .build();
         }
 }

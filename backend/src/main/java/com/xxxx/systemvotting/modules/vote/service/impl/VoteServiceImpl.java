@@ -21,8 +21,12 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Collections;
+import java.util.Arrays;
 
 import com.xxxx.systemvotting.modules.vote.dto.VoteEventDTO;
 import com.xxxx.systemvotting.common.utils.RedisKeyUtils;
@@ -49,6 +53,28 @@ public class VoteServiceImpl implements VoteService {
     private final RankingService rankingService;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+
+    private static final String VOTE_LUA =
+            "local userVotesKey = KEYS[1] " +
+            "local pollVotesKey = KEYS[2] " +
+            "local queueKey = KEYS[3] " +
+            "local userId = ARGV[1] " +
+            "local newOptionId = ARGV[2] " +
+            "local eventJson = ARGV[3] " +
+            "local oldOptionId = redis.call('HGET', userVotesKey, userId) " +
+            "if oldOptionId == newOptionId then " +
+            "    return '-1' " +
+            "end " +
+            "redis.call('HSET', userVotesKey, userId, newOptionId) " +
+            "if oldOptionId then " +
+            "    redis.call('HINCRBY', pollVotesKey, oldOptionId, -1) " +
+            "end " +
+            "redis.call('HINCRBY', pollVotesKey, newOptionId, 1) " +
+            "local finalJson = string.gsub(eventJson, '-999', oldOptionId or 'null') " +
+            "redis.call('LPUSH', queueKey, finalJson) " +
+            "return oldOptionId or ''";
+
+    private final RedisScript<String> voteScript = new DefaultRedisScript<>(VOTE_LUA, String.class);
 
     @Override
     @Transactional
@@ -80,46 +106,43 @@ public class VoteServiceImpl implements VoteService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        // 3. Atomically track user's choice in Redis Hash
+        // 3. Atomically track user's choice and push event via Lua Script
         String userVotesKey = RedisKeyUtils.getPollUserVotesKey(pollId);
         String pollVotesKey = RedisKeyUtils.getPollVotesKey(pollId);
+        String queueKey = RedisKeyUtils.getVoteEventQueueKey();
         
-        // Find if user already voted. HGET is O(1)
-        Object previousVoteObj = redisTemplate.opsForHash().get(userVotesKey, String.valueOf(userId));
-        Long oldOptionId = previousVoteObj != null ? Long.parseLong(previousVoteObj.toString()) : null;
-
-        if (newOptionId.equals(oldOptionId)) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
-        }
-
-        // Set new vote in Hash
-        redisTemplate.opsForHash().put(userVotesKey, String.valueOf(userId), String.valueOf(newOptionId));
-
-        // 4. Update atomic option counts in Redis
-        // Decrement old option count if changing vote
-        if (oldOptionId != null) {
-            redisTemplate.opsForHash().increment(pollVotesKey, String.valueOf(oldOptionId), -1);
-        } else {
-            // First time voting on this poll, increment total poll score for ranking
-            rankingService.incrementPollScore(pollId, 1);
-        }
-        // Increment new option count
-        redisTemplate.opsForHash().increment(pollVotesKey, String.valueOf(newOptionId), 1);
-
-        // 5. Construct Vote Event for Async Processing to DB
-        VoteEventDTO voteEvent = VoteEventDTO.builder()
+        // Construct event template (using -999 as placeholder for oldOptionId)
+        VoteEventDTO tempEvent = VoteEventDTO.builder()
                 .userId(userId)
                 .pollId(pollId)
                 .optionId(newOptionId)
-                .oldOptionId(oldOptionId)
+                .oldOptionId(-999L)
                 .timestamp(now)
                 .build();
-        
+                
+        String eventJsonTemplate;
         try {
-            String eventJson = objectMapper.writeValueAsString(voteEvent);
-            redisTemplate.opsForList().leftPush(RedisKeyUtils.getVoteEventQueueKey(), eventJson);
+            eventJsonTemplate = objectMapper.writeValueAsString(tempEvent);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to queue vote event", e);
+            throw new RuntimeException("Failed to serialize vote event", e);
+        }
+
+        String result = redisTemplate.execute(
+                voteScript,
+                Arrays.asList(userVotesKey, pollVotesKey, queueKey),
+                String.valueOf(userId), String.valueOf(newOptionId), eventJsonTemplate
+        );
+
+        if ("-1".equals(result)) {
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+        
+        Long oldOptionId = null;
+        if (result != null && !result.isEmpty()) {
+            oldOptionId = Long.parseLong(result);
+        } else {
+            // First time voting on this poll
+            rankingService.incrementPollScore(pollId, 1);
         }
 
         // 6. Broadcast updated vote counts to WebSocket subscribers seamlessly

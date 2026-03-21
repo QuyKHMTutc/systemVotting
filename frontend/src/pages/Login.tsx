@@ -66,12 +66,31 @@ const Login = () => {
             const response = await authService.login({ email, password });
 
             if (response.code === 200 && response.data) {
+                // Store tokens immediately so api.interceptors can pick them up for the .me() call
+                localStorage.setItem('accessToken', response.data.accessToken);
+                localStorage.setItem('refreshToken', response.data.refreshToken);
+                
+                let actualUsername = email.split('@')[0];
+                let actualAvatarUrl = '';
+                let actualId = 0;
+                
+                try {
+                    const meRes = await authService.me();
+                    if (meRes && meRes.code === 200 && meRes.data) {
+                        actualUsername = meRes.data.username || actualUsername;
+                        actualAvatarUrl = meRes.data.avatarUrl || actualAvatarUrl;
+                        actualId = meRes.data.id || actualId;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch full profile after login", e);
+                }
+
                 const tokenPayload = decodeJwtPayload(response.data.accessToken);
                 const userData = {
-                    id: tokenPayload.id || 0,
-                    username: tokenPayload.username || tokenPayload.sub || '',
+                    id: actualId || tokenPayload.id || 0,
+                    username: actualUsername,
                     email: email,
-                    avatarUrl: tokenPayload.avatarUrl || '',
+                    avatarUrl: actualAvatarUrl,
                     role: tokenPayload.role || 'USER'
                 };
 
@@ -212,12 +231,32 @@ const Login = () => {
                                                 setError('');
                                                 const res = await authService.loginWithGoogle(credentialResponse.credential);
                                                 if (res.code === 200 && res.data) {
+                                                    localStorage.setItem('accessToken', res.data.accessToken);
+                                                    localStorage.setItem('refreshToken', res.data.refreshToken);
+
                                                     const tokenPayload = decodeJwtPayload(res.data.accessToken);
+                                                    let actualUsername = tokenPayload.username || tokenPayload.sub || '';
+                                                    let actualAvatarUrl = tokenPayload.avatarUrl || '';
+                                                    let actualEmail = tokenPayload.email || '';
+                                                    let actualId = tokenPayload.id || parseInt(tokenPayload.sub) || 0;
+
+                                                    try {
+                                                        const meRes = await authService.me();
+                                                        if (meRes && meRes.code === 200 && meRes.data) {
+                                                            actualUsername = meRes.data.username || actualUsername;
+                                                            actualAvatarUrl = meRes.data.avatarUrl || actualAvatarUrl;
+                                                            actualEmail = meRes.data.email || actualEmail;
+                                                            actualId = meRes.data.id || actualId;
+                                                        }
+                                                    } catch (e) {
+                                                        console.error("Failed to fetch full profile after google login", e);
+                                                    }
+
                                                     const userData = {
-                                                        id: tokenPayload.id || 0,
-                                                        username: tokenPayload.username || tokenPayload.sub || '',
-                                                        email: tokenPayload.email || '',
-                                                        avatarUrl: tokenPayload.avatarUrl || '',
+                                                        id: actualId,
+                                                        username: actualUsername,
+                                                        email: actualEmail,
+                                                        avatarUrl: actualAvatarUrl,
                                                         role: tokenPayload.role || 'USER'
                                                     };
                                                     login(res.data.accessToken, res.data.refreshToken, userData);

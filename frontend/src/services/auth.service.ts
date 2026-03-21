@@ -5,6 +5,10 @@ export const authService = {
         const response = await api.post('/auth/login', data);
         return response.data;
     },
+    me: async () => {
+        const response = await api.get('/auth/me');
+        return response.data;
+    },
     loginWithGoogle: async (idToken: string) => {
         const response = await api.post('/auth/google', { idToken });
         return response.data;
