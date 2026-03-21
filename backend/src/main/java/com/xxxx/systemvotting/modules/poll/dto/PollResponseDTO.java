@@ -9,9 +9,11 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
+
 @Data
 @Schema(description = "Thông tin phản hồi của bình chọn")
-public class PollResponseDTO {
+public class PollResponseDTO implements Serializable {
     @Schema(description = "ID của cuộc bình chọn", example = "1")
     private Long id;
 

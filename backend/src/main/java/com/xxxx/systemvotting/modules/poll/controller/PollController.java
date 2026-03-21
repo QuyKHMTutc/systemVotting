@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.security.oauth2.jwt.Jwt;
+
 @Tag(name = "Polls", description = "Tạo, xem, xóa bình chọn; danh sách bình chọn của tôi / đã bình chọn")
 @RestController
 @RequestMapping("/api/v1/polls")
@@ -36,9 +38,9 @@ public class PollController {
     @PostMapping
     public ApiResponse<PollResponseDTO> createPoll(
             @Valid @RequestBody PollCreateRequestDTO requestDTO,
-            @AuthenticationPrincipal User userDetails) {
+            @AuthenticationPrincipal Jwt jwt) {
 
-        requestDTO.setCreatorId(userDetails.getId());
+        requestDTO.setCreatorId(Long.valueOf(jwt.getSubject()));
 
         PollResponseDTO createdPoll = pollService.createPoll(requestDTO);
         return ApiResponse.<PollResponseDTO>builder()
@@ -84,8 +86,22 @@ public class PollController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deletePoll(
             @PathVariable("id") Long id,
-            @AuthenticationPrincipal User userDetails) {
-        pollService.deletePoll(id, userDetails);
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Temporarily instantiating dummy User to bypass full service signature change if needed, 
+        // or just passing the ID if deletePoll method in service also changed.
+        // Wait, deletePoll accepts (Long id, User userDetails), let's create a dummy User.
+        User dummyUser = new User();
+        dummyUser.setId(Long.valueOf(jwt.getSubject()));
+        // Note: Admin deletion requires role checking in Service. We need to grab role from JWT.
+        java.util.List<String> roles = jwt.getClaimAsStringList("roles");
+        if (roles != null && roles.contains("ADMIN")) {
+            dummyUser.setRole(com.xxxx.systemvotting.modules.user.enums.Role.ADMIN);
+        } else {
+            dummyUser.setRole(com.xxxx.systemvotting.modules.user.enums.Role.USER);
+        }
+        
+        pollService.deletePoll(id, dummyUser);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("Poll deleted successfully")
@@ -96,8 +112,8 @@ public class PollController {
     @Operation(summary = "Bình chọn của tôi", description = "Danh sách bình chọn do user hiện tại tạo", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-polls")
     public ApiResponse<java.util.List<PollResponseDTO>> getMyPolls(
-            @AuthenticationPrincipal User userDetails) {
-        java.util.List<PollResponseDTO> polls = pollService.getMyPolls(userDetails.getId());
+            @AuthenticationPrincipal Jwt jwt) {
+        java.util.List<PollResponseDTO> polls = pollService.getMyPolls(Long.valueOf(jwt.getSubject()));
         return ApiResponse.<java.util.List<PollResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")
@@ -108,8 +124,8 @@ public class PollController {
     @Operation(summary = "Đã bình chọn", description = "Danh sách bình chọn mà user đã vote", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-voted")
     public ApiResponse<java.util.List<PollResponseDTO>> getVotedPolls(
-            @AuthenticationPrincipal User userDetails) {
-        java.util.List<PollResponseDTO> polls = pollService.getVotedPolls(userDetails.getId());
+            @AuthenticationPrincipal Jwt jwt) {
+        java.util.List<PollResponseDTO> polls = pollService.getVotedPolls(Long.valueOf(jwt.getSubject()));
         return ApiResponse.<java.util.List<PollResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")

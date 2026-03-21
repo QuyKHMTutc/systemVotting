@@ -1,12 +1,20 @@
 package com.xxxx.systemvotting.modules.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@Schema(description = "Thông tin người dùng")
-public class UserResponseDTO {
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Schema(description = "Thông tin phản hồi của User")
+public class UserResponseDTO implements Serializable {
     @Schema(description = "ID của người dùng", example = "1")
     private Long id;
 

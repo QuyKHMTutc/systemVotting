@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import org.springframework.security.oauth2.jwt.Jwt;
+
 @Tag(name = "Comments", description = "Bình luận theo bình chọn")
 @RestController
 @RequestMapping("/api/v1/comments")
@@ -36,8 +38,8 @@ public class CommentController {
     @PostMapping
     public ApiResponse<CommentResponseDTO> createComment(
             @Valid @RequestBody CommentRequestDTO request,
-            @AuthenticationPrincipal User userDetails) {
-        CommentResponseDTO response = commentService.createComment(request, userDetails.getId());
+            @AuthenticationPrincipal Jwt jwt) {
+        CommentResponseDTO response = commentService.createComment(request, Long.valueOf(jwt.getSubject()));
         return ApiResponse.<CommentResponseDTO>builder()
                 .code(HttpStatus.CREATED.value())
                 .message("Comment created successfully")

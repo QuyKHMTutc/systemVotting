@@ -50,7 +50,7 @@ public interface PollMapper {
 
     OptionResponseDTO toOptionDto(Option entity);
 
-    List<OptionResponseDTO> toOptionDtoList(List<Option> entities);
+    List<OptionResponseDTO> toOptionDtoList(Set<Option> entities);
 
     default List<String> mapTagsToStrings(Set<Tag> tags) {
         if (tags == null) {

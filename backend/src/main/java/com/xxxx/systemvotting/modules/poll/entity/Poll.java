@@ -27,7 +27,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Set;
 
 @Entity
@@ -75,7 +77,7 @@ public class Poll {
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private List<Option> options = new ArrayList<>();
+    private Set<Option> options = new LinkedHashSet<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

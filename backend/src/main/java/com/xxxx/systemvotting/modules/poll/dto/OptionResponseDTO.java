@@ -3,9 +3,11 @@ package com.xxxx.systemvotting.modules.poll.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @Schema(description = "Thông tin lựa chọn và kết quả vote")
-public class OptionResponseDTO {
+public class OptionResponseDTO implements Serializable {
     @Schema(description = "ID của lựa chọn", example = "1")
     private Long id;
 
