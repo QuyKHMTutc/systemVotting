@@ -12,6 +12,7 @@ import com.xxxx.systemvotting.modules.poll.entity.Tag;
 import com.xxxx.systemvotting.modules.poll.mapper.PollMapper;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.poll.repository.TagRepository;
+import com.xxxx.systemvotting.modules.poll.service.PollModerationService;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
@@ -20,6 +21,7 @@ import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PollServiceImpl implements PollService {
 
     private final PollRepository pollRepository;
@@ -39,6 +42,7 @@ public class PollServiceImpl implements PollService {
     private final CommentRepository commentRepository;
     private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
     private final com.xxxx.systemvotting.common.service.RealTimeService realTimeService;
+    private final PollModerationService pollModerationService;
 
     private int getCommentCountForPoll(Long pollId) {
         return (int) commentRepository.countByPollId(pollId);
@@ -71,6 +75,26 @@ public class PollServiceImpl implements PollService {
         }
     }
 
+    private void normalizePollRequest(PollCreateRequestDTO requestDTO) {
+        requestDTO.setTitle(requestDTO.getTitle() != null ? requestDTO.getTitle().trim() : null);
+        requestDTO.setDescription(requestDTO.getDescription() != null ? requestDTO.getDescription().trim() : null);
+
+        if (requestDTO.getTags() != null) {
+            requestDTO.setTags(requestDTO.getTags().stream()
+                    .map(tag -> tag == null ? null : tag.trim())
+                    .filter(tag -> tag != null && !tag.isEmpty())
+                    .toList());
+        }
+
+        if (requestDTO.getOptions() != null) {
+            requestDTO.getOptions().forEach(option -> {
+                if (option != null && option.getText() != null) {
+                    option.setText(option.getText().trim());
+                }
+            });
+        }
+    }
+
     @Override
     @Transactional
     public PollResponseDTO createPoll(PollCreateRequestDTO requestDTO) {
@@ -78,6 +102,20 @@ public class PollServiceImpl implements PollService {
         User creator = userRepository.findById(requestDTO.getCreatorId())
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        normalizePollRequest(requestDTO);
+
+        PollModerationService.PollModerationResult moderationResult = pollModerationService.moderate(requestDTO);
+        if (moderationResult.available()) {
+            log.info("Poll moderation result creatorId={} field={} label={} confidence={} blocked={}",
+                    requestDTO.getCreatorId(), moderationResult.field(), moderationResult.label(), moderationResult.confidence(), moderationResult.blocked());
+        } else {
+            log.warn("Poll moderation unavailable for creatorId={}", requestDTO.getCreatorId());
+        }
+
+        if (moderationResult.blocked()) {
+            throw new AppException(ErrorCode.POLL_BLOCKED);
+        }
 
         Poll poll = pollMapper.toEntity(requestDTO);
         poll.setCreator(creator);
