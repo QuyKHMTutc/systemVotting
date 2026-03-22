@@ -114,7 +114,7 @@ class CommentServiceImplTest {
 
         CommentResponseDTO response = commentService.createComment(request, userId);
 
-        assertEquals("REVIEW", response.getModerationStatus());
+        assertEquals("REJECTED", response.getModerationStatus());
         assertEquals("spam", response.getModerationLabel());
         verify(commentRepository).save(any(Comment.class));
         verify(realTimeService, never()).broadcast(any(), any());

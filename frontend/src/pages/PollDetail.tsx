@@ -100,9 +100,9 @@ const PollDetail = () => {
     try {
       const created = await commentService.createComment({ pollId: poll.id, content, isAnonymous });
       if (created.moderationStatus === 'REVIEW') {
-        setCommentInfo('Bình luận của bạn đã được gửi nhưng đang chờ kiểm duyệt trước khi hiển thị công khai.');
+        setCommentInfo('Bình luận của bạn đang chờ kiểm duyệt.');
       } else if (created.moderationStatus === 'REJECTED') {
-        setCommentInfo('Bình luận của bạn đã được gửi nhưng hiện đang ở trạng thái bị từ chối.');
+        setCommentInfo('Bình luận của bạn đã bị AI từ chối và sẽ không hiển thị công khai.');
       }
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post comment');

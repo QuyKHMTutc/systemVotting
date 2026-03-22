@@ -10,10 +10,10 @@ public final class ModerationDecisions {
             return ModerationStatus.APPROVED;
         }
         if (blocked) {
-            return ModerationStatus.REVIEW;
+            return ModerationStatus.REJECTED;
         }
         if ("off_topic".equalsIgnoreCase(label)) {
-            return ModerationStatus.REVIEW;
+            return ModerationStatus.REJECTED;
         }
         return ModerationStatus.APPROVED;
     }

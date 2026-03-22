@@ -35,7 +35,7 @@ export const ModerationBadge = ({ status, label, confidence, field }: Moderation
       className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${getBadgeStyle(status)}`}
       title={details.filter(Boolean).join(' • ')}
     >
-      {status === 'REVIEW' ? 'Under review' : status === 'REJECTED' ? 'Rejected' : 'Approved'}
+      {status === 'REVIEW' ? 'Under review' : status === 'REJECTED' ? 'Auto rejected' : 'Approved'}
       {label && <span className="opacity-80">· {labelize(label)}</span>}
     </span>
   );

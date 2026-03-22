@@ -81,10 +81,11 @@ const CreatePoll = () => {
             setCreatedModeration(moderation);
 
             if (moderation.status === 'REVIEW') {
-                setSuccessMessage('Poll của bạn đã được tạo nhưng đang chờ kiểm duyệt trước khi hiển thị công khai.');
+                setSuccessMessage('Poll của bạn đang chờ kiểm duyệt.');
                 setTimeout(() => navigate('/profile?tab=created'), 1400);
             } else if (moderation.status === 'REJECTED') {
-                setSuccessMessage('Poll của bạn đã được tạo nhưng hiện đang ở trạng thái bị từ chối.');
+                setSuccessMessage('Poll của bạn đã bị AI từ chối và sẽ không hiển thị công khai.');
+                setTimeout(() => navigate('/profile?tab=created'), 1400);
             } else {
                 setSuccessMessage('Poll created successfully.');
                 setTimeout(() => navigate('/'), 900);

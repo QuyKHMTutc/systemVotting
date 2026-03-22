@@ -140,7 +140,7 @@ class PollServiceImplTest {
                 .options(new LinkedHashSet<>())
                 .tags(new java.util.HashSet<>())
                 .creator(creator)
-                .moderationStatus(ModerationStatus.REVIEW)
+                .moderationStatus(ModerationStatus.REJECTED)
                 .moderationLabel("spam")
                 .moderationField("title")
                 .moderationConfidence(0.97)
@@ -166,7 +166,7 @@ class PollServiceImplTest {
 
         PollResponseDTO created = pollService.createPoll(request);
 
-        assertEquals("REVIEW", created.getModerationStatus());
+        assertEquals("REJECTED", created.getModerationStatus());
         assertEquals("spam", created.getModerationLabel());
         verify(pollRepository).save(any(Poll.class));
         verify(realTimeService, never()).broadcast(any(), any());
