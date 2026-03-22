@@ -13,6 +13,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     List<Comment> findByPollIdAndModerationStatusOrderByCreatedAtDesc(Long pollId, ModerationStatus moderationStatus);
 
+    List<Comment> findByModerationStatusOrderByCreatedAtDesc(ModerationStatus moderationStatus);
+
     void deleteByPoll_Id(Long pollId);
 
     long countByPollId(Long pollId);

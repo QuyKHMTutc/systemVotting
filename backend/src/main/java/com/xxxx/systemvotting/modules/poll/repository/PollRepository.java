@@ -43,6 +43,9 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @EntityGraph(attributePaths = { "options", "creator" })
     List<Poll> findByCreatorIdOrderByIdDesc(Long creatorId);
 
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    List<Poll> findByModerationStatusOrderByCreatedAtDesc(ModerationStatus moderationStatus);
+
     @EntityGraph(attributePaths = { "options", "creator" })
     @Query("SELECT p FROM Poll p JOIN Vote v ON p.id = v.poll.id WHERE v.user.id = :userId ORDER BY v.createdAt DESC")
     List<Poll> findPollsVotedByUser(@Param("userId") Long userId);
