@@ -11,6 +11,9 @@ export interface Comment {
     voteStatus: string;
     parentId?: number;
     replies?: Comment[];
+    moderationStatus?: 'APPROVED' | 'REVIEW' | 'REJECTED';
+    moderationLabel?: string;
+    moderationConfidence?: number;
 }
 
 export interface CommentCreateRequest {

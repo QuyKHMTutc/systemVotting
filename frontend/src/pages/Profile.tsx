@@ -287,6 +287,9 @@ export const Profile = () => {
                     <p className="text-white/50 text-sm mb-4">
                       Create your first poll to start gathering community votes.
                     </p>
+                    <p className="text-white/40 text-xs mb-4">
+                      Polls can show Approved, Under review, or Rejected status after AI moderation.
+                    </p>
                     <button
                       onClick={() => navigate('/create-poll')}
                       className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"

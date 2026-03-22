@@ -24,6 +24,10 @@ export interface Poll {
     options: PollOption[];
     commentCount: number;
     createdAt: string;
+    moderationStatus?: 'APPROVED' | 'REVIEW' | 'REJECTED';
+    moderationLabel?: string;
+    moderationConfidence?: number;
+    moderationField?: string;
 }
 
 export interface PollOption {

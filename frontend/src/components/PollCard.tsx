@@ -4,6 +4,7 @@ import { Share2, Check, Users, MessageCircle, BarChart3, Clock } from 'lucide-re
 import { useState } from 'react';
 import { timeAgo, endsIn } from '../utils/date';
 import { getTagPillClass } from '../utils/tagPills';
+import { ModerationBadge } from './ModerationBadge';
 
 export interface PollCardProps {
   poll: Poll;
@@ -40,15 +41,11 @@ export const PollCard = ({
   };
 
   return (
-    <Link
-      to={`/poll/${poll.id}`}
-      className="block h-full group"
-    >
-      <div className="glass-panel card-hover-effect rounded-2xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-white/20 relative overflow-hidden">
+    <Link to={`/poll/${poll.id}`} className="block h-full group">
+      <div className="glass-panel card-hover-effect rounded-2xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-white/20 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/8 via-transparent to-purple-500/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
         <div className="relative z-10 p-6 flex flex-col flex-grow">
-          {/* Header: status badge + tags */}
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div className="flex flex-wrap items-center gap-2">
               <span
@@ -95,12 +92,18 @@ export const PollCard = ({
             </div>
           </div>
 
-          {/* Title */}
-          <h2 className="text-lg font-bold text-white mb-4 line-clamp-2 leading-snug group-hover:text-indigo-200 transition-colors">
-            {poll.title}
-          </h2>
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-white mb-2 line-clamp-2 leading-snug group-hover:text-indigo-200 transition-colors">
+              {poll.title}
+            </h2>
+            <ModerationBadge
+              status={poll.moderationStatus}
+              label={poll.moderationLabel}
+              confidence={poll.moderationConfidence}
+              field={poll.moderationField}
+            />
+          </div>
 
-          {/* Creator row */}
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shrink-0 shadow-lg shadow-indigo-500/20 overflow-hidden">
               {poll.creator.avatarUrl ? (
@@ -108,7 +111,7 @@ export const PollCard = ({
                   src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
                   alt={poll.creator.username}
                   className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}`; }}
                 />
               ) : (
                 poll.creator.username.charAt(0).toUpperCase()
@@ -120,7 +123,6 @@ export const PollCard = ({
             </div>
           </div>
 
-          {/* Stats row */}
           <div className="flex items-center gap-4 text-xs text-white/60 mb-5 py-3 border-y border-white/5">
             <span className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-indigo-400/80" />
@@ -136,13 +138,11 @@ export const PollCard = ({
             </span>
           </div>
 
-          {/* Ends in / Ended */}
           <div className="flex items-center gap-2 mb-5 text-xs">
             <Clock className="w-4 h-4 text-white/40" />
             <span className={isActive ? 'text-indigo-300/90' : 'text-white/50'}>{endsIn(poll.endTime)}</span>
           </div>
 
-          {/* CTA Button */}
           <div className="mt-auto pt-2">
             <span
               className={`block text-center w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 ${
