@@ -50,4 +50,16 @@ public class PollResponseDTO implements Serializable {
 
     @Schema(description = "Thời gian cập nhật", example = "2024-03-15T09:00:00")
     private LocalDateTime updatedAt;
+
+    @Schema(description = "Trạng thái kiểm duyệt", example = "APPROVED")
+    private String moderationStatus;
+
+    @Schema(description = "Nhãn AI moderation", example = "normal")
+    private String moderationLabel;
+
+    @Schema(description = "Độ tin cậy moderation", example = "0.91")
+    private Double moderationConfidence;
+
+    @Schema(description = "Field bị flag", example = "title")
+    private String moderationField;
 }

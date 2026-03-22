@@ -1,9 +1,12 @@
 package com.xxxx.systemvotting.modules.comment.entity;
 
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -51,6 +54,20 @@ public class Comment {
 
     @Column(name = "is_anonymous", nullable = false)
     private boolean isAnonymous;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false)
+    @Builder.Default
+    private ModerationStatus moderationStatus = ModerationStatus.APPROVED;
+
+    @Column(name = "moderation_label")
+    private String moderationLabel;
+
+    @Column(name = "moderation_confidence")
+    private Double moderationConfidence;
+
+    @Column(name = "moderation_reason", length = 1000)
+    private String moderationReason;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

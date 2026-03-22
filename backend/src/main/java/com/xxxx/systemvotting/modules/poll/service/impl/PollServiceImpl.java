@@ -1,11 +1,14 @@
 package com.xxxx.systemvotting.modules.poll.service.impl;
 
 import com.xxxx.systemvotting.common.dto.PageResponse;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.util.ModerationDecisions;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
+import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.modules.poll.dto.OptionRequestDTO;
-import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
+import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.entity.Option;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.entity.Tag;
@@ -17,11 +20,10 @@ import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
-import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -51,7 +53,7 @@ public class PollServiceImpl implements PollService {
     private java.util.Map<Long, Integer> getCommentCountsForPolls(java.util.List<Long> pollIds) {
         java.util.Map<Long, Integer> commentCountMap = new java.util.HashMap<>();
         if (pollIds == null || pollIds.isEmpty()) return commentCountMap;
-        
+
         java.util.List<Object[]> results = commentRepository.countCommentsByPollIds(pollIds);
         for (Object[] result : results) {
             commentCountMap.put(((Number) result[0]).longValue(), ((Number) result[1]).intValue());
@@ -69,10 +71,26 @@ public class PollServiceImpl implements PollService {
                 if (val != null) {
                     try {
                         option.setVoteCount(Integer.parseInt(val.toString()));
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
         }
+    }
+
+    private void applyModerationMetadata(Poll poll, PollModerationService.PollModerationResult moderationResult, ModerationStatus moderationStatus) {
+        poll.setModerationStatus(moderationStatus);
+        poll.setModerationLabel(moderationResult.label());
+        poll.setModerationConfidence(moderationResult.confidence());
+        poll.setModerationReason(moderationResult.reason());
+        poll.setModerationField(moderationResult.field());
+    }
+
+    private void fillModerationFields(Poll poll, PollResponseDTO dto) {
+        dto.setModerationStatus(poll.getModerationStatus() != null ? poll.getModerationStatus().name() : null);
+        dto.setModerationLabel(poll.getModerationLabel());
+        dto.setModerationConfidence(poll.getModerationConfidence());
+        dto.setModerationField(poll.getModerationField());
     }
 
     private void normalizePollRequest(PollCreateRequestDTO requestDTO) {
@@ -98,10 +116,8 @@ public class PollServiceImpl implements PollService {
     @Override
     @Transactional
     public PollResponseDTO createPoll(PollCreateRequestDTO requestDTO) {
-        // Validate creator
         User creator = userRepository.findById(requestDTO.getCreatorId())
-                .orElseThrow(
-                        () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         normalizePollRequest(requestDTO);
 
@@ -113,12 +129,13 @@ public class PollServiceImpl implements PollService {
             log.warn("Poll moderation unavailable for creatorId={}", requestDTO.getCreatorId());
         }
 
-        if (moderationResult.blocked()) {
-            throw new AppException(ErrorCode.POLL_BLOCKED);
-        }
+        ModerationStatus moderationStatus = ModerationDecisions.fromLabel(
+                moderationResult.label(), moderationResult.blocked(), moderationResult.available());
 
         Poll poll = pollMapper.toEntity(requestDTO);
         poll.setCreator(creator);
+        applyModerationMetadata(poll, moderationResult, moderationStatus);
+
         java.time.LocalDateTime startTime = poll.getStartTime();
         java.time.LocalDateTime endTime = poll.getEndTime();
         if (startTime == null) {
@@ -129,7 +146,6 @@ public class PollServiceImpl implements PollService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        // Handle tags dynamic creation/mapping
         if (requestDTO.getTags() != null) {
             for (String tagName : requestDTO.getTags()) {
                 String trimmedName = tagName.trim();
@@ -141,7 +157,6 @@ public class PollServiceImpl implements PollService {
             }
         }
 
-        // Map and add options while preserving bidirectional relationship
         for (OptionRequestDTO optionRequest : requestDTO.getOptions()) {
             Option option = pollMapper.toOptionEntity(optionRequest);
             option.setVoteCount(0);
@@ -150,14 +165,16 @@ public class PollServiceImpl implements PollService {
 
         Poll savedPoll = pollRepository.save(poll);
         PollResponseDTO dto = pollMapper.toDto(savedPoll);
-        dto.setCommentCount(0); // Brand new poll has 0 comments
-        
-        // Broadcast new poll to dashboard
-        java.util.Map<String, Object> payload = new java.util.HashMap<>();
-        payload.put("type", "CREATED");
-        payload.put("poll", dto);
-        realTimeService.broadcast("/topic/polls/events", payload);
-        
+        dto.setCommentCount(0);
+        fillModerationFields(savedPoll, dto);
+
+        if (savedPoll.getModerationStatus() == ModerationStatus.APPROVED) {
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("type", "CREATED");
+            payload.put("poll", dto);
+            realTimeService.broadcast("/topic/polls/events", payload);
+        }
+
         return dto;
     }
 
@@ -165,11 +182,12 @@ public class PollServiceImpl implements PollService {
     @Transactional(readOnly = true)
     @Cacheable(value = "pollDetails", key = "#id")
     public PollResponseDTO getPollById(Long id) {
-        Poll poll = pollRepository.findById(id)
+        Poll poll = pollRepository.findByIdAndModerationStatus(id, ModerationStatus.APPROVED)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
         PollResponseDTO dto = pollMapper.toDto(poll);
         dto.setCommentCount(getCommentCountForPoll(id));
         enrichPollWithRedisData(dto);
+        fillModerationFields(poll, dto);
         return dto;
     }
 
@@ -178,23 +196,22 @@ public class PollServiceImpl implements PollService {
     public PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
-        
-        // Ensure 1-based and 0-based compatibility for the frontend
+
         int pageNumber = page > 0 ? page - 1 : 0;
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
         Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, java.time.LocalDateTime.now(), pageable);
-        
+
         java.util.List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
         java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
-        
+
         Page<PollResponseDTO> mappedPage = pollPage.map(poll -> {
             PollResponseDTO dto = pollMapper.toDto(poll);
             dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
             enrichPollWithRedisData(dto);
+            fillModerationFields(poll, dto);
             return dto;
         });
-        
-        // Return 1-based page number for client if it requested 1-based, or match zero-based
+
         int responsePage = page > 0 ? page : (mappedPage.getNumber() == 0 && page == 0 ? 0 : mappedPage.getNumber() + 1);
 
         return PageResponse.<PollResponseDTO>builder()
@@ -221,24 +238,21 @@ public class PollServiceImpl implements PollService {
                     "You do not have permission to delete this poll");
         }
 
-        // Delete votes and comments before poll (FK constraints)
         poll.getOptions().forEach(option -> voteRepository.deleteByOptionId(option.getId()));
         commentRepository.deleteByPoll_Id(poll.getId());
-
         pollRepository.delete(poll);
-        
-        // Broadcast deletion event to dashboard
-        java.util.Map<String, Object> payload = new java.util.HashMap<>();
-        payload.put("type", "DELETED");
-        payload.put("pollId", pollId);
-        realTimeService.broadcast("/topic/polls/events", payload);
+
+        realTimeService.broadcast("/topic/polls/events", java.util.Map.of(
+                "type", "DELETED",
+                "pollId", pollId
+        ));
     }
 
     @Override
     @Transactional(readOnly = true)
     public java.util.List<PollResponseDTO> getMyPolls(Long userId) {
         java.util.List<Poll> polls = pollRepository.findByCreatorIdOrderByIdDesc(userId);
-        
+
         java.util.List<Long> pollIds = polls.stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
         java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
 
@@ -247,6 +261,7 @@ public class PollServiceImpl implements PollService {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
                     enrichPollWithRedisData(dto);
+                    fillModerationFields(poll, dto);
                     return dto;
                 })
                 .collect(java.util.stream.Collectors.toList());
@@ -265,6 +280,7 @@ public class PollServiceImpl implements PollService {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
                     enrichPollWithRedisData(dto);
+                    fillModerationFields(poll, dto);
                     return dto;
                 })
                 .collect(java.util.stream.Collectors.toList());

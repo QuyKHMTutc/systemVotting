@@ -45,4 +45,13 @@ public class CommentResponseDTO {
 
     @Schema(description = "Danh sách các phản hồi con")
     private java.util.List<CommentResponseDTO> replies;
+
+    @Schema(description = "Trạng thái kiểm duyệt", example = "APPROVED")
+    private String moderationStatus;
+
+    @Schema(description = "Nhãn AI moderation", example = "spam")
+    private String moderationLabel;
+
+    @Schema(description = "Độ tin cậy moderation", example = "0.96")
+    private Double moderationConfidence;
 }

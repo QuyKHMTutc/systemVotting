@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.poll.repository;
 
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,20 +20,23 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     Page<Poll> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
-    @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE " +
+    @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE p.moderationStatus = 'APPROVED' AND " +
            "(:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
            "(:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) AND " +
            "(:status IS NULL OR :status = 'ALL' OR " +
            "(:status = 'ACTIVE' AND p.endTime > :currentTime) OR " +
            "(:status = 'ENDED' AND p.endTime <= :currentTime))")
-    Page<Poll> findWithFilters(@Param("title") String title, 
-                               @Param("tag") String tag, 
-                               @Param("status") String status, 
+    Page<Poll> findWithFilters(@Param("title") String title,
+                               @Param("tag") String tag,
+                               @Param("status") String status,
                                @Param("currentTime") java.time.LocalDateTime currentTime,
                                Pageable pageable);
 
     @EntityGraph(attributePaths = { "options", "creator" })
     Optional<Poll> findById(Long id);
+
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    Optional<Poll> findByIdAndModerationStatus(Long id, ModerationStatus moderationStatus);
 
     void deleteByCreator(com.xxxx.systemvotting.modules.user.entity.User creator);
 

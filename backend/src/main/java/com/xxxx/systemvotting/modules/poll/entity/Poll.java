@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.poll.entity;
 
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -8,6 +9,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
@@ -78,6 +81,23 @@ public class Poll {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Option> options = new LinkedHashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false)
+    @Builder.Default
+    private ModerationStatus moderationStatus = ModerationStatus.APPROVED;
+
+    @Column(name = "moderation_label")
+    private String moderationLabel;
+
+    @Column(name = "moderation_confidence")
+    private Double moderationConfidence;
+
+    @Column(name = "moderation_reason", length = 1000)
+    private String moderationReason;
+
+    @Column(name = "moderation_field")
+    private String moderationField;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

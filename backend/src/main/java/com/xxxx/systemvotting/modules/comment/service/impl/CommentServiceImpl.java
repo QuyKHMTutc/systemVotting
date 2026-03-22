@@ -1,5 +1,8 @@
 package com.xxxx.systemvotting.modules.comment.service.impl;
 
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.service.RealTimeService;
+import com.xxxx.systemvotting.common.util.ModerationDecisions;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
@@ -14,10 +17,9 @@ import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
-import com.xxxx.systemvotting.common.service.RealTimeService;
-import org.springframework.cache.annotation.CacheEvict;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -58,20 +60,22 @@ public class CommentServiceImpl implements CommentService {
             log.warn("Comment moderation unavailable for userId={} pollId={}", userId, poll.getId());
         }
 
-        if (moderationResult.blocked()) {
-            throw new AppException(ErrorCode.COMMENT_BLOCKED);
-        }
+        ModerationStatus moderationStatus = ModerationDecisions.fromLabel(
+                moderationResult.label(), moderationResult.blocked(), moderationResult.available());
 
         Comment.CommentBuilder commentBuilder = Comment.builder()
                 .poll(poll)
                 .user(currentUser)
                 .content(normalizedContent)
-                .isAnonymous(request.isAnonymous());
+                .isAnonymous(request.isAnonymous())
+                .moderationStatus(moderationStatus)
+                .moderationLabel(moderationResult.label())
+                .moderationConfidence(moderationResult.confidence())
+                .moderationReason(moderationResult.reason());
 
         if (request.getParentId() != null) {
             Comment parent = commentRepository.findById(request.getParentId())
                     .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
-            // Business rule: To prevent deep nesting, if the parent itself is a reply, we link to the root parent.
             if (parent.getParent() != null) {
                 commentBuilder.parent(parent.getParent());
             } else {
@@ -88,19 +92,19 @@ public class CommentServiceImpl implements CommentService {
             voteStatus = "Đã vote: " + voteOpt.get().getOption().getText();
         }
 
-        // Optimization: For single comment creation, we don't need to build the map for ALL poll comments.
-        // We just need the anonymous label for this specific user.
         Map<Long, String> anonymousDisplayNames = Map.of();
         if (comment.isAnonymous()) {
-            List<Comment> anonymousComments = commentRepository.findByPollIdOrderByCreatedAtDesc(poll.getId())
+            List<Comment> anonymousComments = commentRepository
+                    .findByPollIdAndModerationStatusOrderByCreatedAtDesc(poll.getId(), ModerationStatus.APPROVED)
                     .stream().filter(Comment::isAnonymous).toList();
             anonymousDisplayNames = buildAnonymousDisplayNameMap(anonymousComments);
         }
 
         CommentResponseDTO responseDTO = mapToDTO(comment, voteStatus, anonymousDisplayNames);
 
-        // Broadcast the new comment to all connected clients watching this poll
-        realTimeService.broadcast("/topic/polls/" + poll.getId() + "/comments", responseDTO);
+        if (comment.getModerationStatus() == ModerationStatus.APPROVED) {
+            realTimeService.broadcast("/topic/polls/" + poll.getId() + "/comments", responseDTO);
+        }
 
         return responseDTO;
     }
@@ -108,8 +112,8 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<CommentResponseDTO> getCommentsByPollId(Long pollId) {
-        List<Comment> comments = commentRepository.findByPollIdOrderByCreatedAtDesc(pollId);
-        
+        List<Comment> comments = commentRepository.findByPollIdAndModerationStatusOrderByCreatedAtDesc(pollId, ModerationStatus.APPROVED);
+
         if (comments.isEmpty()) {
             return List.of();
         }
@@ -124,7 +128,6 @@ public class CommentServiceImpl implements CommentService {
 
         Map<Long, String> anonymousDisplayNames = buildAnonymousDisplayNameMap(comments);
 
-        // Get all comments and map them to DTOs
         List<CommentResponseDTO> allCommentDTOs = comments.stream()
                 .map(comment -> {
                     String voteStatus = userVoteMap.getOrDefault(comment.getUser().getId(), "Chưa vote");
@@ -132,28 +135,19 @@ public class CommentServiceImpl implements CommentService {
                 })
                 .collect(Collectors.toList());
 
-        // Group into hierarchical structure (Parent -> Replies)
         List<CommentResponseDTO> rootComments = allCommentDTOs.stream()
                 .filter(c -> c.getParentId() == null)
                 .collect(Collectors.toList());
 
         Map<Long, List<CommentResponseDTO>> repliesByParentId = allCommentDTOs.stream()
                 .filter(c -> c.getParentId() != null)
-                .sorted(Comparator.comparing(CommentResponseDTO::getCreatedAt)) // Sort replies ascending
+                .sorted(Comparator.comparing(CommentResponseDTO::getCreatedAt))
                 .collect(Collectors.groupingBy(CommentResponseDTO::getParentId));
 
-        rootComments.forEach(root -> {
-            root.setReplies(repliesByParentId.getOrDefault(root.getId(), List.of()));
-        });
-
-        // We only return the root comments (because replies are nested inside them)
+        rootComments.forEach(root -> root.setReplies(repliesByParentId.getOrDefault(root.getId(), List.of())));
         return rootComments;
     }
 
-    /**
-     * Builds a stable map: userId -> "Anonymous 1", "Anonymous 2", etc. for anonymous commenters.
-     * Same user on same poll gets the same label; different users get different numbers.
-     */
     private Map<Long, String> buildAnonymousDisplayNameMap(List<Comment> comments) {
         List<Comment> anonymousComments = comments.stream()
                 .filter(Comment::isAnonymous)
@@ -163,7 +157,6 @@ public class CommentServiceImpl implements CommentService {
             return Map.of();
         }
 
-        // Order by first appearance: userId -> min(createdAt)
         Map<Long, java.time.LocalDateTime> firstSeen = anonymousComments.stream()
                 .collect(Collectors.groupingBy(
                         c -> c.getUser().getId(),
@@ -173,7 +166,6 @@ public class CommentServiceImpl implements CommentService {
                         )
                 ));
 
-        // Sort userIds by first appearance time
         List<Long> orderedUserIds = firstSeen.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
@@ -189,8 +181,7 @@ public class CommentServiceImpl implements CommentService {
     private CommentResponseDTO mapToDTO(Comment comment, String voteStatus, Map<Long, String> anonymousDisplayNames) {
         String displayUsername;
         if (comment.isAnonymous()) {
-            displayUsername = anonymousDisplayNames.getOrDefault(
-                    comment.getUser().getId(), "Anonymous");
+            displayUsername = anonymousDisplayNames.getOrDefault(comment.getUser().getId(), "Anonymous");
         } else {
             displayUsername = comment.getUser().getUsername();
         }
@@ -207,7 +198,10 @@ public class CommentServiceImpl implements CommentService {
                 .createdAt(comment.getCreatedAt())
                 .voteStatus(voteStatus)
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
-                .replies(java.util.List.of()) // Initialize empty mutable list for later modification if needed, or keeping it empty here since we will set it during tree building
+                .replies(java.util.List.of())
+                .moderationStatus(comment.getModerationStatus() != null ? comment.getModerationStatus().name() : null)
+                .moderationLabel(comment.getModerationLabel())
+                .moderationConfidence(comment.getModerationConfidence())
                 .build();
     }
 }

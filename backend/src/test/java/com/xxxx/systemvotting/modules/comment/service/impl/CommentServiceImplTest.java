@@ -1,8 +1,7 @@
 package com.xxxx.systemvotting.modules.comment.service.impl;
 
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.common.service.RealTimeService;
-import com.xxxx.systemvotting.exception.AppException;
-import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.entity.Comment;
@@ -26,7 +25,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -37,18 +35,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CommentServiceImplTest {
 
-    @Mock
-    private CommentRepository commentRepository;
-    @Mock
-    private PollRepository pollRepository;
-    @Mock
-    private VoteRepository voteRepository;
-    @Mock
-    private RealTimeService realTimeService;
-    @Mock
-    private UserRepository userRepository;
-    @Mock
-    private CommentModerationService commentModerationService;
+    @Mock private CommentRepository commentRepository;
+    @Mock private PollRepository pollRepository;
+    @Mock private VoteRepository voteRepository;
+    @Mock private RealTimeService realTimeService;
+    @Mock private UserRepository userRepository;
+    @Mock private CommentModerationService commentModerationService;
 
     @InjectMocks
     private CommentServiceImpl commentService;
@@ -85,6 +77,7 @@ class CommentServiceImplTest {
         assertEquals("guy", response.getUsername());
         assertEquals("Toi chon phuong an 2 vi tiet kiem chi phi hon", response.getContent());
         assertFalse(response.isAnonymous());
+        assertEquals("APPROVED", response.getModerationStatus());
 
         ArgumentCaptor<Comment> savedCaptor = ArgumentCaptor.forClass(Comment.class);
         verify(commentRepository).save(savedCaptor.capture());
@@ -94,7 +87,7 @@ class CommentServiceImplTest {
     }
 
     @Test
-    void createComment_blocksSpamComment() {
+    void createComment_marksSpamCommentForReviewWithoutBroadcast() {
         Long userId = 10L;
         Long pollId = 20L;
 
@@ -111,11 +104,19 @@ class CommentServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(commentModerationService.moderate(request.getContent().trim()))
                 .thenReturn(new CommentModerationService.ModerationResult("spam", true, "blocked", 0.96, true));
+        when(voteRepository.findByUserIdAndPollId(userId, pollId)).thenReturn(Optional.empty());
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment c = invocation.getArgument(0);
+            c.setId(55L);
+            c.setCreatedAt(LocalDateTime.now());
+            return c;
+        });
 
-        AppException ex = assertThrows(AppException.class, () -> commentService.createComment(request, userId));
-        assertEquals(ErrorCode.COMMENT_BLOCKED, ex.getErrorCode());
+        CommentResponseDTO response = commentService.createComment(request, userId);
 
-        verify(commentRepository, never()).save(any(Comment.class));
+        assertEquals("REVIEW", response.getModerationStatus());
+        assertEquals("spam", response.getModerationLabel());
+        verify(commentRepository).save(any(Comment.class));
         verify(realTimeService, never()).broadcast(any(), any());
     }
 
@@ -138,7 +139,7 @@ class CommentServiceImplTest {
         when(commentModerationService.moderate(request.getContent().trim()))
                 .thenReturn(CommentModerationService.ModerationResult.unavailable());
         when(voteRepository.findByUserIdAndPollId(userId, pollId)).thenReturn(Optional.empty());
-        when(commentRepository.findByPollIdOrderByCreatedAtDesc(pollId)).thenReturn(List.of());
+        when(commentRepository.findByPollIdAndModerationStatusOrderByCreatedAtDesc(pollId, ModerationStatus.APPROVED)).thenReturn(List.of());
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment c = invocation.getArgument(0);
             c.setId(100L);
@@ -150,6 +151,7 @@ class CommentServiceImplTest {
 
         assertEquals(100L, response.getId());
         assertTrue(response.isAnonymous());
+        assertEquals("APPROVED", response.getModerationStatus());
         verify(commentRepository).save(any(Comment.class));
     }
 }
