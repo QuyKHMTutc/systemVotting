@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import Navbar from '../components/Navbar';
+import { ModerationBadge } from '../components/ModerationBadge';
 
 const CreatePoll = () => {
     const [question, setQuestion] = useState('');
@@ -11,6 +12,8 @@ const CreatePoll = () => {
     const [options, setOptions] = useState<string[]>(['', '']);
     const [endTime, setEndTime] = useState('');
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [createdModeration, setCreatedModeration] = useState<{ status?: 'APPROVED' | 'REVIEW' | 'REJECTED'; label?: string; confidence?: number; field?: string } | null>(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -55,20 +58,37 @@ const CreatePoll = () => {
 
         setLoading(true);
         setError('');
+        setSuccessMessage('');
+        setCreatedModeration(null);
 
         try {
-            // Send local time string directly, appending seconds since datetime-local input omits them
             const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
             const payload = {
                 title: question,
                 tags: tags.length > 0 ? tags : ['General'],
-                isAnonymous: isAnonymous,
+                isAnonymous,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime
             };
 
-            await pollService.createPoll(payload);
-            navigate('/');
+            const created = await pollService.createPoll(payload) as any;
+            const moderation = {
+                status: created.data?.moderationStatus || created.moderationStatus,
+                label: created.data?.moderationLabel || created.moderationLabel,
+                confidence: created.data?.moderationConfidence || created.moderationConfidence,
+                field: created.data?.moderationField || created.moderationField,
+            };
+            setCreatedModeration(moderation);
+
+            if (moderation.status === 'REVIEW') {
+                setSuccessMessage('Poll của bạn đã được tạo nhưng đang chờ kiểm duyệt trước khi hiển thị công khai.');
+                setTimeout(() => navigate('/profile?tab=created'), 1400);
+            } else if (moderation.status === 'REJECTED') {
+                setSuccessMessage('Poll của bạn đã được tạo nhưng hiện đang ở trạng thái bị từ chối.');
+            } else {
+                setSuccessMessage('Poll created successfully.');
+                setTimeout(() => navigate('/'), 900);
+            }
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to create poll');
         } finally {
@@ -76,9 +96,8 @@ const CreatePoll = () => {
         }
     };
 
-    // Get minimum datetime for the picker (now)
     const now = new Date();
-    const tzoffset = now.getTimezoneOffset() * 60000; // offset in milliseconds
+    const tzoffset = now.getTimezoneOffset() * 60000;
     const localISOTime = (new Date(now.getTime() - tzoffset)).toISOString().slice(0, 16);
 
     return (
@@ -93,6 +112,20 @@ const CreatePoll = () => {
                     {error && (
                         <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-xl mb-6">
                             {error}
+                        </div>
+                    )}
+
+                    {successMessage && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/40 text-emerald-200 p-4 rounded-xl mb-6 space-y-3">
+                            <div>{successMessage}</div>
+                            {createdModeration?.status && (
+                                <ModerationBadge
+                                    status={createdModeration.status}
+                                    label={createdModeration.label}
+                                    confidence={createdModeration.confidence}
+                                    field={createdModeration.field}
+                                />
+                            )}
                         </div>
                     )}
 
@@ -111,16 +144,11 @@ const CreatePoll = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-indigo-100 mb-3">Tags (Tối đa 5 thẻ)</label>
-                            
                             <div className="flex flex-wrap gap-2 mb-3">
                                 {tags.map((tag) => (
                                     <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 text-white text-sm font-medium shadow-sm">
                                         #{tag}
-                                        <button 
-                                            type="button" 
-                                            onClick={() => removeTag(tag)}
-                                            className="ml-1 text-white/70 hover:text-white transition-colors"
-                                        >
+                                        <button type="button" onClick={() => removeTag(tag)} className="ml-1 text-white/70 hover:text-white transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                                             </svg>
@@ -135,7 +163,7 @@ const CreatePoll = () => {
                                 onKeyDown={handleTagKeyDown}
                                 disabled={tags.length >= 5}
                                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
-                                placeholder={tags.length >= 5 ? "Đã đạt tối đa 5 thẻ" : "Nhập tag và bấm Enter (VD: CongNghe, GiaiTri)"}
+                                placeholder={tags.length >= 5 ? 'Đã đạt tối đa 5 thẻ' : 'Nhập tag và bấm Enter (VD: CongNghe, GiaiTri)'}
                             />
                         </div>
 
@@ -189,16 +217,10 @@ const CreatePoll = () => {
                             />
                         </div>
 
-                        {/* Anonymous Toggle */}
                         <div className="pt-2 border-t border-white/10">
                             <label className="flex items-center cursor-pointer group">
                                 <div className="relative">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only" 
-                                        checked={isAnonymous}
-                                        onChange={() => setIsAnonymous(!isAnonymous)}
-                                    />
+                                    <input type="checkbox" className="sr-only" checked={isAnonymous} onChange={() => setIsAnonymous(!isAnonymous)} />
                                     <div className={`block w-12 h-7 rounded-full transition-colors ${isAnonymous ? 'bg-pink-500' : 'bg-white/10'}`}></div>
                                     <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${isAnonymous ? 'transform translate-x-5' : ''}`}></div>
                                 </div>
@@ -212,11 +234,7 @@ const CreatePoll = () => {
                         </div>
 
                         <div className="pt-4 flex justify-end gap-4">
-                            <button
-                                type="button"
-                                onClick={() => navigate(-1)}
-                                className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-all"
-                            >
+                            <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-all">
                                 Cancel
                             </button>
                             <button
