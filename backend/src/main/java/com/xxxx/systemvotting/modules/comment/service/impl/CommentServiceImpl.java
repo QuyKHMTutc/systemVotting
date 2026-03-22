@@ -6,16 +6,18 @@ import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.entity.Comment;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
+import com.xxxx.systemvotting.modules.comment.service.CommentModerationService;
 import com.xxxx.systemvotting.modules.comment.service.CommentService;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.common.service.RealTimeService;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -27,12 +29,15 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final PollRepository pollRepository;
     private final VoteRepository voteRepository;
     private final RealTimeService realTimeService;
+    private final UserRepository userRepository;
+    private final CommentModerationService commentModerationService;
 
     @Override
     @org.springframework.transaction.annotation.Transactional
@@ -41,13 +46,26 @@ public class CommentServiceImpl implements CommentService {
         Poll poll = pollRepository.findById(request.getPollId())
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        User currentUser = com.xxxx.systemvotting.modules.user.repository.UserRepository.class.cast(org.springframework.beans.factory.BeanFactory.class.cast(org.springframework.web.context.support.WebApplicationContextUtils.getRequiredWebApplicationContext(((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext())).getBean(com.xxxx.systemvotting.modules.user.repository.UserRepository.class)).findById(userId)
+        User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        String normalizedContent = request.getContent().trim();
+        CommentModerationService.ModerationResult moderationResult = commentModerationService.moderate(normalizedContent);
+        if (moderationResult.available()) {
+            log.info("Comment moderation result userId={} pollId={} label={} confidence={} blocked={}",
+                    userId, poll.getId(), moderationResult.label(), moderationResult.confidence(), moderationResult.blocked());
+        } else {
+            log.warn("Comment moderation unavailable for userId={} pollId={}", userId, poll.getId());
+        }
+
+        if (moderationResult.blocked()) {
+            throw new AppException(ErrorCode.COMMENT_BLOCKED);
+        }
 
         Comment.CommentBuilder commentBuilder = Comment.builder()
                 .poll(poll)
                 .user(currentUser)
-                .content(request.getContent())
+                .content(normalizedContent)
                 .isAnonymous(request.isAnonymous());
 
         if (request.getParentId() != null) {

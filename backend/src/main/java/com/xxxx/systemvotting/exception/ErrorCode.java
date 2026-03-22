@@ -26,6 +26,7 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND(404, "Resource not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(400, "Invalid request", HttpStatus.BAD_REQUEST),
     DUPLICATE_RESOURCE(409, "Duplicate resource", HttpStatus.CONFLICT),
+    COMMENT_BLOCKED(400, "Comment was blocked by moderation", HttpStatus.BAD_REQUEST),
     TOKEN_REFRESH_EXPIRED(403, "Refresh token is invalid or expired", HttpStatus.FORBIDDEN),
     RATE_LIMIT_EXCEEDED(429, "Rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS);
 
