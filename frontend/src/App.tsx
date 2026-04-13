@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -31,9 +32,10 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen">
-          <Routes>
-            <Route path="/login" element={<Login />} />
+        <WebSocketProvider>
+          <div className="min-h-screen">
+            <Routes>
+              <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -61,8 +63,9 @@ function App() {
                 <Profile />
               </ProtectedRoute>
             } />
-          </Routes>
-        </div>
+            </Routes>
+          </div>
+        </WebSocketProvider>
       </AuthProvider>
     </Router>
   );

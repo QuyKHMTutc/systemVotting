@@ -32,5 +32,9 @@ export const authService = {
     resendRegistrationOtp: async (email: string) => {
         const response = await api.post('/auth/resend-registration-otp', { email });
         return response.data;
+    },
+    logout: async () => {
+        const response = await api.post('/auth/logout');
+        return response.data;
     }
 };

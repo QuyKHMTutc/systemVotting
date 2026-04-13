@@ -28,6 +28,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.CookieValue;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Tag(name = "Auth", description = "Đăng ký, đăng nhập, refresh token, quên mật khẩu, xác thực OTP")
 @RestController
@@ -39,6 +43,28 @@ public class AuthController {
         private final UserService userService;
         private final PasswordResetService passwordResetService;
         private final GoogleAuthService googleAuthService;
+
+        private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+                ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                        .httpOnly(true)
+                        .secure(true) // Required for SameSite=None
+                        .path("/")
+                        .maxAge(7 * 24 * 60 * 60) // 7 days
+                        .sameSite("None")
+                        .build();
+                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
+
+        private void clearRefreshTokenCookie(HttpServletResponse response) {
+                ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                        .httpOnly(true)
+                        .secure(true)
+                        .path("/")
+                        .maxAge(0)
+                        .sameSite("None")
+                        .build();
+                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
 
         @Operation(summary = "Đăng ký tài khoản", description = "Tạo tài khoản mới, hệ thống gửi OTP qua email để xác thực")
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Đăng ký thành công"),
@@ -59,8 +85,10 @@ public class AuthController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Sai email hoặc mật khẩu") })
         @PostMapping("/login")
         public ApiResponse<AuthResponseDTO> login(
-                        @Valid @RequestBody AuthRequestDTO requestDTO) {
+                        @Valid @RequestBody AuthRequestDTO requestDTO, 
+                        HttpServletResponse response) {
                 AuthResponseDTO authResponse = authService.login(requestDTO);
+                addRefreshTokenCookie(response, authResponse.refreshToken());
                 return ApiResponse.<AuthResponseDTO>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Success")
@@ -73,8 +101,10 @@ public class AuthController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Token không hợp lệ") })
         @PostMapping("/google")
         public ApiResponse<AuthResponseDTO> loginWithGoogle(
-                        @Valid @RequestBody com.xxxx.systemvotting.modules.auth.dto.request.GoogleAuthRequestDTO requestDTO) {
+                        @Valid @RequestBody com.xxxx.systemvotting.modules.auth.dto.request.GoogleAuthRequestDTO requestDTO,
+                        HttpServletResponse response) {
                 AuthResponseDTO authResponse = googleAuthService.authenticateWithGoogle(requestDTO.idToken());
+                addRefreshTokenCookie(response, authResponse.refreshToken());
                 return ApiResponse.<AuthResponseDTO>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Success")
@@ -87,8 +117,14 @@ public class AuthController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Refresh token hết hạn hoặc không hợp lệ") })
         @PostMapping("/refreshToken")
         public ApiResponse<AuthResponseDTO> refreshToken(
-                        @Valid @RequestBody TokenRefreshRequestDTO request) {
+                        @CookieValue(name = "refreshToken", required = false) String refreshToken,
+                        HttpServletResponse response) {
+                if (refreshToken == null) {
+                        throw new com.xxxx.systemvotting.exception.AppException(com.xxxx.systemvotting.exception.ErrorCode.UNAUTHORIZED);
+                }
+                TokenRefreshRequestDTO request = new TokenRefreshRequestDTO(refreshToken);
                 AuthResponseDTO authResponse = authService.refreshToken(request);
+                addRefreshTokenCookie(response, authResponse.refreshToken());
                 return ApiResponse.<AuthResponseDTO>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Success")
@@ -155,13 +191,14 @@ public class AuthController {
         @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đăng xuất thành công") })
         @PostMapping("/logout")
         public ApiResponse<Void> logout(jakarta.servlet.http.HttpServletRequest request,
-                        @RequestBody(required = false) com.xxxx.systemvotting.modules.auth.dto.request.LogoutRequestDTO logoutRequest) {
+                        HttpServletResponse response,
+                        @CookieValue(name = "refreshToken", required = false) String refreshToken) {
                 String authHeader = request.getHeader("Authorization");
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
                         String jwt = authHeader.substring(7);
-                        String refreshToken = logoutRequest != null ? logoutRequest.getRefreshToken() : null;
                         authService.logout(jwt, refreshToken);
                 }
+                clearRefreshTokenCookie(response);
                 return ApiResponse.<Void>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Logged out successfully")
