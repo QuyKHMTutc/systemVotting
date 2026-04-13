@@ -30,15 +30,22 @@ public class AppInitialDataConfiguration implements CommandLineRunner {
                     .email(ADMIN_EMAIL)
                     .password(passwordEncoder.encode(ADMIN_PASSWORD))
                     .role(Role.ADMIN)
+                    .isVerified(true)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
 
             userRepository.save(admin);
             log.info("SuperAdmin account created: {}", ADMIN_EMAIL);
+        } else {
+            userRepository.findByEmail(ADMIN_EMAIL).ifPresent(admin -> {
+                if (!admin.isVerified()) {
+                    admin.setVerified(true);
+                    userRepository.save(admin);
+                    log.info("SuperAdmin account verification updated: {}", ADMIN_EMAIL);
+                }
+            });
         }
-
-
 
         log.info("Initial data created successfully");
     }

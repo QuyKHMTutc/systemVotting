@@ -242,7 +242,7 @@ const Dashboard = () => {
           <div className="flex justify-center items-center gap-4 mt-12 mb-8">
             <button
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={pollPage.number === 0}
+              disabled={pollPage.currentPage === 0}
               className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/10"
               aria-label="Previous"
             >
@@ -251,11 +251,11 @@ const Dashboard = () => {
               </svg>
             </button>
             <span className="text-white/80 font-medium">
-              Page <span className="text-white">{pollPage.number + 1}</span> of {pollPage.totalPages}
+              Page <span className="text-white">{pollPage.currentPage + 1}</span> of {pollPage.totalPages}
             </span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(pollPage.totalPages - 1, p + 1))}
-              disabled={pollPage.number >= pollPage.totalPages - 1}
+              disabled={pollPage.currentPage >= pollPage.totalPages - 1}
               className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/10"
               aria-label="Next"
             >

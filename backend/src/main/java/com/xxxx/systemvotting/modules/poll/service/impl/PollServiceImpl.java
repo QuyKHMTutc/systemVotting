@@ -140,9 +140,9 @@ public class PollServiceImpl implements PollService {
     public PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction) {
         Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
+        sort = sort.and(Sort.by("id").descending());
         
-        // Ensure 1-based and 0-based compatibility for the frontend
-        int pageNumber = page > 0 ? page - 1 : 0;
+        int pageNumber = Math.max(0, page);
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
         Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, java.time.LocalDateTime.now(), pageable);
         
@@ -155,12 +155,9 @@ public class PollServiceImpl implements PollService {
             enrichPollWithRedisData(dto);
             return dto;
         });
-        
-        // Return 1-based page number for client if it requested 1-based, or match zero-based
-        int responsePage = page > 0 ? page : (mappedPage.getNumber() == 0 && page == 0 ? 0 : mappedPage.getNumber() + 1);
 
         return PageResponse.<PollResponseDTO>builder()
-                .currentPage(responsePage)
+                .currentPage(mappedPage.getNumber())
                 .pageSize(mappedPage.getSize())
                 .totalPages(mappedPage.getTotalPages())
                 .totalElements(mappedPage.getTotalElements())
