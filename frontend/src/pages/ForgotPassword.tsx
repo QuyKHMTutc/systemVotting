@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import { KeyRound, Mail, ArrowLeft, Loader2, Fingerprint, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPassword = () => {
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [emailError, setEmailError] = useState('');
@@ -19,7 +21,7 @@ const ForgotPassword = () => {
     const validateEmail = (emailStr: string) => {
         const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr);
         if (!isValid && emailStr.length > 0) {
-            setEmailError('Vui lòng nhập email hợp lệ (vd: name@example.com)');
+            setEmailError(t('forgotPassword.invalidEmail'));
         } else {
             setEmailError('');
         }
@@ -52,11 +54,11 @@ const ForgotPassword = () => {
                 navigate('/reset-password', { 
                     state: { 
                         email, 
-                        message: 'OTP has been sent to your email. Check your inbox and use the code to reset your password.' 
+                        message: t('forgotPassword.otpSent') 
                     } 
                 });
             } else {
-                setError(response.message || 'Failed to send OTP');
+                setError(response.message || t('forgotPassword.failedToSend'));
                 triggerShake();
             }
         } catch (err: any) {
@@ -65,7 +67,7 @@ const ForgotPassword = () => {
                 navigate('/register', { state: { email, stage: 'verify' } });
                 return;
             }
-            setError(msg || 'Failed to send OTP. Please check the email address.');
+            setError(msg || t('forgotPassword.failedToSendCheckEmail'));
             triggerShake();
         } finally {
             setLoading(false);
@@ -85,8 +87,8 @@ const ForgotPassword = () => {
                             <div className="w-16 h-16 bg-gradient-to-tr from-pink-500/20 to-purple-500/20 border border-pink-500/20 rounded-2xl shadow-inner flex items-center justify-center mx-auto mb-5 transform rotate-3">
                                 <KeyRound className="w-8 h-8 text-pink-400" />
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 sm:mb-3 tracking-tight">Forgot Password?</h1>
-                            <p className="text-pink-100 font-medium text-sm px-4">Enter your registered email and we'll send you an OTP to reset your password.</p>
+                            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 sm:mb-3 tracking-tight">{t('forgotPassword.title')}</h1>
+                            <p className="text-pink-100 font-medium text-sm px-4">{t('forgotPassword.subtitle')}</p>
                         </div>
 
                         <div className={`transition-all duration-300 overflow-hidden ${error ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
@@ -97,7 +99,7 @@ const ForgotPassword = () => {
 
                         <form onSubmit={handleSubmit} className="space-y-7 relative">
                             <div className="space-y-2">
-                                <label htmlFor="email" className="block text-xs font-bold text-pink-100 mb-2 uppercase tracking-widest ml-1">Email Address</label>
+                                <label htmlFor="email" className="block text-xs font-bold text-pink-100 mb-2 uppercase tracking-widest ml-1">{t('forgotPassword.emailLabel')}</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <Mail className={`h-5 w-5 transition-colors ${emailError ? 'text-red-400' : 'text-white/50 group-focus-within:text-pink-400'}`} />
@@ -130,10 +132,10 @@ const ForgotPassword = () => {
                                 {loading ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        <span>Sending OTP...</span>
+                                        <span>{t('forgotPassword.sendingStatus')}</span>
                                     </>
                                 ) : (
-                                    'Send Reset OTP'
+                                    t('forgotPassword.sendOtp')
                                 )}
                             </button>
                         </form>
@@ -141,7 +143,7 @@ const ForgotPassword = () => {
                         <div className="mt-8 pt-6 border-t border-white/10 text-center">
                             <Link to="/login" className="inline-flex items-center gap-2 text-white/60 hover:text-white hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] text-sm font-bold transition-all group">
                                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                                Back to Sign In
+                                {t('forgotPassword.backToSignIn')}
                             </Link>
                         </div>
                     </div>
@@ -159,21 +161,21 @@ const ForgotPassword = () => {
                     <div className="glass-panel p-6 rounded-2xl inline-block mb-8 rotate-6 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
                         <KeyRound className="w-16 h-16 text-pink-400" />
                     </div>
-                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">Recover Your<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Account Validly</span></h2>
+                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">{t('forgotPassword.rightTitle1')}<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{t('forgotPassword.rightTitle2')}</span></h2>
                     <p className="text-lg text-pink-100/70 mb-10 leading-relaxed font-medium">
-                        Your data is safe. We use high-tier OTP validation to ensure only you can regain access to your critical assets.
+                        {t('forgotPassword.rightDesc')}
                     </p>
                     
                     <div className="grid grid-cols-2 gap-6">
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
                             <Fingerprint className="w-8 h-8 text-pink-400 mb-3" />
-                            <h3 className="text-white font-bold mb-1">Identity Verified</h3>
-                            <p className="text-sm text-pink-100/60 font-medium">Bulletproof authentication logic.</p>
+                            <h3 className="text-white font-bold mb-1">{t('forgotPassword.rightFeat1Title')}</h3>
+                            <p className="text-sm text-pink-100/60 font-medium">{t('forgotPassword.rightFeat1Desc')}</p>
                         </div>
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
                             <Zap className="w-8 h-8 text-purple-400 mb-3" />
-                            <h3 className="text-white font-bold mb-1">High Speed</h3>
-                            <p className="text-sm text-pink-100/60 font-medium">Fast action recovery system.</p>
+                            <h3 className="text-white font-bold mb-1">{t('forgotPassword.rightFeat2Title')}</h3>
+                            <p className="text-sm text-pink-100/60 font-medium">{t('forgotPassword.rightFeat2Desc')}</p>
                         </div>
                     </div>
                 </div>

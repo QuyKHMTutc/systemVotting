@@ -4,8 +4,10 @@ import { authService } from '../services/auth.service';
 import OtpInput from '../components/OtpInput';
 import PasswordStrength from '../components/PasswordStrength';
 import { ShieldCheck, Lock, Eye, EyeOff, Loader2, ArrowLeft, Activity, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const ResetPassword = () => {
+    const { t } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -44,13 +46,13 @@ const ResetPassword = () => {
         try {
             const response = await authService.forgotPassword(email);
             if (response.code === 200) {
-                setSuccess('OTP has been re-sent to your email.');
+                setSuccess(t('resetPassword.otpResent'));
                 setCountdown(60);
             } else {
-                setError(response.message || 'Failed to resend OTP');
+                setError(response.message || t('resetPassword.failedResend'));
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to resend OTP.');
+            setError(err.response?.data?.message || t('resetPassword.failedResend'));
         } finally {
             setResendLoading(false);
         }
@@ -62,12 +64,12 @@ const ResetPassword = () => {
         setSuccess('');
 
         if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
+            setError(t('resetPassword.passwordsNotMatch'));
             triggerShake();
             return;
         }
         if (newPassword.length < 6) {
-            setError('Password must be at least 6 characters');
+            setError(t('resetPassword.passwordMinLength'));
             triggerShake();
             return;
         }
@@ -76,14 +78,14 @@ const ResetPassword = () => {
         try {
             const response = await authService.resetPassword({ email, otp, newPassword });
             if (response.code === 200) {
-                setSuccess('Password reset successfully! Redirecting to login...');
+                setSuccess(t('resetPassword.resetSuccess'));
                 setTimeout(() => navigate('/login'), 2500);
             } else {
-                setError(response.message || 'Failed to reset password');
+                setError(response.message || t('resetPassword.failedReset'));
                 triggerShake();
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Invalid or expired OTP. Please try again.');
+            setError(err.response?.data?.message || t('resetPassword.invalidOtp'));
             triggerShake();
         } finally {
             setLoading(false);
@@ -105,8 +107,8 @@ const ResetPassword = () => {
                             <div className="w-16 h-16 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 border border-purple-500/20 rounded-2xl shadow-inner flex items-center justify-center mx-auto mb-5 transform -rotate-3">
                                 <ShieldCheck className="w-8 h-8 text-purple-400" />
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 sm:mb-3 tracking-tight">Reset Password</h1>
-                            <p className="text-pink-100 font-medium text-sm px-2">Enter the OTP sent to your email and create a new password.</p>
+                            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 sm:mb-3 tracking-tight">{t('resetPassword.title')}</h1>
+                            <p className="text-pink-100 font-medium text-sm px-2">{t('resetPassword.subtitle')}</p>
                         </div>
 
                         <div className={`transition-all duration-300 overflow-hidden ${error ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
@@ -127,14 +129,14 @@ const ResetPassword = () => {
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <label className="block text-xs font-bold text-pink-100 mb-2 uppercase tracking-widest ml-1">6-Digit OTP</label>
+                                    <label className="block text-xs font-bold text-pink-100 mb-2 uppercase tracking-widest ml-1">{t('resetPassword.otpLabel')}</label>
                                     <button
                                         type="button"
                                         onClick={handleResendOtp}
                                         disabled={countdown > 0 || resendLoading || !email || loading}
                                         className="text-xs font-bold text-pink-300 hover:text-pink-200 hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase mb-2"
                                     >
-                                        {resendLoading ? 'Sending...' : countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
+                                        {resendLoading ? t('resetPassword.sendingStatus') : countdown > 0 ? t('resetPassword.resendIn', { countdown }) : t('resetPassword.resendOtp')}
                                     </button>
                                 </div>
                                 <div className="flex justify-center">
@@ -143,7 +145,7 @@ const ResetPassword = () => {
                             </div>
 
                             <div className="space-y-1.5 pt-2">
-                                <label htmlFor="newPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">New Password</label>
+                                <label htmlFor="newPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('resetPassword.newPasswordLabel')}</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <Lock className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
@@ -154,7 +156,7 @@ const ResetPassword = () => {
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
-                                        placeholder="Minimum 6 characters"
+                                        placeholder={t('resetPassword.passwordPlaceholder')}
                                         required
                                         minLength={6}
                                         disabled={loading}
@@ -174,7 +176,7 @@ const ResetPassword = () => {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label htmlFor="confirmPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">Confirm Password</label>
+                                <label htmlFor="confirmPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('resetPassword.confirmPasswordLabel')}</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <ShieldCheck className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
@@ -185,7 +187,7 @@ const ResetPassword = () => {
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
-                                        placeholder="Confirm new password"
+                                        placeholder={t('resetPassword.confirmPasswordPlaceholder')}
                                         required
                                         disabled={loading}
                                     />
@@ -210,10 +212,10 @@ const ResetPassword = () => {
                                 {loading ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        <span>Resetting...</span>
+                                        <span>{t('resetPassword.resettingStatus')}</span>
                                     </>
                                 ) : (
-                                    'Reset Password'
+                                    t('resetPassword.submitBtn')
                                 )}
                             </button>
                         </form>
@@ -221,10 +223,10 @@ const ResetPassword = () => {
                         <div className="mt-8 pt-6 border-t border-white/10 text-center flex items-center justify-between">
                             <Link to="/forgot-password" className="inline-flex items-center gap-2 text-white/60 hover:text-white hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] text-sm font-bold transition-all group">
                                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                                Back
+                                {t('resetPassword.backBtn')}
                             </Link>
                             <Link to="/login" className="text-pink-300 hover:text-pink-200 hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] text-sm font-bold transition-all">
-                                Login
+                                {t('resetPassword.loginBtn')}
                             </Link>
                         </div>
                     </div>
@@ -242,21 +244,21 @@ const ResetPassword = () => {
                     <div className="glass-panel p-6 rounded-2xl inline-block mb-8 rotate-3 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
                         <ShieldCheck className="w-16 h-16 text-purple-400" />
                     </div>
-                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">Secure & Seamless<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Voting Platform</span></h2>
+                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">{t('login.rightTitle1')}<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{t('login.rightTitle2')}</span></h2>
                     <p className="text-lg text-pink-100/70 mb-10 leading-relaxed font-medium">
-                        Join millions of users who rely on our enterprise-grade security to manage and participate in critical consensus events globally.
+                        {t('login.rightDesc')}
                     </p>
                     
                     <div className="grid grid-cols-2 gap-6">
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
                             <Activity className="w-8 h-8 text-purple-400 mb-3" />
-                            <h3 className="text-white font-bold mb-1">Real-time Data</h3>
-                            <p className="text-sm text-pink-100/60 font-medium">Watch results update instantly.</p>
+                            <h3 className="text-white font-bold mb-1">{t('login.feat2Title')}</h3>
+                            <p className="text-sm text-pink-100/60 font-medium">{t('login.feat2Desc')}</p>
                         </div>
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
                             <Zap className="w-8 h-8 text-pink-400 mb-3" />
-                            <h3 className="text-white font-bold mb-1">High Speed</h3>
-                            <p className="text-sm text-pink-100/60 font-medium">Optimized for vast user loads.</p>
+                            <h3 className="text-white font-bold mb-1">{t('login.feat3Title')}</h3>
+                            <p className="text-sm text-pink-100/60 font-medium">{t('login.feat3Desc')}</p>
                         </div>
                     </div>
                 </div>

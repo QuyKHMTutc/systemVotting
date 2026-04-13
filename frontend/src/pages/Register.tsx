@@ -41,8 +41,8 @@ const Register = () => {
     // Also send an OTP the first time they arrive from login
     useEffect(() => {
         if (stage === 'verify' && resendCooldown === 0) {
-           startResendCooldown();
-           // to ensure they have a fresh code, but the backend handles that with the resend action
+            startResendCooldown();
+            // to ensure they have a fresh code, but the backend handles that with the resend action
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -65,7 +65,7 @@ const Register = () => {
     const validateEmail = (emailStr: string) => {
         const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr);
         if (!isValid && emailStr.length > 0) {
-            setEmailError('Vui lòng nhập email hợp lệ (vd: name@example.com)');
+            setEmailError('Vui lòng nhập email hợp lệ (vd: name@gmail.com)');
         } else {
             setEmailError('');
         }
@@ -134,7 +134,7 @@ const Register = () => {
 
             if (response.code === 200) {
                 setSuccess('Email verified! Redirecting to dashboard...');
-                
+
                 // Fire confetti on success
                 confetti({
                     particleCount: 150,
@@ -187,7 +187,7 @@ const Register = () => {
     // V2 Split-screen layout
     return (
         <div className="min-h-screen flex w-full">
-            
+
             {/* Left/Top Content: The Form */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-12 z-10">
                 <div className={`glass-panel w-full max-w-md p-6 sm:p-10 rounded-2xl sm:rounded-3xl transition-all duration-300 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -239,11 +239,10 @@ const Register = () => {
                                             value={email}
                                             onChange={handleEmailChange}
                                             onBlur={handleEmailBlur}
-                                            className={`w-full pl-11 pr-5 py-3.5 rounded-xl bg-white/5 border text-white placeholder-white/40 focus:outline-none focus:bg-white/10 transition-all font-medium ${
-                                                emailError 
-                                                ? 'border-red-500/50 focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
-                                                : 'border-white/20 hover:border-white/30 focus:border-pink-500 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)]'
-                                            }`}
+                                            className={`w-full pl-11 pr-5 py-3.5 rounded-xl bg-white/5 border text-white placeholder-white/40 focus:outline-none focus:bg-white/10 transition-all font-medium ${emailError
+                                                    ? 'border-red-500/50 focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                                                    : 'border-white/20 hover:border-white/30 focus:border-pink-500 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)]'
+                                                }`}
                                             placeholder={t('auth.emailPlaceholder')}
                                             required
                                         />
@@ -281,7 +280,7 @@ const Register = () => {
                                     </div>
                                     <PasswordStrength password={password} />
                                 </div>
-                                
+
                                 <div className="space-y-1.5">
                                     <label htmlFor="confirmPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('auth.confirmPassword')}</label>
                                     <div className="relative group">
@@ -317,11 +316,10 @@ const Register = () => {
                                             role="checkbox"
                                             aria-checked={agreeTerms}
                                             onClick={() => setAgreeTerms(!agreeTerms)}
-                                            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                                                agreeTerms 
-                                                ? 'bg-pink-500 border-pink-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]' 
-                                                : 'bg-white/5 border-white/20 hover:border-pink-500/50'
-                                            }`}
+                                            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${agreeTerms
+                                                    ? 'bg-pink-500 border-pink-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                                                    : 'bg-white/5 border-white/20 hover:border-pink-500/50'
+                                                }`}
                                         >
                                             {agreeTerms && <Check className="w-3.5 h-3.5" />}
                                         </button>
@@ -426,16 +424,16 @@ const Register = () => {
                     <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-600/30 rounded-full blur-[100px] mix-blend-screen" />
                     <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-600/20 rounded-full blur-[120px] mix-blend-screen" />
                 </div>
-                
+
                 <div className="z-10 max-w-lg">
                     <div className="glass-panel p-6 rounded-2xl inline-block mb-8 rotate-3 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
                         <Fingerprint className="w-16 h-16 text-pink-400" />
                     </div>
-                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">{t('auth.heroTitle1')}<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{t('auth.heroTitle2')}</span></h2>
+                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">{t('auth.heroTitle1')}<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{t('auth.heroTitle2')}</span></h2>
                     <p className="text-lg text-pink-100/70 mb-10 leading-relaxed font-medium">
                         {t('auth.heroDesc')}
                     </p>
-                    
+
                     <div className="grid grid-cols-2 gap-6">
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
                             <Activity className="w-8 h-8 text-purple-400 mb-3" />
