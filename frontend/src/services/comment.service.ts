@@ -10,6 +10,8 @@ export interface Comment {
     createdAt: string;
     voteStatus: string;
     parentId?: number;
+    pollId?: number;
+    pollTitle?: string;
     replies?: Comment[];
 }
 
@@ -23,6 +25,11 @@ export interface CommentCreateRequest {
 export const commentService = {
     getCommentsByPollId: async (pollId: number): Promise<Comment[]> => {
         const response = await api.get(`/comments/poll/${pollId}`);
+        return response.data.data;
+    },
+
+    getMyComments: async (): Promise<Comment[]> => {
+        const response = await api.get('/comments/me');
         return response.data.data;
     },
 

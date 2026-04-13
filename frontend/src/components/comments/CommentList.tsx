@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Comment } from '../../services/comment.service';
 import CommentItem from './CommentItem';
+import { useTranslation } from 'react-i18next';
 
 interface CommentListProps {
   comments: Comment[];
@@ -8,6 +9,7 @@ interface CommentListProps {
 }
 
 export default function CommentList({ comments, onReplySubmit }: CommentListProps) {
+  const { t } = useTranslation();
   const [expandedReplies, setExpandedReplies] = useState<Record<number, boolean>>({});
 
   const toggleReply = (commentId: number, forceOpen?: boolean) => {
@@ -20,7 +22,7 @@ export default function CommentList({ comments, onReplySubmit }: CommentListProp
   if (!comments?.length) {
     return (
       <div className="text-center py-12 text-white/50 rounded-xl border border-dashed border-white/10">
-        No comments yet. Be the first to share your thoughts!
+        {t('pollDetail.noCommentsBeFirst')}
       </div>
     );
   }

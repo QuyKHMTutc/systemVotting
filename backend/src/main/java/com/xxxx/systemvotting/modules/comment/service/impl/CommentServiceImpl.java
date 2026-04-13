@@ -132,6 +132,30 @@ public class CommentServiceImpl implements CommentService {
         return rootComments;
     }
 
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<CommentResponseDTO> getMyComments(Long userId) {
+        List<Comment> comments = commentRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (comments.isEmpty()) return List.of();
+
+        // Get all votes for this user across these polls
+        List<Long> pollIds = comments.stream().map(c -> c.getPoll().getId()).distinct().toList();
+        List<Vote> votes = voteRepository.findByUserIdAndPollIdIn(userId, pollIds);
+        Map<Long, String> pollVoteMap = votes.stream()
+                .collect(Collectors.toMap(
+                        v -> v.getPoll().getId(),
+                        v -> "Đã vote: " + v.getOption().getText(),
+                        (existing, replacement) -> existing
+                ));
+
+        return comments.stream()
+                .map(comment -> {
+                    String voteStatus = pollVoteMap.getOrDefault(comment.getPoll().getId(), "Chưa vote");
+                    return mapToDTO(comment, voteStatus, Map.of());
+                })
+                .collect(Collectors.toList());
+    }
+
     /**
      * Builds a stable map: userId -> "Anonymous 1", "Anonymous 2", etc. for anonymous commenters.
      * Same user on same poll gets the same label; different users get different numbers.
@@ -189,6 +213,8 @@ public class CommentServiceImpl implements CommentService {
                 .createdAt(comment.getCreatedAt())
                 .voteStatus(voteStatus)
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .pollId(comment.getPoll() != null ? comment.getPoll().getId() : null)
+                .pollTitle(comment.getPoll() != null ? comment.getPoll().getTitle() : null)
                 .replies(java.util.List.of()) // Initialize empty mutable list for later modification if needed, or keeping it empty here since we will set it during tree building
                 .build();
     }

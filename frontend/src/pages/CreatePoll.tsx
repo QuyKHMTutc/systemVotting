@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import Navbar from '../components/Navbar';
+import { useTranslation } from 'react-i18next';
 
 const CreatePoll = () => {
+    const { t } = useTranslation();
     const [question, setQuestion] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
@@ -49,7 +51,7 @@ const CreatePoll = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (options.some(opt => opt.trim() === '')) {
-            setError('All options must be filled');
+            setError(t('createPoll.errorEmptyOptions'));
             return;
         }
 
@@ -70,7 +72,7 @@ const CreatePoll = () => {
             await pollService.createPoll(payload);
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create poll');
+            setError(err.response?.data?.message || t('createPoll.errorFailed'));
         } finally {
             setLoading(false);
         }
@@ -87,8 +89,8 @@ const CreatePoll = () => {
 
             <main className="max-w-3xl mx-auto px-6">
                 <div className="glass-panel p-8 rounded-2xl shadow-xl">
-                    <h1 className="text-3xl font-bold text-white mb-2">Create New Poll</h1>
-                    <p className="text-indigo-200/80 mb-8">Set up a question and let the community vote.</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">{t('createPoll.title')}</h1>
+                    <p className="text-indigo-200/80 mb-8">{t('createPoll.subtitle')}</p>
 
                     {error && (
                         <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-xl mb-6">
@@ -98,19 +100,19 @@ const CreatePoll = () => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-indigo-100 mb-2">Poll Question</label>
+                            <label className="block text-sm font-medium text-indigo-100 mb-2">{t('createPoll.question')}</label>
                             <input
                                 type="text"
                                 value={question}
                                 onChange={(e) => setQuestion(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                                placeholder="What would you like to ask?"
+                                placeholder={t('createPoll.questionPlaceholder')}
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-indigo-100 mb-3">Tags (Tối đa 5 thẻ)</label>
+                            <label className="block text-sm font-medium text-indigo-100 mb-3">{t('createPoll.tags')}</label>
                             
                             <div className="flex flex-wrap gap-2 mb-3">
                                 {tags.map((tag) => (
@@ -135,12 +137,12 @@ const CreatePoll = () => {
                                 onKeyDown={handleTagKeyDown}
                                 disabled={tags.length >= 5}
                                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
-                                placeholder={tags.length >= 5 ? "Đã đạt tối đa 5 thẻ" : "Nhập tag và bấm Enter (VD: CongNghe, GiaiTri)"}
+                                placeholder={tags.length >= 5 ? t('createPoll.tagsMaxReached') : t('createPoll.tagsPlaceholder')}
                             />
                         </div>
 
                         <div className="space-y-4">
-                            <label className="block text-sm font-medium text-indigo-100 mb-2">Options</label>
+                            <label className="block text-sm font-medium text-indigo-100 mb-2">{t('createPoll.options')}</label>
                             {options.map((option, index) => (
                                 <div key={index} className="flex gap-3 relative group">
                                     <input
@@ -148,7 +150,7 @@ const CreatePoll = () => {
                                         value={option}
                                         onChange={(e) => handleOptionChange(index, e.target.value)}
                                         className="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
-                                        placeholder={`Option ${index + 1}`}
+                                        placeholder={t('createPoll.optionPlaceholder', { index: index + 1 })}
                                         required
                                     />
                                     {options.length > 2 && (
@@ -156,7 +158,7 @@ const CreatePoll = () => {
                                             type="button"
                                             onClick={() => handleRemoveOption(index)}
                                             className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/30 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                                            title="Remove Option"
+                                            title={t('createPoll.removeOption')}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -173,12 +175,12 @@ const CreatePoll = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400 group-hover:text-pink-400 transition-colors" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                                 </svg>
-                                Add another option
+                                {t('createPoll.addOption')}
                             </button>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-indigo-100 mb-2">End Date & Time</label>
+                            <label className="block text-sm font-medium text-indigo-100 mb-2">{t('createPoll.endTime')}</label>
                             <input
                                 type="datetime-local"
                                 min={localISOTime}
@@ -203,9 +205,9 @@ const CreatePoll = () => {
                                     <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${isAnonymous ? 'transform translate-x-5' : ''}`}></div>
                                 </div>
                                 <div className="ml-4">
-                                    <span className="block text-white font-medium">Bảo mật ẩn danh (Anonymous Mode)</span>
+                                    <span className="block text-white font-medium">{t('createPoll.anonymousMode')}</span>
                                     <span className="block text-xs text-indigo-200/60 mt-0.5 group-hover:text-indigo-200/90 transition-colors">
-                                        Đăng dưới chế độ ẩn danh. Người khác sẽ không thấy bạn là người tạo.
+                                        {t('createPoll.anonymousDesc')}
                                     </span>
                                 </div>
                             </label>
@@ -217,14 +219,14 @@ const CreatePoll = () => {
                                 onClick={() => navigate(-1)}
                                 className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-all"
                             >
-                                Cancel
+                                {t('createPoll.cancel')}
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
                                 className="px-8 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wide text-sm"
                             >
-                                {loading ? 'Creating...' : 'Create Poll'}
+                                {loading ? t('createPoll.creating') : t('createPoll.submitBtn')}
                             </button>
                         </div>
                     </form>

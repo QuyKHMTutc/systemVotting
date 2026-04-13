@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth.service';
+import { useTranslation } from 'react-i18next';
 import OtpInput from '../components/OtpInput';
 import PasswordStrength from '../components/PasswordStrength';
 import LegalModal from '../components/LegalModal';
@@ -34,6 +35,7 @@ const Register = () => {
     const [loading, setLoading] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     // Trigger cooldown on initial mount if state is already 'verify'
     // Also send an OTP the first time they arrive from login
@@ -191,9 +193,13 @@ const Register = () => {
                 <div className={`glass-panel w-full max-w-md p-6 sm:p-10 rounded-2xl sm:rounded-3xl transition-all duration-300 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
                     {stage === 'register' ? (
                         <div className={`transition-all ${isShaking ? 'animate-shake' : ''}`}>
-                            <div className="mb-8">
-                                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Create Account</h1>
-                                <p className="text-pink-100/80 font-medium">Join the voting community today.</p>
+                            <div className="relative text-center mb-8 mt-2">
+                                <Link to="/" className="inline-block hover:scale-105 transition-transform duration-300 mb-3" title="Back to Home">
+                                    <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                                        Voting
+                                    </span>
+                                </Link>
+                                <p className="text-pink-100/80 font-medium mt-1">{t('auth.registerPrompt')}</p>
                             </div>
 
                             <div className={`transition-all duration-300 overflow-hidden ${error ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
@@ -204,7 +210,7 @@ const Register = () => {
 
                             <form onSubmit={handleRegister} className="space-y-6">
                                 <div className="space-y-1.5">
-                                    <label htmlFor="username" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">Username</label>
+                                    <label htmlFor="username" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('auth.username')}</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <User className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
@@ -215,14 +221,14 @@ const Register = () => {
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
                                             className="w-full pl-11 pr-5 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
-                                            placeholder="Choose a username"
+                                            placeholder={t('auth.usernamePlaceholder')}
                                             required
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label htmlFor="email" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">Email Address</label>
+                                    <label htmlFor="email" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('auth.emailAddress')}</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <Mail className={`h-5 w-5 transition-colors ${emailError ? 'text-red-400' : 'text-white/50 group-focus-within:text-pink-400'}`} />
@@ -238,7 +244,7 @@ const Register = () => {
                                                 ? 'border-red-500/50 focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
                                                 : 'border-white/20 hover:border-white/30 focus:border-pink-500 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)]'
                                             }`}
-                                            placeholder="name@example.com"
+                                            placeholder={t('auth.emailPlaceholder')}
                                             required
                                         />
                                     </div>
@@ -248,7 +254,7 @@ const Register = () => {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label htmlFor="password" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">Password</label>
+                                    <label htmlFor="password" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('auth.password')}</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <Lock className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
@@ -259,7 +265,7 @@ const Register = () => {
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
-                                            placeholder="Create a strong password"
+                                            placeholder={t('auth.passwordPlaceholder')}
                                             required
                                             minLength={6}
                                         />
@@ -277,7 +283,7 @@ const Register = () => {
                                 </div>
                                 
                                 <div className="space-y-1.5">
-                                    <label htmlFor="confirmPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">Confirm Password</label>
+                                    <label htmlFor="confirmPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('auth.confirmPassword')}</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <ShieldCheck className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
@@ -288,7 +294,7 @@ const Register = () => {
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
-                                            placeholder="Confirm your password"
+                                            placeholder={t('auth.confirmPasswordPlaceholder')}
                                             required
                                             minLength={6}
                                         />
@@ -322,12 +328,12 @@ const Register = () => {
                                     </div>
                                     <div className="text-sm">
                                         <span className="text-pink-100/70 font-medium select-none cursor-pointer" onClick={() => setAgreeTerms(!agreeTerms)}>
-                                            I agree to the{' '}
+                                            {t('auth.agreeToText1')}
                                         </span>
-                                        <button type="button" onClick={openLegalModal('terms')} className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">Terms of Service</button>
-                                        <span className="text-pink-100/70 font-medium"> and </span>
-                                        <button type="button" onClick={openLegalModal('privacy')} className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">Privacy Policy</button>
-                                        <span className="text-pink-100/70 font-medium">.</span>
+                                        <button type="button" onClick={openLegalModal('terms')} className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">{t('auth.terms')}</button>
+                                        <span className="text-pink-100/70 font-medium">{t('auth.agreeToText2')}</span>
+                                        <button type="button" onClick={openLegalModal('privacy')} className="text-pink-300 hover:text-pink-200 font-bold hover:underline transition-all">{t('auth.privacy')}</button>
+                                        <span className="text-pink-100/70 font-medium">{t('auth.agreeToText3')}</span>
                                     </div>
                                 </div>
 
@@ -335,14 +341,14 @@ const Register = () => {
                                     type="submit"
                                     className="w-full py-4 px-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-0.5 active:scale-[0.98] uppercase tracking-wider text-sm mt-4"
                                 >
-                                    {loading ? 'Creating...' : 'Create Account'}
+                                    {loading ? t('auth.creatingBtn') : t('auth.createAccountBtn')}
                                 </button>
                             </form>
 
                             <p className="mt-8 text-center text-pink-100/80 text-sm font-medium">
-                                Already have an account?{' '}
-                                <Link to="/login" className="text-white hover:text-pink-300 hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] font-bold transition-all">
-                                    Sign In here
+                                {t('auth.alreadyHaveAccount')} {/* space */}
+                                <Link to="/login" className="text-white hover:text-pink-300 hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] font-bold transition-all ml-1">
+                                    {t('auth.signInHere')}
                                 </Link>
                             </p>
                         </div>
@@ -352,9 +358,9 @@ const Register = () => {
                                 <div className="w-16 h-16 bg-gradient-to-tr from-pink-500/20 to-purple-500/20 border border-pink-500/20 rounded-2xl shadow-inner flex items-center justify-center mx-auto mb-5 transform rotate-3">
                                     <MailCheck className="w-8 h-8 text-pink-400" />
                                 </div>
-                                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Check Your Email</h1>
+                                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">{t('auth.checkEmail')}</h1>
                                 <p className="text-pink-100 font-medium text-sm">
-                                    We sent a 6-digit code to<br />
+                                    {t('auth.checkEmailDesc1')} <br />
                                     <span className="text-pink-300 font-bold">{email}</span>
                                 </p>
                             </div>
@@ -373,7 +379,7 @@ const Register = () => {
 
                             <form onSubmit={handleVerify} className="space-y-7 relative">
                                 <div className="space-y-4">
-                                    <label className="block text-xs font-bold text-pink-100 text-center uppercase tracking-widest ml-1">Verification Code</label>
+                                    <label className="block text-xs font-bold text-pink-100 text-center uppercase tracking-widest ml-1">{t('auth.verificationCode')}</label>
                                     <div className="flex justify-center">
                                         <OtpInput value={otp} onChange={setOtp} length={6} />
                                     </div>
@@ -384,19 +390,19 @@ const Register = () => {
                                     disabled={otp.length < 6}
                                     className="w-full py-4 px-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
                                 >
-                                    Verify Email
+                                    {t('auth.verifyEmailBtn')}
                                 </button>
                             </form>
 
                             <div className="mt-8 text-center">
                                 <p className="text-pink-100/80 text-sm font-medium">
-                                    Didn't receive the code?{' '}
+                                    {t('auth.didntReceive')} {/* space */}
                                     <button
                                         onClick={handleResend}
                                         disabled={resendCooldown > 0}
-                                        className="text-pink-300 hover:text-pink-200 hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="text-pink-300 hover:text-pink-200 hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ml-1"
                                     >
-                                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+                                        {resendCooldown > 0 ? `${t('auth.resendIn')} ${resendCooldown}s` : t('auth.resendOtp')}
                                     </button>
                                 </p>
                             </div>
@@ -406,7 +412,7 @@ const Register = () => {
                                     onClick={() => { setStage('register'); setError(''); setSuccess(''); }}
                                     className="text-white/60 hover:text-white hover:drop-shadow-[0_0_3px_rgba(255,255,255,0.3)] text-sm font-medium transition-all"
                                 >
-                                    ← Back to registration (Preserves Form)
+                                    {t('auth.backToRegister')}
                                 </button>
                             </div>
                         </div>
@@ -425,21 +431,21 @@ const Register = () => {
                     <div className="glass-panel p-6 rounded-2xl inline-block mb-8 rotate-3 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
                         <Fingerprint className="w-16 h-16 text-pink-400" />
                     </div>
-                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">Secure & Seamless<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Voting Platform</span></h2>
+                    <h2 className="text-5xl font-black text-white mb-6 leading-tight">{t('auth.heroTitle1')}<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{t('auth.heroTitle2')}</span></h2>
                     <p className="text-lg text-pink-100/70 mb-10 leading-relaxed font-medium">
-                        Join millions of users who rely on our enterprise-grade security to manage and participate in critical consensus events globally.
+                        {t('auth.heroDesc')}
                     </p>
                     
                     <div className="grid grid-cols-2 gap-6">
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
                             <Activity className="w-8 h-8 text-purple-400 mb-3" />
-                            <h3 className="text-white font-bold mb-1">Real-time Data</h3>
-                            <p className="text-sm text-pink-100/60 font-medium">Watch results update instantly.</p>
+                            <h3 className="text-white font-bold mb-1">{t('auth.feat2Title')}</h3>
+                            <p className="text-sm text-pink-100/60 font-medium">{t('auth.feat2Desc')}</p>
                         </div>
                         <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
                             <Zap className="w-8 h-8 text-pink-400 mb-3" />
-                            <h3 className="text-white font-bold mb-1">High Speed</h3>
-                            <p className="text-sm text-pink-100/60 font-medium">Optimized for vast user loads.</p>
+                            <h3 className="text-white font-bold mb-1">{t('auth.feat3Title')}</h3>
+                            <p className="text-sm text-pink-100/60 font-medium">{t('auth.feat3Desc')}</p>
                         </div>
                     </div>
                 </div>

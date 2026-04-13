@@ -40,11 +40,7 @@ function App() {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
 
-            <Route path="/" element={
-              <ProtectedRoute requireRole="USER">
-                <Dashboard />
-              </ProtectedRoute>
-            } />
+            <Route path="/" element={<Dashboard />} />
 
             <Route path="/create-poll" element={
               <ProtectedRoute requireRole="USER">
@@ -52,11 +48,7 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/poll/:id" element={
-              <ProtectedRoute requireRole="USER">
-                <PollDetail />
-              </ProtectedRoute>
-            } />
+            <Route path="/poll/:id" element={<PollDetail />} />
 
             <Route path="/admin" element={
               <ProtectedRoute requireRole="ADMIN">

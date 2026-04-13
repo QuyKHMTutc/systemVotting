@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -9,6 +10,7 @@ interface UserProfileModalProps {
 
 const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
     const { user, updateUser } = useAuth();
+    const { t } = useTranslation();
 
     // We initialize the states with the user's current info
     const [username, setUsername] = useState(user?.username || '');
@@ -48,12 +50,12 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
             });
             // Update Auth Context with the returned updated user data
             updateUser(response.data.data);
-            setSuccess('Profile updated successfully!');
+            setSuccess(t('profile.successUpdate'));
             setTimeout(() => {
                 onClose();
             }, 1000);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to update profile');
+            setError(err.response?.data?.message || t('profile.failUpdate'));
         } finally {
             setLoading(false);
         }
@@ -65,8 +67,8 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                 {/* Header */}
                 <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
                     <div>
-                        <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200 tracking-wide">Edit Profile</h2>
-                        <p className="text-indigo-200/60 text-sm mt-1">Customize your public voting identity</p>
+                        <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200 tracking-wide">{t('profile.title')}</h2>
+                        <p className="text-indigo-200/60 text-sm mt-1">{t('profile.desc')}</p>
                     </div>
                     <button onClick={onClose} className="p-2 sm:p-2.5 bg-white/10 border border-white/20 text-white hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-full transition-all duration-300 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-red-500">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -109,10 +111,10 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                             <div className="flex flex-col items-center sm:items-start justify-center flex-grow text-center sm:text-left space-y-3">
                                 <div>
                                     <h3 className="text-white font-semibold flex items-center justify-center sm:justify-start gap-2">
-                                        Profile Picture
+                                        {t('profile.picture')}
                                     </h3>
                                     <p className="text-indigo-200/50 text-xs mt-1 max-w-[200px] leading-relaxed">
-                                        Upload a new avatar or image, max size 2MB. Recommended 256x256px.
+                                        {t('profile.pictureDesc')}
                                     </p>
                                 </div>
                                 <div className="relative">
@@ -120,7 +122,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                                         type="button"
                                         className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white/90 text-sm font-medium rounded-xl border border-white/10 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-full sm:w-auto"
                                     >
-                                        Choose File
+                                        {t('profile.chooseFile')}
                                     </button>
                                     <input
                                         type="file"
@@ -136,7 +138,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                         {/* Username Section */}
                         <div className="space-y-3">
                             <label className="block text-sm font-semibold text-indigo-100/90 tracking-wide" htmlFor="username">
-                                Username
+                                {t('profile.username')}
                             </label>
                             <input
                                 id="username"
@@ -144,23 +146,10 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-purple-500 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all flex-grow"
-                                placeholder="Enter a cool username"
+                                placeholder={t('profile.usernamePlaceholder')}
                                 required
                                 minLength={3}
                                 maxLength={50}
-                            />
-                        </div>
-
-                        {/* Email Section (Read-only reference) */}
-                        <div className="space-y-3 opacity-60 pointer-events-none">
-                            <label className="block text-sm font-semibold text-indigo-100/90 tracking-wide">
-                                Email Address <span className="text-xs font-normal text-indigo-200/50 ml-2">(Cannot be changed)</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={user.email}
-                                readOnly
-                                className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white/70"
                             />
                         </div>
 
@@ -174,7 +163,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                         onClick={onClose}
                         className="px-6 py-3 text-sm font-medium text-indigo-200 hover:text-white bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl transition-all flex-1 sm:flex-none text-center"
                     >
-                        Cancel
+                        {t('profile.cancel')}
                     </button>
                     <button
                         onClick={handleSubmit}
@@ -182,7 +171,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                         disabled={loading}
                         className="px-8 py-3 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)] transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none text-center"
                     >
-                        {loading ? 'Saving...' : 'Save Changes'}
+                        {loading ? t('profile.saving') : t('profile.save')}
                     </button>
                 </div>
             </div>

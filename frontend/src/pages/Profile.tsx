@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { pollService } from '../services/poll.service';
+import { commentService, type Comment } from '../services/comment.service';
 import type { Poll } from '../services/poll.service';
 import { PollCard } from '../components/PollCard';
 import { ListPlus, CheckSquare, X, PenLine, MessageSquare } from 'lucide-react';
@@ -9,19 +10,21 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import UserProfileModal from '../components/UserProfileModal';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
-import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as 'created' | 'voted') || 'created';
-  const setActiveTab = (tab: 'created' | 'voted') =>
+  const activeTab = (searchParams.get('tab') as 'created' | 'voted' | 'comments') || 'created';
+  const setActiveTab = (tab: 'created' | 'voted' | 'comments') =>
     setSearchParams({ tab }, { replace: true });
 
   const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
+  const [myComments, setMyComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -40,12 +43,14 @@ export const Profile = () => {
     const fetchProfileData = async () => {
       try {
         setLoading(true);
-        const [created, voted] = await Promise.all([
+        const [created, voted, comments] = await Promise.all([
           pollService.getMyPolls(),
           pollService.getMyVotedPolls(),
+          commentService.getMyComments()
         ]);
         setCreatedPolls(created);
         setVotedPolls(voted);
+        setMyComments(comments);
       } catch (err) {
         console.error('Failed to fetch profile data', err);
         setError('Failed to load profile data. Please try again later.');
@@ -166,7 +171,7 @@ export const Profile = () => {
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10"
               >
                 <PenLine className="w-4 h-4" />
-                Edit Profile
+                {t('profile.editProfile')}
               </button>
             </div>
 
@@ -175,24 +180,24 @@ export const Profile = () => {
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
                   <ListPlus className="w-4 h-4 group-hover:text-indigo-400 transition-colors" />
-                  <span className="text-xs font-medium uppercase tracking-wider">Polls</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">{t('profile.polls')}</span>
                 </div>
                 <p className="text-2xl font-bold text-white">{createdPolls.length}</p>
               </div>
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
                   <CheckSquare className="w-4 h-4 group-hover:text-emerald-400 transition-colors" />
-                  <span className="text-xs font-medium uppercase tracking-wider">Votes</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">{t('profile.votes')}</span>
                 </div>
                 <p className="text-2xl font-bold text-white">{votedPolls.length}</p>
               </div>
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
                   <MessageSquare className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
-                  <span className="text-xs font-medium uppercase tracking-wider">Engagement</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">{t('profile.engagement')}</span>
                 </div>
                 <p className="text-2xl font-bold text-white">
-                  {createdPolls.length + votedPolls.length}
+                  {myComments.length}
                 </p>
               </div>
             </div>
@@ -203,16 +208,16 @@ export const Profile = () => {
             <div className="flex">
               <button
                 onClick={() => setActiveTab('created')}
-                className={`relative flex-1 py-4 px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
+                className={`relative flex-1 py-4 px-2 sm:px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
                   activeTab === 'created'
                     ? 'text-indigo-400'
                     : 'text-white/50 hover:text-white/80'
                 }`}
               >
-                <ListPlus className="w-5 h-5" />
-                <span>Created Polls</span>
+                <ListPlus className="w-5 h-5 hidden sm:block" />
+                <span>{t('profile.createdPolls')}</span>
                 <span
-                  className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold hidden sm:inline-block ${
                     activeTab === 'created' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
                   }`}
                 >
@@ -221,20 +226,38 @@ export const Profile = () => {
               </button>
               <button
                 onClick={() => setActiveTab('voted')}
-                className={`relative flex-1 py-4 px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
+                className={`relative flex-1 py-4 px-2 sm:px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
                   activeTab === 'voted'
                     ? 'text-indigo-400'
                     : 'text-white/50 hover:text-white/80'
                 }`}
               >
-                <CheckSquare className="w-5 h-5" />
-                <span>Voted Polls</span>
+                <CheckSquare className="w-5 h-5 hidden sm:block" />
+                <span>{t('profile.votedPolls')}</span>
                 <span
-                  className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold hidden sm:inline-block ${
                     activeTab === 'voted' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
                   }`}
                 >
                   {votedPolls.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('comments')}
+                className={`relative flex-1 py-4 px-2 sm:px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
+                  activeTab === 'comments'
+                    ? 'text-indigo-400'
+                    : 'text-white/50 hover:text-white/80'
+                }`}
+              >
+                <MessageSquare className="w-5 h-5 hidden sm:block" />
+                <span>{t('profile.myComments')}</span>
+                <span
+                  className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold hidden sm:inline-block ${
+                    activeTab === 'comments' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
+                  }`}
+                >
+                  {myComments.length}
                 </span>
               </button>
             </div>
@@ -242,8 +265,8 @@ export const Profile = () => {
             <div
               className="absolute bottom-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-[left] duration-300 ease-out"
               style={{
-                left: activeTab === 'created' ? '25%' : '75%',
-                width: '30%',
+                left: activeTab === 'created' ? '16.66%' : activeTab === 'voted' ? '50%' : '83.33%',
+                width: '33.33%',
                 transform: 'translateX(-50%)',
                 boxShadow: '0 0 12px rgba(99, 102, 241, 0.6)',
               }}
@@ -283,46 +306,100 @@ export const Profile = () => {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
                       <ListPlus className="h-8 w-8 text-white/40" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">No polls created yet</h3>
+                    <h3 className="text-lg font-semibold text-white mb-2">{t('profile.noPollsCreated')}</h3>
                     <p className="text-white/50 text-sm mb-4">
-                      Create your first poll to start gathering community votes.
+                      {t('profile.noPollsDesc')}
                     </p>
                     <button
                       onClick={() => navigate('/create-poll')}
                       className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
                     >
-                      Create a poll →
+                      {t('profile.createPollBtn')}
                     </button>
                   </div>
                 )
-              ) : votedPolls.length > 0 ? (
-                votedPolls.map((poll, i) => (
-                  <div
-                    key={poll.id}
-                    className="animate-fade-in-up"
-                    style={{ animationDelay: `${i * 50}ms` }}
-                  >
-                    <div className="transition-transform duration-200 hover:-translate-y-0.5">
-                      <PollCard poll={poll} hasVoted commentCount={poll.commentCount} />
+              ) : activeTab === 'voted' ? (
+                votedPolls.length > 0 ? (
+                  votedPolls.map((poll, i) => (
+                    <div
+                      key={poll.id}
+                      className="animate-fade-in-up"
+                      style={{ animationDelay: `${i * 50}ms` }}
+                    >
+                      <div className="transition-transform duration-200 hover:-translate-y-0.5">
+                        <PollCard poll={poll} hasVoted commentCount={poll.commentCount} />
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                      <CheckSquare className="h-8 w-8 text-white/40" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">{t('profile.noVotesYet')}</h3>
+                    <p className="text-white/50 text-sm mb-4">
+                      {t('profile.noVotesDesc')}
+                    </p>
+                    <button
+                      onClick={() => navigate('/')}
+                      className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
+                    >
+                      {t('profile.browsePollsBtn')}
+                    </button>
                   </div>
-                ))
+                )
               ) : (
-                <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                    <CheckSquare className="h-8 w-8 text-white/40" />
+                myComments.length > 0 ? (
+                  myComments.map((comment, i) => (
+                    <div
+                      key={comment.id}
+                      className="animate-fade-in-up glass-panel p-5 rounded-2xl mb-4 transition-transform duration-200 hover:-translate-y-0.5"
+                      style={{ animationDelay: `${i * 50}ms` }}
+                    >
+                      <div className="flex gap-4">
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm font-bold border border-indigo-500/30 overflow-hidden">
+                           {comment.isAnonymous ? 'A' : (
+                               comment.avatarUrl && comment.avatarUrl !== 'null' && comment.avatarUrl.trim() !== '' ? (
+                                   <img src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`} alt={comment.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.username}` }} />
+                               ) : comment.username.charAt(0).toUpperCase()
+                           )}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-semibold text-white/90 text-sm">
+                              {comment.isAnonymous ? 'Anonymous' : comment.username}
+                            </span>
+                            <span className="text-xs text-white/40">•</span>
+                            <span className="text-xs text-white/50">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                            {comment.pollTitle && (
+                                <>
+                                  <span className="text-xs text-white/40">•</span>
+                                  <button onClick={() => navigate(`/poll/${comment.pollId}`)} className="text-xs text-indigo-400 hover:text-indigo-300 truncate max-w-[150px] sm:max-w-xs">{comment.pollTitle}</button>
+                                </>
+                            )}
+                          </div>
+                          <p className="text-white/80 text-sm whitespace-pre-wrap">{comment.content}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                      <MessageSquare className="h-8 w-8 text-white/40" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">{t('profile.noCommentsYet')}</h3>
+                    <p className="text-white/50 text-sm mb-4">
+                      {t('profile.noCommentsDesc')}
+                    </p>
+                    <button
+                      onClick={() => navigate('/')}
+                      className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
+                    >
+                      {t('profile.browsePollsBtn')}
+                    </button>
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">No votes yet</h3>
-                  <p className="text-white/50 text-sm mb-4">
-                    Explore polls and cast your first vote!
-                  </p>
-                  <button
-                    onClick={() => navigate('/')}
-                    className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
-                  >
-                    Browse polls →
-                  </button>
-                </div>
+                )
               )}
             </div>
           </div>
