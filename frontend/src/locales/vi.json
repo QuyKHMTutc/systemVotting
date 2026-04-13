@@ -55,6 +55,12 @@
     "mAgo": "{{count}} phút trước",
     "hAgo": "{{count}} giờ trước",
     "dAgo": "{{count}} ngày trước",
+    "wAgo": "{{count}} tuần trước",
+    "endsInM": "Kết thúc sau {{count}} phút",
+    "endsInH": "Kết thúc sau {{count}} giờ",
+    "endsInD": "Kết thúc sau {{count}} ngày",
+    "viewResults": "Xem Kết Quả",
+    "voteNow": "BÌNH CHỌN NGAY",
     "noCommentsBeFirst": "Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ suy nghĩ của bạn!"
   },
   "auth": {
