@@ -55,34 +55,34 @@ const Home = () => {
 
         {/* Statistics Section */}
         <div className="mt-16 text-center">
-            <h3 className="text-white/60 font-bold text-sm tracking-[0.1em] uppercase mb-12">
+            <h3 className="text-slate-800 dark:text-white/60 font-bold text-sm tracking-[0.1em] uppercase mb-12 transition-colors">
                 {t('home.trustedBy')}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-10">
                 <div className="flex flex-col items-center">
-                    <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-purple-500 mb-2">
+                    <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-700 dark:from-indigo-400 dark:to-purple-500 mb-2">
                         {t('home.stat1Value')}
                     </div>
-                    <div className="text-white/60 font-medium text-lg">
+                    <div className="text-slate-700 dark:text-white/60 font-medium text-lg transition-colors">
                         {t('home.stat1Label')}
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center md:border-l md:border-r border-white/10 px-4">
-                    <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-purple-400 to-pink-500 mb-2">
+                <div className="flex flex-col items-center md:border-l md:border-r border-slate-300 dark:border-white/10 px-4 transition-colors">
+                    <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-purple-600 to-pink-700 dark:from-purple-400 dark:to-pink-500 mb-2">
                         {t('home.stat2Value')}
                     </div>
-                    <div className="text-white/60 font-medium text-lg">
+                    <div className="text-slate-700 dark:text-white/60 font-medium text-lg transition-colors">
                         {t('home.stat2Label')}
                     </div>
                 </div>
 
                 <div className="flex flex-col items-center">
-                    <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-red-400 mb-2">
+                    <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-pink-600 to-red-600 dark:from-pink-400 dark:to-red-400 mb-2">
                         {t('home.stat3Value')}
                     </div>
-                    <div className="text-white/60 font-medium text-lg">
+                    <div className="text-slate-700 dark:text-white/60 font-medium text-lg transition-colors">
                         {t('home.stat3Label')}
                     </div>
                 </div>

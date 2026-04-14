@@ -51,22 +51,22 @@ export default function CommentItem({
   };
 
   return (
-    <div className="flex gap-3 py-4 group hover:bg-white/[0.02] rounded-xl -mx-2 px-2 transition-colors">
+    <div className="flex gap-3 py-4 group hover:bg-slate-50 dark:hover:bg-white/[0.02] rounded-xl -mx-2 px-2 transition-colors">
       {/* Avatar column */}
       <div className="shrink-0 mt-1">
         {comment.isAnonymous ? (
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 ring-2 ring-white/10 shadow-lg shadow-black/20">
+          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 ring-2 ring-slate-200 dark:ring-white/10 shadow-lg shadow-black/5 dark:shadow-black/20">
             <User className="w-5 h-5" />
           </div>
         ) : comment.avatarUrl && comment.avatarUrl !== 'null' && comment.avatarUrl.trim() !== '' ? (
           <img
             src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`}
             alt={comment.username}
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10 shadow-lg shadow-black/20"
+            className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-200 dark:ring-white/10 shadow-lg shadow-black/5 dark:shadow-black/20"
             onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.username}` }}
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/10 shadow-lg shadow-indigo-500/20">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-slate-200 dark:ring-white/10 shadow-lg shadow-indigo-500/20">
             {comment.username.charAt(0).toUpperCase()}
           </div>
         )}
@@ -76,16 +76,16 @@ export default function CommentItem({
       <div className="flex-1 min-w-0">
         {/* Username + time */}
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-white text-sm">{comment.username}</span>
-          <span className="text-white/40 text-xs">·</span>
-          <span className="text-white/50 text-xs">{timeAgo}</span>
+          <span className="font-semibold text-slate-900 dark:text-white text-sm">{comment.username}</span>
+          <span className="text-slate-400 dark:text-white/40 text-xs">·</span>
+          <span className="text-slate-500 dark:text-white/50 text-xs">{timeAgo}</span>
         </div>
 
         {/* Content */}
-        <p className="text-white/90 text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+        <p className="text-slate-800 dark:text-white/90 text-[15px] leading-relaxed whitespace-pre-wrap break-words">
           {comment.content.split(' ').map((word, i) =>
             word.startsWith('@') ? (
-              <span key={i} className="text-indigo-400 font-medium">
+              <span key={i} className="text-indigo-600 dark:text-indigo-400 font-medium">
                 {word}{' '}
               </span>
             ) : (
@@ -99,7 +99,7 @@ export default function CommentItem({
           <button
             onClick={handleLikeClick}
             className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-              liked ? 'text-indigo-400' : 'text-white/50 hover:text-white/80'
+              liked ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80'
             }`}
           >
             <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
@@ -107,12 +107,12 @@ export default function CommentItem({
           </button>
           <button
             onClick={handleReplyClick}
-            className="text-xs font-medium text-white/50 hover:text-white/80 transition-colors"
+            className="text-xs font-medium text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80 transition-colors"
           >
             {t('pollDetail.reply')}
           </button>
           {comment.voteStatus !== 'Chưa vote' && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300">
               {comment.voteStatus}
             </span>
           )}
@@ -141,7 +141,7 @@ export default function CommentItem({
 
         {/* Nested replies */}
         {comment.replies && comment.replies.length > 0 && (
-          <div className="mt-4 pl-4 border-l-2 border-white/10 space-y-0">
+          <div className="mt-4 pl-4 border-l-2 border-slate-200 dark:border-white/10 space-y-0">
             {showReplies ? (
               <>
                 {comment.replies.map((r) => (
@@ -155,7 +155,7 @@ export default function CommentItem({
                 ))}
                 <button
                   onClick={() => toggleReply(comment.id, false)}
-                  className="flex items-center gap-2 mt-2 text-sm font-medium text-indigo-400 hover:text-indigo-300"
+                  className="flex items-center gap-2 mt-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                 >
                   <CornerDownRight className="w-4 h-4" />
                   {t('pollDetail.hideReplies')}
@@ -164,7 +164,7 @@ export default function CommentItem({
             ) : (
               <button
                 onClick={() => toggleReply(comment.id, true)}
-                className="flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300"
+                className="flex items-center gap-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
               >
                 <CornerDownRight className="w-4 h-4" />
                 {comment.replies.length === 1 ? t('pollDetail.viewReply', { count: 1 }) : t('pollDetail.viewReplies', { count: comment.replies.length })}

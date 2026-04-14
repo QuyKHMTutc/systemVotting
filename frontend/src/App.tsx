@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -44,8 +45,9 @@ const ConditionalFooter = () => {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <WebSocketProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <WebSocketProvider>
           <div className="min-h-screen flex flex-col">
             <div className="flex-grow flex flex-col relative z-0">
               <Routes>
@@ -82,8 +84,9 @@ function App() {
             </div>
             <ConditionalFooter />
           </div>
-        </WebSocketProvider>
-      </AuthProvider>
+          </WebSocketProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }
