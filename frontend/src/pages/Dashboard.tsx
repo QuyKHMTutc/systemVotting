@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { pollService } from '../services/poll.service';
 import type { Poll, PollPageResponse } from '../services/poll.service';
 import Navbar from '../components/Navbar';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PollCard } from '../components/PollCard';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
@@ -118,24 +118,7 @@ const Dashboard = () => {
     <div className="min-h-screen pb-12">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-1 tracking-tight">{t('dashboard.title')}</h1>
-            <p className="text-white/50 text-sm">{t('dashboard.subtitle')}</p>
-          </div>
-          <Link
-            to="/create-poll"
-            className="inline-flex items-center gap-2 px-6 py-3 btn-primary text-white font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            {t('dashboard.createPoll')}
-          </Link>
-        </div>
-
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
         {error && (
           <div className="glass-panel bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-xl mb-8">
             {error}

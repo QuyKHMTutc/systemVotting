@@ -1,14 +1,31 @@
 {
   "navbar": {
-    "login": "Login",
-    "logout": "Sign out",
+    "home": "Home",
+    "explore": "Explore",
+    "createPoll": "Create a poll",
+    "login": "Sign In",
+    "logout": "Log Out",
     "admin": "⭐ ADMIN PANEL",
     "lang": "EN",
-    "greeting": "Comment as {{username}}",
+    "greeting": "Commenting as {{username}}",
     "editProfile": "Edit Profile",
     "myPolls": "My Polls",
     "myComments": "My Comments",
     "myVotes": "My Votes"
+  },
+  "home": {
+    "heroTitle1": "Create a poll",
+    "heroTitle2": "in seconds",
+    "heroDesc": "Want to ask friends, colleagues or the community for their opinions? Create a poll in seconds and get instant results effortlessly.",
+    "createPollBtn": "Create a poll",
+    "livePresentationBtn": "Explore",
+    "trustedBy": "TRUSTED BY OVER 2,300,000 USERS WORLDWIDE.",
+    "stat1Value": "Over 2.3 million",
+    "stat1Label": "Users",
+    "stat2Value": "Over 13 million",
+    "stat2Label": "Polls",
+    "stat3Value": "Over 290 million",
+    "stat3Label": "Votes"
   },
   "dashboard": {
     "title": "Community Polls",

@@ -1,5 +1,8 @@
 {
   "navbar": {
+    "home": "Trang chủ",
+    "explore": "Khám phá",
+    "createPoll": "Tạo cuộc thăm dò ý kiến",
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
     "admin": "⭐ TRANG QUẢN TRỊ",
@@ -9,6 +12,20 @@
     "myPolls": "Bài đăng của tôi",
     "myComments": "Bình luận của tôi",
     "myVotes": "Lượt vote của tôi"
+  },
+  "home": {
+    "heroTitle1": "Tạo cuộc thăm dò ý kiến",
+    "heroTitle2": "trong giây",
+    "heroDesc": "Bạn muốn xin ý kiến bạn bè, đồng nghiệp hoặc cộng đồng? Tạo cuộc thăm dò ý kiến chỉ trong vài giây và nhận kết quả ngay lập tức một cách dễ dàng.",
+    "createPollBtn": "Tạo cuộc thăm dò ý kiến",
+    "livePresentationBtn": "Khám phá",
+    "trustedBy": "ĐƯỢC HƠN 2.300.000 NGƯỜI DÙNG TRÊN TOÀN THẾ GIỚI TIN DÙNG.",
+    "stat1Value": "Hơn 2,3 triệu",
+    "stat1Label": "Người dùng",
+    "stat2Value": "Hơn 13 triệu",
+    "stat2Label": "Các cuộc thăm dò",
+    "stat3Value": "Hơn 290 triệu",
+    "stat3Label": "Phiếu bầu"
   },
   "dashboard": {
     "title": "Bình chọn Cộng đồng",
@@ -213,7 +230,6 @@
     "privacyPolicy": "Chính sách bảo mật",
     "termsOfService": "Điều khoản dịch vụ",
     "cancellationPolicy": "Chính sách hoàn hủy",
-    "paymentGuide": "Hướng dẫn thanh toán VNPAY",
     "connectNow": "Kết nối ngay",
     "copyright": "Bản quyền © 2026 bởi TRẦN VĂN QUÝ"
   }
