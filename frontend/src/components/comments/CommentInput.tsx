@@ -87,14 +87,14 @@ export default function CommentInput({
         <div className="relative shrink-0" ref={dropdownRef}>
           {/* Identity Popup Panel (Above Avatar) */}
           {showDropdown && (
-            <div className="absolute bottom-full mb-3 left-0 z-50 w-72 origin-bottom-left bg-slate-800 border border-slate-700 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <div className="absolute bottom-full mb-3 left-0 z-50 w-72 origin-bottom-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.1)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-2 duration-200">
               <div className="p-2 flex flex-col gap-1">
                 
                 {/* User Option */}
                 <button
                   onClick={() => selectIdentity('user')}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-left group ${
-                    commentMode === 'user' ? 'bg-indigo-500/10' : 'hover:bg-white/5'
+                    commentMode === 'user' ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'hover:bg-slate-50 dark:hover:bg-white/5'
                   }`}
                 >
                   <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-sm overflow-hidden">
@@ -105,13 +105,13 @@ export default function CommentInput({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate mb-0.5 ${commentMode === 'user' ? 'text-indigo-400' : 'text-slate-200 group-hover:text-white'}`}>
+                    <p className={`text-sm font-medium truncate mb-0.5 ${commentMode === 'user' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
                       {t('pollDetail.commentAs', { username })}
                     </p>
-                    <p className="text-xs text-slate-400 truncate">{t('pollDetail.useRealProfile')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t('pollDetail.useRealProfile')}</p>
                   </div>
                   {commentMode === 'user' && (
-                    <div className="shrink-0 text-indigo-400 mr-1">
+                    <div className="shrink-0 text-indigo-600 dark:text-indigo-400 mr-1">
                       <Check className="w-5 h-5" />
                     </div>
                   )}
@@ -121,20 +121,20 @@ export default function CommentInput({
                 <button
                   onClick={() => selectIdentity('anonymous')}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-left group ${
-                    commentMode === 'anonymous' ? 'bg-slate-700/80' : 'hover:bg-white/5'
+                    commentMode === 'anonymous' ? 'bg-slate-100 dark:bg-slate-700/80' : 'hover:bg-slate-50 dark:hover:bg-white/5'
                   }`}
                 >
-                  <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 shadow-sm text-slate-300 group-hover:text-white">
+                  <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm text-slate-500 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white">
                     <VenetianMask className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate mb-0.5 ${commentMode === 'anonymous' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                    <p className={`text-sm font-medium truncate mb-0.5 ${commentMode === 'anonymous' ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
                       {t('pollDetail.commentAnonymously')}
                     </p>
-                    <p className="text-xs text-slate-400 truncate">{t('pollDetail.nameHidden')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t('pollDetail.nameHidden')}</p>
                   </div>
                   {commentMode === 'anonymous' && (
-                    <div className="shrink-0 text-white mr-1">
+                    <div className="shrink-0 text-slate-900 dark:text-white mr-1">
                       <Check className="w-5 h-5" />
                     </div>
                   )}
@@ -169,7 +169,7 @@ export default function CommentInput({
 
         {/* Input container */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-end gap-2 rounded-2xl bg-white/[0.04] border border-white/10 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white/[0.06] transition-all duration-200">
+          <div className="flex items-end gap-2 rounded-2xl bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 focus-within:border-indigo-400 dark:focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white dark:focus-within:bg-white/[0.06] transition-all duration-200 shadow-sm">
             <textarea
               ref={textareaRef}
               value={content}
@@ -179,13 +179,13 @@ export default function CommentInput({
               autoFocus={autoFocus}
               disabled={submitting}
               rows={1}
-              className="w-full min-h-[40px] max-h-[200px] py-3 px-4 bg-transparent text-white placeholder-white/40 resize-none focus:outline-none text-[15px] leading-relaxed"
+              className="w-full min-h-[40px] max-h-[200px] py-3 px-4 bg-transparent text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 resize-none focus:outline-none text-[15px] leading-relaxed"
             />
             <button
               type="button"
               onClick={handleSubmit}
               disabled={!content.trim() || submitting}
-              className="shrink-0 p-2 mb-1 mr-1 rounded-xl text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all"
+              className="shrink-0 p-2 mb-1 mr-1 rounded-xl text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                 <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />

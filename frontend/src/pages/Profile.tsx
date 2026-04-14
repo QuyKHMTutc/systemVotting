@@ -106,11 +106,11 @@ export const Profile = () => {
 
       <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Profile Card */}
-        <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden relative">
+        <div className="glass-panel rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden relative bg-white/80 dark:bg-transparent">
           {/* Back button */}
           <button
             onClick={() => navigate(-1)}
-            className="absolute top-4 right-4 z-20 p-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-white/80 hover:text-white transition-all duration-200"
+            className="absolute top-4 right-4 z-20 p-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/10 rounded-full text-slate-600 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-all duration-200"
             aria-label="Back"
           >
             <X className="w-5 h-5" />
@@ -135,7 +135,7 @@ export const Profile = () => {
             <div className="flex flex-col items-center text-center">
               {/* Avatar - 80–100px, ring, shadow */}
               <div className="relative mb-4">
-                <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full ring-4 ring-white/20 sm:ring-purple-400/30 bg-white/10 flex items-center justify-center overflow-hidden shadow-xl shadow-black/30">
+                <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full ring-4 ring-slate-200 dark:ring-white/20 sm:ring-slate-300 sm:dark:ring-purple-400/30 bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden shadow-xl shadow-black/5 dark:shadow-black/30">
                   {user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? (
                     <img
                       src={
@@ -150,7 +150,7 @@ export const Profile = () => {
                       }}
                     />
                   ) : (
-                    <span className="text-4xl font-bold text-white/90">
+                    <span className="text-4xl font-bold text-slate-800 dark:text-white/90">
                       {user?.username?.charAt(0).toUpperCase()}
                     </span>
                   )}
@@ -160,15 +160,15 @@ export const Profile = () => {
               </div>
 
               {/* Username & Email */}
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight">
                 {user?.username}
               </h1>
-              <p className="text-white/60 text-sm mb-5">{user?.email}</p>
+              <p className="text-slate-500 dark:text-white/60 text-sm mb-5">{user?.email}</p>
 
               {/* Edit Profile button */}
               <button
                 onClick={() => setIsProfileModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10"
               >
                 <PenLine className="w-4 h-4" />
                 {t('profile.editProfile')}
@@ -176,27 +176,27 @@ export const Profile = () => {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/10">
+            <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-200 dark:border-white/10">
               <div className="text-center group">
-                <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
-                  <ListPlus className="w-4 h-4 group-hover:text-indigo-400 transition-colors" />
+                <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-white/50 mb-1">
+                  <ListPlus className="w-4 h-4 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
                   <span className="text-xs font-medium uppercase tracking-wider">{t('profile.polls')}</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{createdPolls.length}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{createdPolls.length}</p>
               </div>
               <div className="text-center group">
-                <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
-                  <CheckSquare className="w-4 h-4 group-hover:text-emerald-400 transition-colors" />
+                <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-white/50 mb-1">
+                  <CheckSquare className="w-4 h-4 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
                   <span className="text-xs font-medium uppercase tracking-wider">{t('profile.votes')}</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{votedPolls.length}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{votedPolls.length}</p>
               </div>
               <div className="text-center group">
-                <div className="flex items-center justify-center gap-2 text-white/50 mb-1">
-                  <MessageSquare className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
+                <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-white/50 mb-1">
+                  <MessageSquare className="w-4 h-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
                   <span className="text-xs font-medium uppercase tracking-wider">{t('profile.engagement')}</span>
                 </div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">
                   {myComments.length}
                 </p>
               </div>
@@ -204,21 +204,21 @@ export const Profile = () => {
           </div>
 
           {/* Tabs - animated underline */}
-          <div className="relative border-b border-white/10">
+          <div className="relative border-b border-slate-200 dark:border-white/10">
             <div className="flex">
               <button
                 onClick={() => setActiveTab('created')}
                 className={`relative flex-1 py-4 px-2 sm:px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
                   activeTab === 'created'
-                    ? 'text-indigo-400'
-                    : 'text-white/50 hover:text-white/80'
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white/80'
                 }`}
               >
                 <ListPlus className="w-5 h-5 hidden sm:block" />
                 <span>{t('profile.createdPolls')}</span>
                 <span
                   className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold hidden sm:inline-block ${
-                    activeTab === 'created' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
+                    activeTab === 'created' ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60'
                   }`}
                 >
                   {createdPolls.length}
@@ -228,15 +228,15 @@ export const Profile = () => {
                 onClick={() => setActiveTab('voted')}
                 className={`relative flex-1 py-4 px-2 sm:px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
                   activeTab === 'voted'
-                    ? 'text-indigo-400'
-                    : 'text-white/50 hover:text-white/80'
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white/80'
                 }`}
               >
                 <CheckSquare className="w-5 h-5 hidden sm:block" />
                 <span>{t('profile.votedPolls')}</span>
                 <span
                   className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold hidden sm:inline-block ${
-                    activeTab === 'voted' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
+                    activeTab === 'voted' ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60'
                   }`}
                 >
                   {votedPolls.length}
@@ -246,15 +246,15 @@ export const Profile = () => {
                 onClick={() => setActiveTab('comments')}
                 className={`relative flex-1 py-4 px-2 sm:px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
                   activeTab === 'comments'
-                    ? 'text-indigo-400'
-                    : 'text-white/50 hover:text-white/80'
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white/80'
                 }`}
               >
                 <MessageSquare className="w-5 h-5 hidden sm:block" />
                 <span>{t('profile.myComments')}</span>
                 <span
                   className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold hidden sm:inline-block ${
-                    activeTab === 'comments' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/60'
+                    activeTab === 'comments' ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60'
                   }`}
                 >
                   {myComments.length}
@@ -302,17 +302,17 @@ export const Profile = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                      <ListPlus className="h-8 w-8 text-white/40" />
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] animate-fade-in-up">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                      <ListPlus className="h-8 w-8 text-slate-400 dark:text-white/40" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">{t('profile.noPollsCreated')}</h3>
-                    <p className="text-white/50 text-sm mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('profile.noPollsCreated')}</h3>
+                    <p className="text-slate-500 dark:text-white/50 text-sm mb-4">
                       {t('profile.noPollsDesc')}
                     </p>
                     <button
                       onClick={() => navigate('/create-poll')}
-                      className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium text-sm"
                     >
                       {t('profile.createPollBtn')}
                     </button>
@@ -332,17 +332,17 @@ export const Profile = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                      <CheckSquare className="h-8 w-8 text-white/40" />
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] animate-fade-in-up">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                      <CheckSquare className="h-8 w-8 text-slate-400 dark:text-white/40" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">{t('profile.noVotesYet')}</h3>
-                    <p className="text-white/50 text-sm mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('profile.noVotesYet')}</h3>
+                    <p className="text-slate-500 dark:text-white/50 text-sm mb-4">
                       {t('profile.noVotesDesc')}
                     </p>
                     <button
                       onClick={() => navigate('/')}
-                      className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium text-sm"
                     >
                       {t('profile.browsePollsBtn')}
                     </button>
@@ -357,7 +357,7 @@ export const Profile = () => {
                       style={{ animationDelay: `${i * 50}ms` }}
                     >
                       <div className="flex gap-4">
-                        <div className="shrink-0 w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm font-bold border border-indigo-500/30 overflow-hidden">
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-bold border border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
                            {comment.isAnonymous ? 'A' : (
                                comment.avatarUrl && comment.avatarUrl !== 'null' && comment.avatarUrl.trim() !== '' ? (
                                    <img src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`} alt={comment.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.username}` }} />
@@ -366,35 +366,35 @@ export const Profile = () => {
                         </div>
                         <div className="flex-grow min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-semibold text-white/90 text-sm">
+                            <span className="font-semibold text-slate-800 dark:text-white/90 text-sm">
                               {comment.isAnonymous ? 'Anonymous' : comment.username}
                             </span>
-                            <span className="text-xs text-white/40">•</span>
-                            <span className="text-xs text-white/50">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                            <span className="text-xs text-slate-400 dark:text-white/40">•</span>
+                            <span className="text-xs text-slate-500 dark:text-white/50">{new Date(comment.createdAt).toLocaleDateString()}</span>
                             {comment.pollTitle && (
                                 <>
-                                  <span className="text-xs text-white/40">•</span>
-                                  <button onClick={() => navigate(`/poll/${comment.pollId}`)} className="text-xs text-indigo-400 hover:text-indigo-300 truncate max-w-[150px] sm:max-w-xs">{comment.pollTitle}</button>
+                                  <span className="text-xs text-slate-400 dark:text-white/40">•</span>
+                                  <button onClick={() => navigate(`/poll/${comment.pollId}`)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 truncate max-w-[150px] sm:max-w-xs">{comment.pollTitle}</button>
                                 </>
                             )}
                           </div>
-                          <p className="text-white/80 text-sm whitespace-pre-wrap">{comment.content}</p>
+                          <p className="text-slate-700 dark:text-white/80 text-sm whitespace-pre-wrap">{comment.content}</p>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] animate-fade-in-up">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                      <MessageSquare className="h-8 w-8 text-white/40" />
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] animate-fade-in-up">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                      <MessageSquare className="h-8 w-8 text-slate-400 dark:text-white/40" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">{t('profile.noCommentsYet')}</h3>
-                    <p className="text-white/50 text-sm mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('profile.noCommentsYet')}</h3>
+                    <p className="text-slate-500 dark:text-white/50 text-sm mb-4">
                       {t('profile.noCommentsDesc')}
                     </p>
                     <button
                       onClick={() => navigate('/')}
-                      className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium text-sm"
                     >
                       {t('profile.browsePollsBtn')}
                     </button>

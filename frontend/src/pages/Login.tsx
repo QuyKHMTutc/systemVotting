@@ -4,6 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { authService } from '../services/auth.service';
+import { useTheme } from '../contexts/ThemeContext';
 import { Eye, EyeOff, Mail, Lock, LogIn, Activity, Fingerprint, Zap } from 'lucide-react';
 
 function decodeJwtPayload(token: string): any {
@@ -24,6 +25,7 @@ const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { theme } = useTheme();
 
     const [emailError, setEmailError] = useState('');
     const [isShaking, setIsShaking] = useState(false);
@@ -127,11 +129,11 @@ const Login = () => {
                     <div className={`transition-all ${isShaking ? 'animate-shake' : ''}`}>
                         <div className="relative text-center mb-8 sm:mb-10 mt-2">
                             <Link to="/" className="inline-block hover:scale-105 transition-transform duration-300 mb-3" title="Back to Home">
-                                <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                                <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
                                     Voting
                                 </span>
                             </Link>
-                            <p className="text-pink-100 font-medium mt-1">{t('auth.signInPrompt')}</p>
+                            <p className="text-slate-600 dark:text-pink-100/80 font-medium mt-1">{t('auth.signInPrompt')}</p>
                         </div>
 
                         <div className={`transition-all duration-300 overflow-hidden ${error ? 'max-h-32 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
@@ -153,10 +155,10 @@ const Login = () => {
 
                         <form onSubmit={handleSubmit} className="space-y-7 relative">
                             <div className="space-y-2">
-                                <label htmlFor="email" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('auth.emailAddress')}</label>
+                                <label htmlFor="email" className="block text-xs font-bold text-slate-700 dark:text-pink-100 uppercase tracking-widest ml-1">{t('auth.emailAddress')}</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Mail className={`h-5 w-5 transition-colors ${emailError ? 'text-red-400' : 'text-white/50 group-focus-within:text-pink-400'}`} />
+                                        <Mail className={`h-5 w-5 transition-colors ${emailError ? 'text-red-500 dark:text-red-400' : 'text-slate-400 dark:text-white/50 group-focus-within:text-pink-500 dark:group-focus-within:text-pink-400'}`} />
                                     </div>
                                     <input
                                         id="email"
@@ -164,9 +166,9 @@ const Login = () => {
                                         value={email}
                                         onChange={handleEmailChange}
                                         onBlur={handleEmailBlur}
-                                        className={`w-full pl-11 pr-5 py-3.5 rounded-xl bg-white/5 border text-white placeholder-white/40 focus:outline-none focus:bg-white/10 transition-all font-medium ${emailError
+                                        className={`w-full pl-11 pr-5 py-3.5 rounded-xl bg-white dark:bg-white/5 border text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:bg-white dark:focus:bg-white/10 transition-all font-medium shadow-sm ${emailError
                                                 ? 'border-red-500/50 focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.3)]'
-                                                : 'border-white/20 hover:border-white/30 focus:border-pink-500 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)]'
+                                                : 'border-slate-300 dark:border-white/20 hover:border-slate-400 dark:hover:border-white/30 focus:border-pink-500 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)]'
                                             }`}
                                         placeholder={t('auth.emailPlaceholder')}
                                         required
@@ -178,17 +180,17 @@ const Login = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="password" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('auth.password')}</label>
+                                <label htmlFor="password" className="block text-xs font-bold text-slate-700 dark:text-pink-100 uppercase tracking-widest ml-1">{t('auth.password')}</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Lock className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
+                                        <Lock className="h-5 w-5 text-slate-400 dark:text-white/50 group-focus-within:text-pink-500 dark:group-focus-within:text-pink-400 transition-colors" />
                                     </div>
                                     <input
                                         id="password"
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
+                                        className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/20 hover:border-slate-400 dark:hover:border-white/30 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white dark:focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium shadow-sm"
                                         placeholder={t('auth.passwordPlaceholder')}
                                         required
                                     />
@@ -196,7 +198,7 @@ const Login = () => {
                                         type="button"
                                         aria-label="Toggle password visibility"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-all transform active:scale-90 rounded-lg hover:bg-white/10"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-700 dark:text-white/50 dark:hover:text-white transition-all transform active:scale-90 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
                                         tabIndex={-1}
                                     >
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -205,7 +207,7 @@ const Login = () => {
                             </div>
 
                             <div className="flex items-center justify-end text-sm">
-                                <Link to="/forgot-password" className="text-white/60 hover:text-white transition-all font-semibold">
+                                <Link to="/forgot-password" className="text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white transition-all font-semibold">
                                     {t('auth.forgotPassword')}
                                 </Link>
                             </div>
@@ -221,9 +223,9 @@ const Login = () => {
                         </form>
 
                         <div className="mt-8 flex items-center justify-center space-x-3">
-                            <div className="h-px bg-white/10 w-1/4"></div>
-                            <span className="text-xs text-white/30 font-bold uppercase tracking-widest">{t('auth.orContinueWith')}</span>
-                            <div className="h-px bg-white/10 w-1/4"></div>
+                            <div className="h-px bg-slate-200 dark:bg-white/10 w-1/4"></div>
+                            <span className="text-xs text-slate-400 dark:text-white/30 font-bold uppercase tracking-widest">{t('auth.orContinueWith')}</span>
+                            <div className="h-px bg-slate-200 dark:bg-white/10 w-1/4"></div>
                         </div>
 
                         <div className="mt-6 flex justify-center w-full">
@@ -283,16 +285,16 @@ const Login = () => {
                                         triggerShake();
                                     }}
                                     useOneTap
-                                    theme="filled_black"
+                                    theme={theme === 'dark' ? 'filled_black' : 'outline'}
                                     shape="pill"
                                     width="100%"
                                 />
                             </div>
                         </div>
 
-                        <p className="mt-8 text-center text-white/60 text-sm font-medium">
+                        <p className="mt-8 text-center text-slate-600 dark:text-white/60 text-sm font-medium">
                             {t('auth.dontHaveAccount')} {/* space */}
-                            <Link to="/register" className="text-white hover:text-pink-300 font-bold transition-all ml-1">
+                            <Link to="/register" className="text-indigo-600 hover:text-indigo-800 dark:text-white dark:hover:text-pink-300 font-bold transition-all ml-1">
                                 {t('auth.createAccount')}
                             </Link>
                         </p>
@@ -301,28 +303,31 @@ const Login = () => {
             </div>
 
             {/* Right Side: Branding Hero (Hidden on Mobile) */}
-            <div className="hidden lg:flex w-1/2 relative bg-black/20 backdrop-blur-sm border-l border-white/5 flex-col justify-center items-center p-12 overflow-hidden">
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-600/30 rounded-full blur-[100px] mix-blend-screen" />
-                    <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-600/20 rounded-full blur-[120px] mix-blend-screen" />
+            <div className="hidden lg:flex w-1/2 relative bg-slate-900 dark:bg-black/20 backdrop-blur-sm flex-col justify-center items-center p-12 overflow-hidden">
+                {/* Beautiful Gradient Separator */}
+                <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-purple-500/50 to-transparent shadow-[0_0_10px_rgba(168,85,247,0.5)] z-20" />
+                
+                <div className="absolute inset-0 z-0 opacity-80 dark:opacity-100">
+                    <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-600/40 rounded-full blur-[100px] mix-blend-screen" />
+                    <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-600/30 rounded-full blur-[120px] mix-blend-screen" />
                 </div>
 
                 <div className="z-10 max-w-lg">
-                    <div className="glass-panel p-6 rounded-2xl inline-block mb-8 -rotate-3 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+                    <div className="bg-white/5 border border-white/10 backdrop-blur-lg p-6 rounded-2xl inline-block mb-8 -rotate-3 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
                         <Activity className="w-16 h-16 text-purple-400" />
                     </div>
                     <h2 className="text-5xl font-black text-white mb-6 leading-tight">{t('auth.heroTitle1')}<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{t('auth.heroTitle2')}</span></h2>
-                    <p className="text-lg text-pink-100/70 mb-10 leading-relaxed font-medium">
+                    <p className="text-lg text-pink-100/80 mb-10 leading-relaxed font-medium">
                         {t('auth.heroDesc')}
                     </p>
 
                     <div className="grid grid-cols-2 gap-6">
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md hover:bg-white/10 transition-colors">
                             <Fingerprint className="w-8 h-8 text-pink-400 mb-3" />
                             <h3 className="text-white font-bold mb-1">{t('auth.feat1Title')}</h3>
                             <p className="text-sm text-pink-100/60 font-medium">{t('auth.feat1Desc')}</p>
                         </div>
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md hover:bg-white/10 transition-colors">
                             <Zap className="w-8 h-8 text-purple-400 mb-3" />
                             <h3 className="text-white font-bold mb-1">{t('auth.feat3Title')}</h3>
                             <p className="text-sm text-pink-100/60 font-medium">{t('auth.feat3Desc')}</p>

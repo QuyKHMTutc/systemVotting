@@ -254,15 +254,15 @@ const PollDetail = () => {
       <main className="max-w-[720px] mx-auto px-4 sm:px-6 relative">
         <button
           onClick={() => navigate(-1)}
-          className="absolute -top-2 right-0 z-20 p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/80 hover:text-white transition-all"
+          className="absolute -top-2 right-0 z-20 p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-full text-slate-600 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm dark:shadow-none"
           title="Back"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 animate-modal-enter shadow-2xl shadow-black/30">
+        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 animate-modal-enter shadow-2xl shadow-slate-200/50 dark:shadow-black/30 bg-white/80 dark:bg-transparent">
           {/* Header */}
-          <div className="p-6 sm:p-8 pb-6 border-b border-white/10">
+          <div className="p-6 sm:p-8 pb-6 border-b border-slate-200 dark:border-white/10">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span
                 className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${
@@ -284,7 +284,7 @@ const PollDetail = () => {
               ))}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">{poll.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4 leading-tight">{poll.title}</h1>
 
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -301,31 +301,31 @@ const PollDetail = () => {
                   )}
                 </div>
                 <div>
-                  <span className="text-white/90 font-medium block">{poll.creator.username}</span>
-                  <span className="text-white/50 text-sm">{timeAgo(poll.createdAt)} · {endsIn(poll.endTime)}</span>
+                  <span className="text-slate-800 dark:text-white/90 font-medium block">{poll.creator.username}</span>
+                  <span className="text-slate-500 dark:text-white/50 text-sm">{timeAgo(poll.createdAt)} · {endsIn(poll.endTime)}</span>
                 </div>
               </div>
               <button
                 onClick={handleShare}
-                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-all border border-white/10"
+                className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-600 dark:text-white/60 hover:text-indigo-600 dark:hover:text-white transition-all border border-slate-200 dark:border-white/10"
               >
                 {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />}
               </button>
             </div>
 
             {/* Stats row */}
-            <div className="flex items-center gap-4 text-xs text-white/60 mt-5 pt-4 border-t border-white/5">
+            <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-white/60 mt-5 pt-4 border-t border-slate-200 dark:border-white/5">
               <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-indigo-400/80" />
-                <span className="text-white font-semibold">{totalVotes}</span> {t('pollDetail.voters')}
+                <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
+                <span className="text-slate-800 dark:text-white font-semibold">{totalVotes}</span> {t('pollDetail.voters')}
               </span>
               <span className="flex items-center gap-1.5">
-                <MessageCircle className="w-4 h-4 text-indigo-400/80" />
-                <span className="text-white font-semibold">{countTotalComments(comments)}</span> {t('pollDetail.comments')}
+                <MessageCircle className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
+                <span className="text-slate-800 dark:text-white font-semibold">{countTotalComments(comments)}</span> {t('pollDetail.comments')}
               </span>
               <span className="flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-indigo-400/80" />
-                <span className="text-white font-semibold">{poll.options.length}</span> {t('pollDetail.options')}
+                <BarChart3 className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
+                <span className="text-slate-800 dark:text-white font-semibold">{poll.options.length}</span> {t('pollDetail.options')}
               </span>
             </div>
           </div>
@@ -347,14 +347,14 @@ const PollDetail = () => {
                 <div
                   key={option.id}
                   onClick={() => (isActive && !hasVoted) && setSelectedOption(option.id)}
-                  className={`relative rounded-xl border-2 p-4 transition-all duration-300 ${
+                  className={`relative rounded-xl border p-4 transition-all duration-300 shadow-sm dark:shadow-none ${
                     isActive && !hasVoted
-                      ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-white/[0.03]'
+                      ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                       : 'cursor-default'
                   } ${
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-500/15 shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400/20'
-                      : 'border-white/10 bg-white/[0.02]'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/15 ring-1 ring-indigo-500 dark:ring-0 text-indigo-900'
+                      : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02]'
                   }`}
                 >
                   {showResults && (
@@ -363,12 +363,12 @@ const PollDetail = () => {
                       style={{ width: barAnimated ? `${percentage}%` : '0%' }}
                     />
                   )}
-                  <div className="relative z-10 flex justify-between items-center gap-4">
+                    <div className="relative z-10 flex justify-between items-center gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                       {isActive && !hasVoted && (
                         <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                            isSelected ? 'border-indigo-400 bg-indigo-500' : 'border-white/30'
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                            isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-white/30'
                           }`}
                         >
                           {isSelected && (
@@ -378,12 +378,12 @@ const PollDetail = () => {
                           )}
                         </div>
                       )}
-                      <span className="text-white font-medium truncate">{option.text}</span>
+                      <span className="text-slate-800 dark:text-white font-medium truncate">{option.text}</span>
                     </div>
                     {showResults && (
                       <div className="text-right shrink-0">
-                        <span className="text-white font-bold block">{percentage}%</span>
-                        <span className="text-white/50 text-xs">{option.voteCount} {t('pollDetail.votes')}</span>
+                        <span className="text-slate-900 dark:text-white font-bold block">{percentage}%</span>
+                        <span className="text-slate-500 dark:text-white/50 text-xs">{option.voteCount} {t('pollDetail.votes')}</span>
                       </div>
                     )}
                   </div>
@@ -393,9 +393,9 @@ const PollDetail = () => {
           </div>
 
           {/* Vote Button / Status */}
-          <div className="px-6 sm:px-8 py-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-white/70 text-sm">
-              {t('pollDetail.totalVotes')} <span className="text-white font-semibold">{totalVotes}</span>
+          <div className="px-6 sm:px-8 py-6 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-slate-600 dark:text-white/70 text-sm">
+              {t('pollDetail.totalVotes')} <span className="text-slate-900 dark:text-white font-semibold">{totalVotes}</span>
             </div>
             {isActive && !hasVoted && (
               <button
@@ -424,23 +424,23 @@ const PollDetail = () => {
 
           {/* Comments */}
           {showComments && (
-            <div className="border-t border-white/10 flex flex-col bg-black/20">
+            <div className="border-t border-slate-200 dark:border-white/10 flex flex-col bg-slate-50 dark:bg-black/20">
               <div className="flex-1 overflow-y-auto custom-scrollbar max-h-[480px] p-4 sm:p-6">
                 {loadingComments && comments.length === 0 ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent" />
                   </div>
                 ) : comments.length === 0 ? (
-                  <p className="text-center text-white/50 py-8">{t('pollDetail.noComments')}</p>
+                  <p className="text-center text-slate-500 dark:text-white/50 py-8">{t('pollDetail.noComments')}</p>
                 ) : (
                   <CommentList comments={comments} onReplySubmit={handleReplySubmit} />
                 )}
               </div>
-              <div className="shrink-0 p-4 sm:p-6 border-t border-white/10">
+              <div className="shrink-0 p-4 sm:p-6 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-transparent">
                 {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
                 {!user ? (
-                   <div className="text-center p-4 bg-white/5 rounded-xl border border-white/10">
-                     <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
+                   <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+                     <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
                        {t('pollDetail.loginToComment')}
                      </Link>
                    </div>

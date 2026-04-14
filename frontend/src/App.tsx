@@ -1,8 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import CreatePoll from './pages/CreatePoll';
 import PollDetail from './pages/PollDetail';
@@ -12,6 +14,7 @@ import ResetPassword from './pages/ResetPassword';
 import { Profile } from './pages/Profile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Footer from './components/Footer';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, requireRole?: string }) => {
@@ -28,13 +31,26 @@ const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, 
   return <>{children}</>;
 };
 
+const ConditionalFooter = () => {
+  const location = useLocation();
+  const noFooterRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  
+  if (noFooterRoutes.includes(location.pathname)) {
+    return null;
+  }
+  
+  return <Footer />;
+};
+
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <WebSocketProvider>
-          <div className="min-h-screen">
-            <Routes>
+      <ThemeProvider>
+        <AuthProvider>
+          <WebSocketProvider>
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-grow flex flex-col relative z-0">
+              <Routes>
               <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -42,7 +58,8 @@ function App() {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
 
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/explore" element={<Dashboard />} />
 
             <Route path="/create-poll" element={
               <ProtectedRoute requireRole="USER">
@@ -64,9 +81,12 @@ function App() {
               </ProtectedRoute>
             } />
             </Routes>
+            </div>
+            <ConditionalFooter />
           </div>
-        </WebSocketProvider>
-      </AuthProvider>
+          </WebSocketProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

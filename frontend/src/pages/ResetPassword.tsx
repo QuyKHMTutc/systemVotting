@@ -107,8 +107,8 @@ const ResetPassword = () => {
                             <div className="w-16 h-16 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 border border-purple-500/20 rounded-2xl shadow-inner flex items-center justify-center mx-auto mb-5 transform -rotate-3">
                                 <ShieldCheck className="w-8 h-8 text-purple-400" />
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 sm:mb-3 tracking-tight">{t('resetPassword.title')}</h1>
-                            <p className="text-pink-100 font-medium text-sm px-2">{t('resetPassword.subtitle')}</p>
+                            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mb-2 sm:mb-3 tracking-tight">{t('resetPassword.title')}</h1>
+                            <p className="text-slate-600 dark:text-pink-100/80 font-medium text-sm px-2">{t('resetPassword.subtitle')}</p>
                         </div>
 
                         <div className={`transition-all duration-300 overflow-hidden ${error ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
@@ -129,7 +129,7 @@ const ResetPassword = () => {
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <label className="block text-xs font-bold text-pink-100 mb-2 uppercase tracking-widest ml-1">{t('resetPassword.otpLabel')}</label>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-pink-100 mb-2 uppercase tracking-widest ml-1">{t('resetPassword.otpLabel')}</label>
                                     <button
                                         type="button"
                                         onClick={handleResendOtp}
@@ -145,17 +145,17 @@ const ResetPassword = () => {
                             </div>
 
                             <div className="space-y-1.5 pt-2">
-                                <label htmlFor="newPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('resetPassword.newPasswordLabel')}</label>
+                                <label htmlFor="newPassword" className="block text-xs font-bold text-slate-700 dark:text-pink-100 uppercase tracking-widest ml-1">{t('resetPassword.newPasswordLabel')}</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Lock className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
+                                        <Lock className="h-5 w-5 text-slate-400 dark:text-white/50 group-focus-within:text-pink-500 transition-colors" />
                                     </div>
                                     <input
                                         id="newPassword"
                                         type={showPassword ? "text" : "password"}
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
+                                        className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/20 hover:border-slate-400 dark:hover:border-white/30 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white dark:focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium shadow-sm"
                                         placeholder={t('resetPassword.passwordPlaceholder')}
                                         required
                                         minLength={6}
@@ -166,7 +166,7 @@ const ResetPassword = () => {
                                         aria-label="Toggle password visibility"
                                         onClick={() => setShowPassword(!showPassword)}
                                         disabled={loading}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-all transform active:scale-90 rounded-lg hover:bg-white/10 disabled:opacity-50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-700 dark:text-white/50 dark:hover:text-white transition-all transform active:scale-90 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50"
                                         tabIndex={-1}
                                     >
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -176,17 +176,17 @@ const ResetPassword = () => {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label htmlFor="confirmPassword" className="block text-xs font-bold text-pink-100 uppercase tracking-widest ml-1">{t('resetPassword.confirmPasswordLabel')}</label>
+                                <label htmlFor="confirmPassword" className="block text-xs font-bold text-slate-700 dark:text-pink-100 uppercase tracking-widest ml-1">{t('resetPassword.confirmPasswordLabel')}</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <ShieldCheck className="h-5 w-5 text-white/50 group-focus-within:text-pink-400 transition-colors" />
+                                        <ShieldCheck className="h-5 w-5 text-slate-400 dark:text-white/50 group-focus-within:text-pink-500 transition-colors" />
                                     </div>
                                     <input
                                         id="confirmPassword"
                                         type={showConfirmPassword ? "text" : "password"}
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white/5 border border-white/20 hover:border-white/30 text-white placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium"
+                                        className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/20 hover:border-slate-400 dark:hover:border-white/30 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white dark:focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium shadow-sm"
                                         placeholder={t('resetPassword.confirmPasswordPlaceholder')}
                                         required
                                         disabled={loading}
@@ -196,7 +196,7 @@ const ResetPassword = () => {
                                         aria-label="Toggle confirm password visibility"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                         disabled={loading}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-all transform active:scale-90 rounded-lg hover:bg-white/10 disabled:opacity-50"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-700 dark:text-white/50 dark:hover:text-white transition-all transform active:scale-90 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50"
                                         tabIndex={-1}
                                     >
                                         {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -220,12 +220,12 @@ const ResetPassword = () => {
                             </button>
                         </form>
 
-                        <div className="mt-8 pt-6 border-t border-white/10 text-center flex items-center justify-between">
-                            <Link to="/forgot-password" className="inline-flex items-center gap-2 text-white/60 hover:text-white hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] text-sm font-bold transition-all group">
+                        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-white/10 text-center flex items-center justify-between">
+                            <Link to="/forgot-password" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white dark:hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] text-sm font-bold transition-all group">
                                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                                 {t('resetPassword.backBtn')}
                             </Link>
-                            <Link to="/login" className="text-pink-300 hover:text-pink-200 hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] text-sm font-bold transition-all">
+                            <Link to="/login" className="text-pink-500 hover:text-pink-600 dark:text-pink-300 dark:hover:text-pink-200 dark:hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] text-sm font-bold transition-all">
                                 {t('resetPassword.loginBtn')}
                             </Link>
                         </div>
@@ -234,14 +234,17 @@ const ResetPassword = () => {
             </div>
 
             {/* Right Side: Branding Hero (Hidden on Mobile) */}
-            <div className="hidden lg:flex w-1/2 relative bg-black/20 backdrop-blur-sm border-l border-white/5 flex-col justify-center items-center p-12 overflow-hidden">
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-600/30 rounded-full blur-[100px] mix-blend-screen" />
-                    <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-600/20 rounded-full blur-[120px] mix-blend-screen" />
+            <div className="hidden lg:flex w-1/2 relative bg-slate-900 dark:bg-black/20 backdrop-blur-sm flex-col justify-center items-center p-12 overflow-hidden">
+                {/* Beautiful Gradient Separator */}
+                <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-purple-500/50 to-transparent shadow-[0_0_10px_rgba(168,85,247,0.5)] z-20" />
+
+                <div className="absolute inset-0 z-0 opacity-80 dark:opacity-100">
+                    <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-600/40 rounded-full blur-[100px] mix-blend-screen" />
+                    <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-600/30 rounded-full blur-[120px] mix-blend-screen" />
                 </div>
                 
                 <div className="z-10 max-w-lg">
-                    <div className="glass-panel p-6 rounded-2xl inline-block mb-8 rotate-3 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+                    <div className="bg-white/5 border border-white/10 backdrop-blur-lg p-6 rounded-2xl inline-block mb-8 rotate-3 hover:rotate-0 transition-transform duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
                         <ShieldCheck className="w-16 h-16 text-purple-400" />
                     </div>
                     <h2 className="text-5xl font-black text-white mb-6 leading-tight">{t('login.rightTitle1')}<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{t('login.rightTitle2')}</span></h2>
@@ -250,12 +253,12 @@ const ResetPassword = () => {
                     </p>
                     
                     <div className="grid grid-cols-2 gap-6">
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md hover:bg-white/10 transition-colors">
                             <Activity className="w-8 h-8 text-purple-400 mb-3" />
                             <h3 className="text-white font-bold mb-1">{t('login.feat2Title')}</h3>
                             <p className="text-sm text-pink-100/60 font-medium">{t('login.feat2Desc')}</p>
                         </div>
-                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md hover:bg-white/10 transition-colors">
                             <Zap className="w-8 h-8 text-pink-400 mb-3" />
                             <h3 className="text-white font-bold mb-1">{t('login.feat3Title')}</h3>
                             <p className="text-sm text-pink-100/60 font-medium">{t('login.feat3Desc')}</p>

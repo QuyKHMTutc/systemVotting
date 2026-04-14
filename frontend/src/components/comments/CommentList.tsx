@@ -21,14 +21,14 @@ export default function CommentList({ comments, onReplySubmit }: CommentListProp
 
   if (!comments?.length) {
     return (
-      <div className="text-center py-12 text-white/50 rounded-xl border border-dashed border-white/10">
+      <div className="text-center py-12 text-slate-500 dark:text-white/50 rounded-xl border border-dashed border-slate-300 dark:border-white/10">
         {t('pollDetail.noCommentsBeFirst')}
       </div>
     );
   }
 
   return (
-    <div className="space-y-0 divide-y divide-white/5">
+    <div className="space-y-0 divide-y divide-slate-200 dark:divide-white/5">
       {comments.map((comment) => (
         <CommentItem
           key={comment.id}
