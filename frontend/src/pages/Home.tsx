@@ -2,6 +2,10 @@ import Navbar from '../components/Navbar';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import bannerImg from '../assets/banner.png';
+import { ShieldCheck, Activity, Settings, MessageSquare, BarChart3, Lock, PieChart, MousePointerClick, MessageCircle } from 'lucide-react';
+import createMockup from '../assets/mockups/create.png';
+import voteMockup from '../assets/mockups/vote.png';
+import commentMockup from '../assets/mockups/comment.png';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -88,6 +92,175 @@ const Home = () => {
                 </div>
             </div>
         </div>
+
+        {/* Features / Intro Section */}
+        <div className="mt-20 mb-20 text-center px-4">
+            <h4 className="text-purple-600 dark:text-purple-400 font-bold text-sm tracking-widest uppercase mb-4 transition-colors">
+                {t('home.featPreTitle')}
+            </h4>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight transition-colors">
+                {t('home.featTitle')}
+            </h2>
+            <p className="max-w-3xl mx-auto text-slate-600 dark:text-white/70 text-lg leading-relaxed mb-20 transition-colors">
+                {t('home.featDesc')}
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+                {/* Feature 1 */}
+                <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                        <ShieldCheck className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('home.f1Title')}</h3>
+                    <p className="text-slate-600 dark:text-white/70 leading-relaxed text-sm">
+                        {t('home.f1Desc')}
+                    </p>
+                </div>
+
+                {/* Feature 2 */}
+                <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                        <Activity className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('home.f2Title')}</h3>
+                    <p className="text-slate-600 dark:text-white/70 leading-relaxed text-sm">
+                        {t('home.f2Desc')}
+                    </p>
+                </div>
+
+                {/* Feature 3 */}
+                <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                        <Settings className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('home.f3Title')}</h3>
+                    <p className="text-slate-600 dark:text-white/70 leading-relaxed text-sm">
+                        {t('home.f3Desc')}
+                    </p>
+                </div>
+
+                {/* Feature 4 */}
+                <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                        <MessageSquare className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('home.f4Title')}</h3>
+                    <p className="text-slate-600 dark:text-white/70 leading-relaxed text-sm">
+                        {t('home.f4Desc')}
+                    </p>
+                </div>
+
+                {/* Feature 5 */}
+                <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                        <BarChart3 className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('home.f5Title')}</h3>
+                    <p className="text-slate-600 dark:text-white/70 leading-relaxed text-sm">
+                        {t('home.f5Desc')}
+                    </p>
+                </div>
+
+                {/* Feature 6 */}
+                <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                        <Lock className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('home.f6Title')}</h3>
+                    <p className="text-slate-600 dark:text-white/70 leading-relaxed text-sm">
+                        {t('home.f6Desc')}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {/* --- Showcase Section 1: Create Poll --- */}
+        <div className="py-20 border-t border-slate-200 dark:border-white/10 mt-10">
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 px-4">
+                <div className="lg:w-1/2">
+                    <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30">
+                        <PieChart className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 leading-tight transition-colors">
+                        {t('home.createSectionTitle')}
+                    </h2>
+                    <p className="text-slate-600 dark:text-white/70 text-lg leading-relaxed mb-8 transition-colors">
+                        {t('home.createSectionDesc')}
+                    </p>
+                    <div className="flex flex-wrap gap-4">
+                        <Link to="/create-poll" className="px-6 py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all hover:-translate-y-0.5">
+                            {t('home.btnCreateNow')}
+                        </Link>
+                        <Link to="/explore" className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-900 dark:text-white font-bold rounded-xl transition-all border border-slate-200 dark:border-white/10 shadow-sm">
+                            {t('home.btnViewExample')}
+                        </Link>
+                    </div>
+                </div>
+                <div className="lg:w-1/2 w-full">
+                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 group transform transition-transform hover:-translate-y-2 duration-500">
+                        <img src={createMockup} alt="Create Poll Mockup" className="w-full h-auto object-cover" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 rounded-[2rem] pointer-events-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* --- Showcase Section 2: Vote Poll (Image Left) --- */}
+        <div className="py-20 border-t border-slate-200 dark:border-white/10">
+            <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-20 px-4">
+                <div className="lg:w-1/2 w-full">
+                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 group transform transition-transform hover:-translate-y-2 duration-500">
+                        <img src={voteMockup} alt="Vote Mockup" className="w-full h-auto object-cover" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 rounded-[2rem] pointer-events-none"></div>
+                    </div>
+                </div>
+                <div className="lg:w-1/2">
+                    <div className="w-16 h-16 bg-pink-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-pink-500/30">
+                        <MousePointerClick className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 leading-tight transition-colors">
+                        {t('home.voteSectionTitle')}
+                    </h2>
+                    <p className="text-slate-600 dark:text-white/70 text-lg leading-relaxed mb-8 transition-colors">
+                        {t('home.voteSectionDesc')}
+                    </p>
+                    <div className="flex flex-wrap gap-4">
+                        <Link to="/explore" className="px-6 py-3.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl shadow-lg shadow-pink-500/20 transition-all hover:-translate-y-0.5">
+                            {t('home.btnExplorePolls')}
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* --- Showcase Section 3: Comments --- */}
+        <div className="py-20 border-t border-slate-200 dark:border-white/10">
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 px-4">
+                <div className="lg:w-1/2">
+                    <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/30">
+                        <MessageCircle className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 leading-tight transition-colors">
+                        {t('home.commentSectionTitle')}
+                    </h2>
+                    <p className="text-slate-600 dark:text-white/70 text-lg leading-relaxed mb-8 transition-colors">
+                        {t('home.commentSectionDesc')}
+                    </p>
+                    <div className="flex flex-wrap gap-4">
+                        <Link to="/explore" className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5">
+                            {t('home.btnJoinDiscussion')}
+                        </Link>
+                    </div>
+                </div>
+                <div className="lg:w-1/2 w-full">
+                    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 group transform transition-transform hover:-translate-y-2 duration-500">
+                        <img src={commentMockup} alt="Comment Mockup" className="w-full h-auto object-cover" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 rounded-[2rem] pointer-events-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
       </main>
     </div>
   );

@@ -10,7 +10,16 @@ const Navbar = () => {
     const { theme, toggleTheme } = useTheme();
     const { t, i18n } = useTranslation();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -23,7 +32,11 @@ const Navbar = () => {
     }, []);
 
     return (
-        <nav className="glass-panel sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 rounded-b-xl mb-8 border-b border-white/10 shadow-lg">
+        <nav className={`sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 mb-8 transition-all duration-300 ${
+            isScrolled 
+                ? 'bg-white/80 dark:bg-[#0a051d]/80 backdrop-blur-xl shadow-lg border-b border-slate-200/80 dark:border-white/10' 
+                : 'bg-transparent border-b border-transparent'
+        }`}>
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between px-1 sm:px-2 relative">
                 
                 {/* Left: Logo */}
@@ -122,7 +135,7 @@ const Navbar = () => {
                                             {t('navbar.myPolls')}
                                         </Link>
 
-                                        <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
+                                        <Link to="/profile?tab=comments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
                                             <div className="w-8 h-8 rounded-full bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0">
                                                 <MessageSquare className="w-4 h-4" />
                                             </div>

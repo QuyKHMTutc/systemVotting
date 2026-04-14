@@ -25,7 +25,32 @@
     "stat2Value": "Hơn 13 triệu",
     "stat2Label": "Các cuộc thăm dò",
     "stat3Value": "Hơn 290 triệu",
-    "stat3Label": "Phiếu bầu"
+    "stat3Label": "Phiếu bầu",
+    "featPreTitle": "KHẢO SÁT Ý KIẾN DỄ DÀNG HƠN",
+    "featTitle": "Các cuộc thăm dò ý kiến đơn giản với khả năng cấu hình mạnh mẽ.",
+    "featDesc": "Mặc dù chúng tôi thiết kế các cuộc thăm dò ý kiến của mình đơn giản và đẹp mắt nhất có thể, chúng tôi cũng cung cấp các tùy chọn tùy chỉnh mạnh mẽ để cho phép điều chỉnh theo yêu cầu cho nhiều mục đích khác nhau.",
+    "f1Title": "Bảo mật & Trực quan",
+    "f1Desc": "Cơ chế bảo mật mạnh mẽ. Tự động chuyển đổi giữa chế độ Sáng và Tối để mang lại trải nghiệm tối ưu.",
+    "f2Title": "Bỏ phiếu thời gian thực",
+    "f2Desc": "Mọi thay đổi từ phiếu bầu đến bình luận đều được cập nhật ngay lập tức mà không cần tải lại trang.",
+    "f3Title": "Cấu hình linh hoạt",
+    "f3Desc": "Hỗ trợ nhiều lựa chọn, cho phép thiết lập thời hạn và danh tính người tạo tùy theo mục đích sử dụng.",
+    "f4Title": "Tương tác cộng đồng",
+    "f4Desc": "Bình luận, thảo luận trực tiếp trên từng cuộc thăm dò. Tương tác mượt mà như các mạng xã hội hàng đầu.",
+    "f5Title": "Báo cáo trực quan",
+    "f5Desc": "Kết quả khảo sát được tổng hợp và hiển thị trực quan thông qua tỉ lệ phần trăm và màu sắc nổi bật.",
+    "f6Title": "Bảo vệ tài khoản",
+    "f6Desc": "Hệ thống đăng nhập an toàn, khôi phục mật khẩu qua OTP qua email với bảo vệ danh tính tuyệt đối.",
+    "createSectionTitle": "Sử dụng công cụ tạo khảo sát nâng cao của chúng tôi",
+    "createSectionDesc": "Khả năng tùy chỉnh không giới hạn từ đa lựa chọn, thiết lập thời hạn đóng đăng ký cho tới việc giữ bài đăng hoàn toàn ẩn danh. Công cụ của chúng tôi được thiết kế để tiện dụng tối đa và phù hợp với mọi kịch bản thu thập ý kiến.",
+    "btnCreateNow": "Tạo cuộc thăm dò ý kiến",
+    "btnViewExample": "Xem ví dụ",
+    "voteSectionTitle": "Trải nghiệm bỏ phiếu mượt mà và minh bạch thời gian thực",
+    "voteSectionDesc": "Không cần làm mới trang! Mọi lượt vote đều được cập nhật theo thời gian thực (Real-time). Bạn có thể thấy các thanh tiến trình nháy và nhảy số ngay khi có người vừa bỏ phiếu ở cách bạn nửa vòng trái đất.",
+    "btnExplorePolls": "Khám phá các khảo sát",
+    "commentSectionTitle": "Thảo luận và Kết nối Cộng đồng Sâu Sắc",
+    "commentSectionDesc": "Mỗi cuộc khảo sát đi kèm một diễn đàn thu nhỏ. Bạn có thể để lại ý kiến, trả lời theo luồng, tương tác tự do bằng danh tính thật hoặc bình luận hoàn toàn ẩn danh. Mọi người đều có tiếng nói.",
+    "btnJoinDiscussion": "Tham gia thảo luận"
   },
   "dashboard": {
     "title": "Bình chọn Cộng đồng",
@@ -168,8 +193,8 @@
     "feat3Desc": "Tối ưu hóa cho số lượng lớn người dùng."
   },
   "createPoll": {
-    "title": "Tạo bình chọn mới",
-    "subtitle": "Đặt câu hỏi và để cộng đồng tham gia bình chọn.",
+    "title": "Tạo cuộc thăm dò ý kiến mới",
+    "subtitle": "Đặt câu hỏi và để cộng đồng tham gia cuộc thăm dò ý kiến.",
     "errorEmptyOptions": "Tất cả các lựa chọn không được để trống",
     "errorFailed": "Tạo bình chọn thất bại",
     "question": "Câu hỏi bình chọn",
@@ -186,7 +211,7 @@
     "anonymousDesc": "Đăng dưới chế độ ẩn danh. Người khác sẽ không biết bạn là người tạo.",
     "cancel": "Hủy",
     "creating": "Đang tạo...",
-    "submitBtn": "Tạo Bình Chọn"
+    "submitBtn": "Tạo Cuộc Thăm Dò Ý Kiến"
   },
   "profile": {
     "title": "Chỉnh sửa hồ sơ",
