@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -11,11 +11,11 @@
   --bg-grad-2: rgba(168, 85, 247, 0.05);
   --bg-grad-3: rgba(59, 130, 246, 0.07);
 
-  --surface: rgba(255, 255, 255, 0.9);
-  --glass-bg: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 100%);
-  --glass-border: rgba(0, 0, 0, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.5);
-  --glass-shadow: 0 4px 24px -4px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.3) inset;
+  --surface: rgba(255, 255, 255, 0.95);
+  --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-highlight: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 10px 40px -10px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.4) inset;
 
   --text-main: #0f172a;
   --text-muted: #475569;
@@ -31,11 +31,11 @@
   --bg-grad-2: rgba(168, 85, 247, 0.2);
   --bg-grad-3: rgba(59, 130, 246, 0.12);
 
-  --surface: rgba(255, 255, 255, 0.04);
-  --glass-bg: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 4px 24px -4px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  --surface: rgba(255, 255, 255, 0.05);
+  --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 10px 40px -10px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05) inset;
 
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
@@ -46,7 +46,9 @@
 }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background: var(--bg-color);
   color: var(--text-main);
   background-image:
@@ -58,10 +60,16 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+h1, h2, h3, h4, h5, h6, .font-heading,
+.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl, .text-7xl {
+  font-family: 'Outfit', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -149,12 +157,17 @@ body {
 
 /* Button shine on hover */
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
   background-size: 200% 200%;
-  box-shadow: 0 4px 20px -4px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 4px 20px -4px rgba(168, 85, 247, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.btn-primary:active {
+  transform: scale(0.97);
 }
 .btn-primary:hover {
-  box-shadow: 0 8px 32px -4px rgba(99, 102, 241, 0.5), 0 0 40px -10px rgba(168, 85, 247, 0.4);
+  background-position: 100% 0;
+  box-shadow: 0 12px 32px -4px rgba(168, 85, 247, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Tag pill colors */
