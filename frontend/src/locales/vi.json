@@ -200,5 +200,21 @@
     "successUpdate": "Cập nhật hồ sơ thành công!",
     "failUpdate": "Cập nhật hồ sơ thất bại",
     "deleteConfirm": "Bạn có chắc chắn muốn xóa bài đăng này không?"
+  },
+  "footer": {
+    "contactInfo": "Thông tin liên hệ",
+    "addressLabel": "Địa chỉ:",
+    "addressValue": "99 Nguyễn Chí Thanh, Đống Đa, Hà Nội",
+    "phoneLabel": "Điện thoại:",
+    "phoneValue": "(+84) 989997062",
+    "emailLabel": "Email:",
+    "emailValue": "quykhmtutc@gmail.com",
+    "policiesTitle": "Chính sách & điều khoản",
+    "privacyPolicy": "Chính sách bảo mật",
+    "termsOfService": "Điều khoản dịch vụ",
+    "cancellationPolicy": "Chính sách hoàn hủy",
+    "paymentGuide": "Hướng dẫn thanh toán VNPAY",
+    "connectNow": "Kết nối ngay",
+    "copyright": "Bản quyền © 2026 bởi TRẦN VĂN QUÝ"
   }
 }

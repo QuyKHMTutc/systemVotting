@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import Login from './pages/Login';
@@ -12,6 +12,7 @@ import ResetPassword from './pages/ResetPassword';
 import { Profile } from './pages/Profile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Footer from './components/Footer';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, requireRole?: string }) => {
@@ -28,13 +29,25 @@ const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, 
   return <>{children}</>;
 };
 
+const ConditionalFooter = () => {
+  const location = useLocation();
+  const noFooterRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  
+  if (noFooterRoutes.includes(location.pathname)) {
+    return null;
+  }
+  
+  return <Footer />;
+};
+
 function App() {
   return (
     <Router>
       <AuthProvider>
         <WebSocketProvider>
-          <div className="min-h-screen">
-            <Routes>
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-grow flex flex-col relative z-0">
+              <Routes>
               <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -64,6 +77,8 @@ function App() {
               </ProtectedRoute>
             } />
             </Routes>
+            </div>
+            <ConditionalFooter />
           </div>
         </WebSocketProvider>
       </AuthProvider>

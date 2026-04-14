@@ -64,7 +64,7 @@
     "noCommentsBeFirst": "No comments yet. Be the first to share your thoughts!"
   },
   "forgotPassword": {
-    "invalidEmail": "Please enter a valid email (e.g., name@example.com)",
+    "invalidEmail": "Please enter a valid email (e.g., name@gmail.com)",
     "otpSent": "OTP has been sent to your email. Check your inbox and use the code to reset your password.",
     "failedToSend": "Failed to send OTP",
     "failedToSendCheckEmail": "Failed to send OTP. Please check the email address.",
@@ -200,5 +200,20 @@
     "successUpdate": "Profile updated successfully!",
     "failUpdate": "Failed to update profile",
     "deleteConfirm": "Are you sure you want to delete this poll?"
+  },
+  "footer": {
+    "contactInfo": "Contact Information",
+    "addressLabel": "Address:",
+    "addressValue": "99 Nguyen Chi Thanh, Dong Da, Hanoi",
+    "phoneLabel": "Phone:",
+    "phoneValue": "(+84) 989997062",
+    "emailLabel": "Email:",
+    "emailValue": "quykhmtutc@gmail.com",
+    "policiesTitle": "Policies & Terms",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "cancellationPolicy": "Cancellation Policy",
+    "connectNow": "Connect Now",
+    "copyright": "Copyright © 2026 by TRAN VAN QUY"
   }
 }
