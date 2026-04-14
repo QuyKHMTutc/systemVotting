@@ -1,6 +1,7 @@
 import Navbar from '../components/Navbar';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import bannerImg from '../assets/banner.png';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -41,15 +42,14 @@ const Home = () => {
           </div>
 
           {/* Graphic Element (Hand slipping ballot) - We simulate the visual with gradients and an icon since we don't have the exact image */}
-          <div className="hidden lg:block absolute right-0 bottom-0 w-[45%] h-full opacity-80 pointer-events-none">
-             <div className="absolute right-[-100px] bottom-[-100px] w-96 h-96 bg-purple-500/20 rounded-full blur-[100px]"></div>
-             <div className="absolute right-[100px] top-[50%] -translate-y-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-[#6b21a8] drop-shadow-[0_0_50px_rgba(107,33,168,0.5)]">
-                    <path d="M4 14a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4z" fill="#6b21a8"/>
-                    <path d="M12 4v8" stroke="white" strokeWidth="2"/>
-                    <path d="M8 22L12 12l4 10H8z" fill="#a88ff3"/>
-                </svg>
-             </div>
+          {/* Graphic Element */}
+          <div className="hidden lg:block absolute right-0 bottom-0 top-0 w-[50%] pointer-events-none overflow-hidden">
+             <div className="absolute right-[-100px] bottom-[-100px] w-96 h-96 bg-purple-500/30 rounded-full blur-[100px]"></div>
+             <img
+                 src={bannerImg}
+                 alt="Ban bình chọn"
+                 className="absolute right-0 top-0 w-full h-full object-cover object-left pointer-events-none [mask-image:linear-gradient(to_right,transparent_0%,black_25%)] mix-blend-lighten opacity-90"
+             />
           </div>
         </div>
 
