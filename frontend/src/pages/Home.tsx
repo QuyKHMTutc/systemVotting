@@ -51,6 +51,7 @@ const Home = () => {
              <div className="absolute right-[-100px] bottom-[-100px] w-96 h-96 bg-purple-500/30 rounded-full blur-[100px]"></div>
              <img
                  src={bannerImg}
+
                  alt="Ban bình chọn"
                  className="absolute right-0 top-0 w-full h-full object-cover object-left pointer-events-none [mask-image:linear-gradient(to_right,transparent_0%,black_25%)] mix-blend-lighten opacity-90"
              />
