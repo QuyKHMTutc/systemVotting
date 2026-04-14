@@ -43,6 +43,12 @@ public class CommentResponseDTO {
     @Schema(description = "ID của bình luận cha (nếu là phản hồi)", example = "null")
     private Long parentId;
 
+    @Schema(description = "ID của poll", example = "1")
+    private Long pollId;
+
+    @Schema(description = "Tiêu đề của poll", example = "Poll Title")
+    private String pollTitle;
+
     @Schema(description = "Danh sách các phản hồi con")
     private java.util.List<CommentResponseDTO> replies;
 }

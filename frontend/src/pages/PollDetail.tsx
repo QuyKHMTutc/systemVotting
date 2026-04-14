@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
@@ -15,6 +15,7 @@ import { getTagPillClass } from '../utils/tagPills';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../contexts/AuthContext';
 import { usePollWebSocket } from '../hooks/usePollWebSocket';
+import { useTranslation } from 'react-i18next';
 
 const countTotalComments = (commentsList: Comment[]): number => {
     return commentsList.reduce((acc, comment) => {
@@ -26,6 +27,7 @@ const countTotalComments = (commentsList: Comment[]): number => {
 const PollDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [poll, setPoll] = useState<Poll | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -165,6 +167,10 @@ const PollDetail = () => {
   };
 
   const handleVote = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     if (!selectedOption) return;
     setVoting(true);
     setError('');
@@ -224,12 +230,12 @@ const PollDetail = () => {
       <div className="min-h-screen pb-12">
         <Navbar />
         <div className="max-w-2xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Poll not found</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">{t('pollDetail.pollNotFound')}</h2>
           <button
             onClick={() => navigate('/')}
             className="text-indigo-400 hover:text-indigo-300 font-medium"
           >
-            Back to Dashboard
+            {t('pollDetail.backToDashboard')}
           </button>
         </div>
       </div>
@@ -266,7 +272,7 @@ const PollDetail = () => {
                 }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                {isActive ? 'Active' : 'Ended'}
+                {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
               </span>
               {poll.tags?.map((tag) => (
                 <span
@@ -311,15 +317,15 @@ const PollDetail = () => {
             <div className="flex items-center gap-4 text-xs text-white/60 mt-5 pt-4 border-t border-white/5">
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-indigo-400/80" />
-                <span className="text-white font-semibold">{totalVotes}</span> voters
+                <span className="text-white font-semibold">{totalVotes}</span> {t('pollDetail.voters')}
               </span>
               <span className="flex items-center gap-1.5">
                 <MessageCircle className="w-4 h-4 text-indigo-400/80" />
-                <span className="text-white font-semibold">{countTotalComments(comments)}</span> comments
+                <span className="text-white font-semibold">{countTotalComments(comments)}</span> {t('pollDetail.comments')}
               </span>
               <span className="flex items-center gap-1.5">
                 <BarChart3 className="w-4 h-4 text-indigo-400/80" />
-                <span className="text-white font-semibold">{poll.options.length}</span> options
+                <span className="text-white font-semibold">{poll.options.length}</span> {t('pollDetail.options')}
               </span>
             </div>
           </div>
@@ -377,7 +383,7 @@ const PollDetail = () => {
                     {showResults && (
                       <div className="text-right shrink-0">
                         <span className="text-white font-bold block">{percentage}%</span>
-                        <span className="text-white/50 text-xs">{option.voteCount} votes</span>
+                        <span className="text-white/50 text-xs">{option.voteCount} {t('pollDetail.votes')}</span>
                       </div>
                     )}
                   </div>
@@ -389,21 +395,21 @@ const PollDetail = () => {
           {/* Vote Button / Status */}
           <div className="px-6 sm:px-8 py-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-white/70 text-sm">
-              Total votes: <span className="text-white font-semibold">{totalVotes}</span>
+              {t('pollDetail.totalVotes')} <span className="text-white font-semibold">{totalVotes}</span>
             </div>
             {isActive && !hasVoted && (
               <button
                 onClick={handleVote}
-                disabled={!selectedOption || voting}
-                className="w-full sm:w-auto px-8 py-3.5 btn-primary text-white font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:!bg-gray-600 disabled:!shadow-none"
+                disabled={(user && !selectedOption) || voting}
+                className={`w-full sm:w-auto px-8 py-3.5 font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:!shadow-none ${!user ? 'bg-[#00c853] hover:bg-[#00e676] text-white' : 'btn-primary text-white disabled:!bg-gray-600'}`}
               >
-                {voting ? 'Submitting...' : 'Submit Vote'}
+                {voting ? t('pollDetail.submitVote') + '...' : !user ? t('pollDetail.loginToVote') : t('pollDetail.submitVote')}
               </button>
             )}
             {hasVoted && (
               <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/30">
                 <Check className="w-5 h-5" />
-                <span className="font-medium">You voted</span>
+                <span className="font-medium">{t('pollDetail.youVoted')}</span>
               </div>
             )}
           </div>
@@ -425,19 +431,27 @@ const PollDetail = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent" />
                   </div>
                 ) : comments.length === 0 ? (
-                  <p className="text-center text-white/50 py-8">No comments yet. Be the first!</p>
+                  <p className="text-center text-white/50 py-8">{t('pollDetail.noComments')}</p>
                 ) : (
                   <CommentList comments={comments} onReplySubmit={handleReplySubmit} />
                 )}
               </div>
               <div className="shrink-0 p-4 sm:p-6 border-t border-white/10">
                 {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
-                <CommentInput 
-                  onSubmit={handleCommentSubmit} 
-                  placeholder="Write a comment..." 
-                  avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
-                  username={user?.username}
-                />
+                {!user ? (
+                   <div className="text-center p-4 bg-white/5 rounded-xl border border-white/10">
+                     <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
+                       {t('pollDetail.loginToComment')}
+                     </Link>
+                   </div>
+                ) : (
+                   <CommentInput 
+                     onSubmit={handleCommentSubmit} 
+                     placeholder={t('pollDetail.writeComment')} 
+                     avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
+                     username={user?.username}
+                   />
+                )}
               </div>
             </div>
           )}

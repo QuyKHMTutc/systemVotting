@@ -4,6 +4,7 @@ import { Share2, Check, Users, MessageCircle, BarChart3, Clock } from 'lucide-re
 import { useState } from 'react';
 import { timeAgo, endsIn } from '../utils/date';
 import { getTagPillClass } from '../utils/tagPills';
+import { useTranslation } from 'react-i18next';
 
 export interface PollCardProps {
   poll: Poll;
@@ -20,6 +21,7 @@ export const PollCard = ({
   onDelete,
   showDeleteButton = false,
 }: PollCardProps) => {
+  const { t } = useTranslation();
   const isActive = new Date(poll.endTime) > new Date();
   const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
   const [copied, setCopied] = useState(false);
@@ -59,7 +61,7 @@ export const PollCard = ({
                 }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                {isActive ? 'Active' : 'Ended'}
+                {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
               </span>
               {poll.tags?.slice(0, 3).map((tag) => (
                 <span
@@ -124,15 +126,15 @@ export const PollCard = ({
           <div className="flex items-center gap-4 text-xs text-white/60 mb-5 py-3 border-y border-white/5">
             <span className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-indigo-400/80" />
-              <span className="text-white font-semibold">{totalVotes}</span> voters
+              <span className="text-white font-semibold">{totalVotes}</span> {t('pollDetail.voters')}
             </span>
             <span className="flex items-center gap-1.5">
               <MessageCircle className="w-4 h-4 text-indigo-400/80" />
-              <span className="text-white font-semibold">{commentCount}</span> comments
+              <span className="text-white font-semibold">{commentCount}</span> {t('pollDetail.comments')}
             </span>
             <span className="flex items-center gap-1.5">
               <BarChart3 className="w-4 h-4 text-indigo-400/80" />
-              <span className="text-white font-semibold">{poll.options.length}</span> options
+              <span className="text-white font-semibold">{poll.options.length}</span> {t('pollDetail.options')}
             </span>
           </div>
 
@@ -153,7 +155,7 @@ export const PollCard = ({
                     : 'btn-primary text-white border-0 hover:opacity-95 group-hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)]'
               }`}
             >
-              {!isActive ? 'View Results' : hasVoted ? 'View Results' : 'VOTE NOW'}
+              {!isActive ? t('pollDetail.viewResults') : hasVoted ? t('pollDetail.viewResults') : t('pollDetail.voteNow')}
             </span>
           </div>
         </div>

@@ -57,4 +57,16 @@ public class CommentController {
                 .data(response)
                 .build();
     }
+
+    @Operation(summary = "Lấy bình luận của tôi", description = "Danh sách bình luận của người dùng hiện tại")
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công") })
+    @GetMapping("/me")
+    public ApiResponse<List<CommentResponseDTO>> getMyComments(@AuthenticationPrincipal Jwt jwt) {
+        List<CommentResponseDTO> response = commentService.getMyComments(Long.valueOf(jwt.getSubject()));
+        return ApiResponse.<List<CommentResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("My comments retrieved successfully")
+                .data(response)
+                .build();
+    }
 }

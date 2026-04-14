@@ -4,8 +4,8 @@ export interface PollPageResponse {
     content: Poll[];
     totalElements: number;
     totalPages: number;
-    size: number;
-    number: number;
+    pageSize: number;
+    currentPage: number;
 }
 
 export interface Poll {

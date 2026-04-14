@@ -9,4 +9,5 @@ import java.util.List;
 public interface CommentService {
     CommentResponseDTO createComment(CommentRequestDTO request, Long userId);
     List<CommentResponseDTO> getCommentsByPollId(Long pollId);
+    List<CommentResponseDTO> getMyComments(Long userId);
 }

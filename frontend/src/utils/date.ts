@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 /**
  * Format relative time (e.g. "2h ago", "3d ago")
  */
@@ -11,11 +13,11 @@ export function timeAgo(dateString: string): string {
   const diffDays = Math.floor(diffHours / 24);
   const diffWeeks = Math.floor(diffDays / 7);
 
-  if (diffSeconds < 60) return 'Just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffWeeks < 4) return `${diffWeeks}w ago`;
+  if (diffSeconds < 60) return i18n.t('pollDetail.justNow');
+  if (diffMinutes < 60) return i18n.t('pollDetail.mAgo', { count: diffMinutes });
+  if (diffHours < 24) return i18n.t('pollDetail.hAgo', { count: diffHours });
+  if (diffDays < 7) return i18n.t('pollDetail.dAgo', { count: diffDays });
+  if (diffWeeks < 4) return i18n.t('pollDetail.wAgo', { count: diffWeeks });
   return date.toLocaleDateString();
 }
 
@@ -27,13 +29,13 @@ export function endsIn(endTime: string): string {
   const now = new Date();
   const diffMs = end.getTime() - now.getTime();
 
-  if (diffMs <= 0) return 'Ended';
+  if (diffMs <= 0) return i18n.t('pollDetail.ended');
 
   const diffMinutes = Math.floor(diffMs / (60 * 1000));
   const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
   const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
 
-  if (diffMinutes < 60) return `Ends in ${diffMinutes}m`;
-  if (diffHours < 24) return `Ends in ${diffHours}h`;
-  return `Ends in ${diffDays}d`;
+  if (diffMinutes < 60) return i18n.t('pollDetail.endsInM', { count: diffMinutes });
+  if (diffHours < 24) return i18n.t('pollDetail.endsInH', { count: diffHours });
+  return i18n.t('pollDetail.endsInD', { count: diffDays });
 }

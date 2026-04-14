@@ -7,8 +7,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { PollCard } from '../components/PollCard';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const [pollPage, setPollPage] = useState<PollPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -120,8 +122,8 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-1 tracking-tight">Community Polls</h1>
-            <p className="text-white/50 text-sm">Discover and vote on community discussions</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-1 tracking-tight">{t('dashboard.title')}</h1>
+            <p className="text-white/50 text-sm">{t('dashboard.subtitle')}</p>
           </div>
           <Link
             to="/create-poll"
@@ -130,7 +132,7 @@ const Dashboard = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
-            Create Poll
+            {t('dashboard.createPoll')}
           </Link>
         </div>
 
@@ -152,7 +154,7 @@ const Dashboard = () => {
                 </span>
                 <input
                   type="text"
-                  placeholder="Search polls..."
+                  placeholder={t('dashboard.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 focus:bg-white/[0.06] transition-all duration-200"
@@ -166,7 +168,7 @@ const Dashboard = () => {
                 </span>
                 <input
                   type="text"
-                  placeholder="Filter by tag"
+                  placeholder={t('dashboard.filterTags')}
                   value={filterTag === 'ALL' ? '' : filterTag}
                   onChange={(e) => setFilterTagValue(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 focus:bg-white/[0.06] transition-all duration-200"
@@ -184,7 +186,7 @@ const Dashboard = () => {
                       : 'bg-white/[0.04] border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:border-white/20'
                   }`}
                 >
-                  {status === 'ALL' ? 'All' : status}
+                  {status === 'ALL' ? t('dashboard.filterAll') : status === 'ACTIVE' ? t('dashboard.filterActive') : t('dashboard.filterEnded')}
                 </button>
               ))}
             </div>
@@ -205,7 +207,7 @@ const Dashboard = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
-                <p className="text-white/60 text-lg mb-2">No polls found</p>
+                <p className="text-white/60 text-lg mb-2">{t('dashboard.noPolls')}</p>
                 <button
                   onClick={() => {
                     setSearchQuery('');
@@ -214,7 +216,7 @@ const Dashboard = () => {
                   }}
                   className="text-indigo-400 hover:text-indigo-300 font-medium"
                 >
-                  Clear filters
+                  {t('dashboard.clearFilters')}
                 </button>
               </div>
             ) : (
@@ -242,7 +244,7 @@ const Dashboard = () => {
           <div className="flex justify-center items-center gap-4 mt-12 mb-8">
             <button
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={pollPage.number === 0}
+              disabled={pollPage.currentPage === 0}
               className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/10"
               aria-label="Previous"
             >
@@ -251,11 +253,11 @@ const Dashboard = () => {
               </svg>
             </button>
             <span className="text-white/80 font-medium">
-              Page <span className="text-white">{pollPage.number + 1}</span> of {pollPage.totalPages}
+              Page <span className="text-white">{pollPage.currentPage + 1}</span> of {pollPage.totalPages}
             </span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(pollPage.totalPages - 1, p + 1))}
-              disabled={pollPage.number >= pollPage.totalPages - 1}
+              disabled={pollPage.currentPage >= pollPage.totalPages - 1}
               className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-white/10"
               aria-label="Next"
             >

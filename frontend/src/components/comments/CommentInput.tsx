@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { VenetianMask, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CommentInputProps {
   onSubmit: (content: string, isAnonymous: boolean) => Promise<void> | void;
@@ -18,6 +19,7 @@ export default function CommentInput({
   isReply = false,
   autoFocus = false,
 }: CommentInputProps) {
+  const { t } = useTranslation();
   const [content, setContent] = useState('');
   const [commentMode, setCommentMode] = useState<'user' | 'anonymous'>('user');
   const [submitting, setSubmitting] = useState(false);
@@ -104,9 +106,9 @@ export default function CommentInput({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate mb-0.5 ${commentMode === 'user' ? 'text-indigo-400' : 'text-slate-200 group-hover:text-white'}`}>
-                      Comment as {username}
+                      {t('pollDetail.commentAs', { username })}
                     </p>
-                    <p className="text-xs text-slate-400 truncate">Use your real profile</p>
+                    <p className="text-xs text-slate-400 truncate">{t('pollDetail.useRealProfile')}</p>
                   </div>
                   {commentMode === 'user' && (
                     <div className="shrink-0 text-indigo-400 mr-1">
@@ -127,9 +129,9 @@ export default function CommentInput({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate mb-0.5 ${commentMode === 'anonymous' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
-                      Comment anonymously
+                      {t('pollDetail.commentAnonymously')}
                     </p>
-                    <p className="text-xs text-slate-400 truncate">Your name will be hidden</p>
+                    <p className="text-xs text-slate-400 truncate">{t('pollDetail.nameHidden')}</p>
                   </div>
                   {commentMode === 'anonymous' && (
                     <div className="shrink-0 text-white mr-1">
@@ -173,7 +175,7 @@ export default function CommentInput({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isAnonymous ? 'Write a comment anonymously...' : placeholder}
+              placeholder={isAnonymous ? t('pollDetail.writeCommentAnon') : placeholder}
               autoFocus={autoFocus}
               disabled={submitting}
               rows={1}

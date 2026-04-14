@@ -15,4 +15,6 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     void deleteByOptionId(Long optionId);
 
     java.util.List<com.xxxx.systemvotting.modules.vote.entity.Vote> findByPollId(Long pollId);
+    
+    java.util.List<com.xxxx.systemvotting.modules.vote.entity.Vote> findByUserIdAndPollIdIn(Long userId, java.util.List<Long> pollIds);
 }

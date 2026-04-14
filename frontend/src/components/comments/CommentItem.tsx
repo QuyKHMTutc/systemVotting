@@ -3,6 +3,8 @@ import type { Comment } from '../../services/comment.service';
 import { CornerDownRight, ThumbsUp, User } from 'lucide-react';
 import CommentInput from './CommentInput';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface CommentItemProps {
   comment: Comment;
@@ -11,18 +13,18 @@ interface CommentItemProps {
   toggleReply: (commentId: number, forceOpen?: boolean) => void;
 }
 
-function getRelativeTime(dateString: string): string {
+function getRelativeTime(dateString: string, t: TFunction): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (diffSeconds < 60) return 'Just now';
+  if (diffSeconds < 60) return t('pollDetail.justNow');
   const diffMinutes = Math.floor(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffMinutes < 60) return t('pollDetail.mAgo', { count: diffMinutes });
   const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return t('pollDetail.hAgo', { count: diffHours });
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 7) return t('pollDetail.dAgo', { count: diffDays });
   return date.toLocaleDateString();
 }
 
@@ -33,13 +35,14 @@ export default function CommentItem({
   toggleReply,
 }: CommentItemProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isReplying, setIsReplying] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
 
   const showReplies = expandedReplies[comment.id] ?? false;
   const isReply = comment.parentId != null;
-  const timeAgo = getRelativeTime(comment.createdAt);
+  const timeAgo = getRelativeTime(comment.createdAt, t);
 
   const handleReplyClick = () => setIsReplying(!isReplying);
   const handleLikeClick = () => {
@@ -100,13 +103,13 @@ export default function CommentItem({
             }`}
           >
             <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
-            {likeCount > 0 ? likeCount : 'Like'}
+            {likeCount > 0 ? likeCount : t('pollDetail.like')}
           </button>
           <button
             onClick={handleReplyClick}
             className="text-xs font-medium text-white/50 hover:text-white/80 transition-colors"
           >
-            Reply
+            {t('pollDetail.reply')}
           </button>
           {comment.voteStatus !== 'Chưa vote' && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">
@@ -127,7 +130,7 @@ export default function CommentItem({
                 setIsReplying(false);
                 toggleReply(comment.id, true);
               }}
-              placeholder={`Reply to ${comment.username}...`}
+              placeholder={t('pollDetail.replyTo', { username: comment.username })}
               username={user?.username || "You"}
               avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
               isReply
@@ -155,7 +158,7 @@ export default function CommentItem({
                   className="flex items-center gap-2 mt-2 text-sm font-medium text-indigo-400 hover:text-indigo-300"
                 >
                   <CornerDownRight className="w-4 h-4" />
-                  Hide replies
+                  {t('pollDetail.hideReplies')}
                 </button>
               </>
             ) : (
@@ -164,7 +167,7 @@ export default function CommentItem({
                 className="flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300"
               >
                 <CornerDownRight className="w-4 h-4" />
-                View {comment.replies.length} repl{comment.replies.length === 1 ? 'y' : 'ies'}
+                {comment.replies.length === 1 ? t('pollDetail.viewReply', { count: 1 }) : t('pollDetail.viewReplies', { count: comment.replies.length })}
               </button>
             )}
           </div>
