@@ -15,6 +15,7 @@ import { Profile } from './pages/Profile';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, requireRole?: string }) => {
@@ -82,6 +83,7 @@ function App() {
             } />
             </Routes>
             </div>
+            <ScrollToTop />
             <ConditionalFooter />
           </div>
           </WebSocketProvider>

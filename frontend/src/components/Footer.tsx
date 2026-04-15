@@ -6,7 +6,7 @@ const Footer = () => {
   const { t } = useTranslation();
 
   return (
-    <footer className="mt-auto border-t border-slate-200 dark:border-white/10 bg-slate-100/80 dark:bg-black/20 backdrop-blur-md transition-colors">
+    <footer className="mt-auto border-t border-purple-200/50 dark:border-white/10 bg-gradient-to-br from-indigo-100/60 via-purple-100/50 to-pink-100/60 dark:bg-none dark:bg-black/20 backdrop-blur-xl transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-8 lg:gap-16">
           
@@ -52,7 +52,7 @@ const Footer = () => {
           {/* Column 3: Social & Action */}
           <div className="md:col-span-4 lg:col-span-4 flex justify-center md:justify-end mt-4 md:mt-0">
             <div className="flex flex-col items-center space-y-5">
-              <button className="w-full sm:w-auto px-10 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition-all hover:-translate-y-0.5 active:scale-95 shadow-[0_0_20px_rgba(34,197,94,0.3)] min-w-[200px]">
+              <button className="w-full sm:w-auto px-10 bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white font-bold py-3.5 rounded-xl transition-all hover:-translate-y-0.5 active:scale-95 shadow-[0_4px_20px_rgba(52,211,153,0.4)] min-w-[200px] border border-white/20">
                 {t('footer.connectNow')}
               </button>
               <div className="flex flex-wrap items-center justify-center gap-2 lg:gap-3 w-full">
@@ -82,7 +82,7 @@ const Footer = () => {
       </div>
       
       {/* Bottom Copyright */}
-      <div className="border-t border-slate-200 dark:border-white/10 bg-slate-200/50 dark:bg-black/40 py-5 transition-colors">
+      <div className="border-t border-purple-200/50 dark:border-white/10 bg-white/30 dark:bg-black/40 py-5 transition-colors backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-xs sm:text-sm text-slate-500 dark:text-white/50 font-medium tracking-wide">
           {t('footer.copyright')}
         </div>
