@@ -34,7 +34,7 @@ const Navbar = () => {
     return (
         <nav className={`sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 mb-8 transition-all duration-300 ${
             isScrolled 
-                ? 'bg-white/80 dark:bg-[#0a051d]/80 backdrop-blur-xl shadow-lg border-b border-slate-200/80 dark:border-white/10' 
+                ? 'bg-gradient-to-r from-pink-100/80 via-purple-100/80 to-indigo-100/80 dark:bg-none dark:bg-[#0a051d]/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(236,72,153,0.1)] dark:shadow-lg border-b border-white/50 dark:border-white/10' 
                 : 'bg-transparent border-b border-transparent'
         }`}>
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between px-1 sm:px-2 relative">

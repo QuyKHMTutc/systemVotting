@@ -70,7 +70,7 @@ const CreatePoll = () => {
             };
 
             await pollService.createPoll(payload);
-            navigate('/');
+            navigate('/explore');
         } catch (err: any) {
             setError(err.response?.data?.message || t('createPoll.errorFailed'));
         } finally {
