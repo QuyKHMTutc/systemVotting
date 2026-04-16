@@ -16,6 +16,7 @@ import confetti from 'canvas-confetti';
 import { useAuth } from '../contexts/AuthContext';
 import { usePollWebSocket } from '../hooks/usePollWebSocket';
 import { useTranslation } from 'react-i18next';
+import PollLiveChartModal from '../components/poll/PollLiveChartModal';
 
 const countTotalComments = (commentsList: Comment[]): number => {
     return commentsList.reduce((acc, comment) => {
@@ -43,6 +44,7 @@ const PollDetail = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState('');
+  const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
   
   const [identityLocked, setIdentityLocked] = useState(false);
   const [lockedIsAnonymous, setLockedIsAnonymous] = useState(false);
@@ -342,12 +344,21 @@ const PollDetail = () => {
                   <span className="text-slate-500 dark:text-white/50 text-sm">{timeAgo(poll.createdAt)} · {endsIn(poll.endTime)}</span>
                 </div>
               </div>
-              <button
-                onClick={handleShare}
-                className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-600 dark:text-white/60 hover:text-indigo-600 dark:hover:text-white transition-all border border-slate-200 dark:border-white/10"
-              >
-                {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsLiveChartOpen(true)}
+                  className="flex items-center gap-2 group px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-semibold rounded-xl border border-red-500/30 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] shrink-0"
+                >
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                  <span className="text-sm">Xem Live</span>
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-600 dark:text-white/60 hover:text-indigo-600 dark:hover:text-white transition-all border border-slate-200 dark:border-white/10 shrink-0"
+                >
+                  {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             {/* Stats row */}
@@ -502,6 +513,15 @@ const PollDetail = () => {
           )}
         </div>
       </main>
+
+      {poll && (
+        <PollLiveChartModal 
+          isOpen={isLiveChartOpen}
+          onClose={() => setIsLiveChartOpen(false)}
+          options={poll.options}
+          pollTitle={poll.title}
+        />
+      )}
     </div>
   );
 };

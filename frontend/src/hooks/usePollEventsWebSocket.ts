@@ -4,7 +4,8 @@ import { useGlobalWebSocket } from '../contexts/WebSocketContext';
 export type PollEventPayload = 
   | { type: 'CREATED'; poll: any }
   | { type: 'DELETED'; pollId: number }
-  | { type: 'VOTED'; pollId: number; options: { optionId: number; text: string; voteCount: number }[] };
+  | { type: 'VOTED'; pollId: number; options: { optionId: number; text: string; voteCount: number }[] }
+  | { type: 'COMMENT_ADDED'; pollId: number };
 
 interface PollEventsWebSocketOptions {
   onEvent: (payload: PollEventPayload) => void;

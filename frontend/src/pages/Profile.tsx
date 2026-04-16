@@ -88,6 +88,13 @@ export const Profile = () => {
           }
           return p;
         });
+      } else if (payload.type === 'COMMENT_ADDED') {
+        newContent = newContent.map(p => {
+          if (p.id === payload.pollId) {
+            return { ...p, commentCount: (p.commentCount || 0) + 1 };
+          }
+          return p;
+        });
       }
       return newContent;
     };
