@@ -30,12 +30,12 @@ export const Profile = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const handleDeletePoll = async (pollId: number) => {
-    if (!window.confirm('Are you sure you want to delete this poll?')) return;
+    if (!window.confirm(t('profile.deleteConfirm'))) return;
     try {
       await pollService.deletePoll(pollId);
       setCreatedPolls((prev) => prev.filter((p) => p.id !== pollId));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete. Please try again.');
+      alert(err.response?.data?.message || t('profile.deleteFail'));
     }
   };
 
@@ -53,7 +53,7 @@ export const Profile = () => {
         setMyComments(comments);
       } catch (err) {
         console.error('Failed to fetch profile data', err);
-        setError('Failed to load profile data. Please try again later.');
+        setError(t('profile.loadFail'));
       } finally {
         setLoading(false);
       }

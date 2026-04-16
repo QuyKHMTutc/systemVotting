@@ -241,7 +241,9 @@
     "noCommentsDesc": "Share your thoughts on community polls!",
     "successUpdate": "Profile updated successfully!",
     "failUpdate": "Failed to update profile",
-    "deleteConfirm": "Are you sure you want to delete this poll?"
+    "deleteConfirm": "Are you sure you want to delete this poll?",
+    "deleteFail": "Failed to delete. Please try again.",
+    "loadFail": "Failed to load profile data. Please try again later."
   },
   "termsPage": {
     "title": "Terms of Service",
@@ -300,5 +302,31 @@
     "cancellationPolicy": "Cancellation Policy",
     "connectNow": "Connect Now",
     "copyright": "Copyright © 2026 by TRAN VAN QUY"
+  },
+  "notification": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "noNotifications": "No notifications",
+    "today": "Today",
+    "earlier": "Earlier",
+    "viewMore": "View earlier notifications",
+    "commentedPoll": "commented on your poll:",
+    "repliedComment": "replied to your comment:",
+    "votedPoll": "voted on your poll.",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}}m",
+    "hoursAgo": "{{count}}h",
+    "daysAgo": "{{count}}d"
+  },
+  "liveChart": {
+    "option": "Option",
+    "votes": "votes",
+    "liveResults": "Live Results",
+    "realTime": "Real-time Updates",
+    "totalVotes": "Total votes",
+    "totalOptions": "Total options",
+    "close": "Close live view"
   }
 }

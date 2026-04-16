@@ -5,9 +5,11 @@ import { notificationService } from '../services/notification.service';
 import type { Notification } from '../services/notification.service';
 import { useGlobalWebSocket } from '../contexts/WebSocketContext';
 import type { IMessage } from '@stomp/stompjs';
+import { useTranslation } from 'react-i18next';
 
 export default function NotificationBell() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -87,7 +89,6 @@ export default function NotificationBell() {
                 if (window.location.pathname === currentPath && 
                     window.location.hash === '#comments' && 
                     window.location.search === search) {
-                    // We are exactly on the same URL, just trigger hashchange to scroll
                     window.dispatchEvent(new HashChangeEvent("hashchange"));
                 } else {
                     navigate(`${currentPath}${search}#comments`);
@@ -100,10 +101,10 @@ export default function NotificationBell() {
 
     const formatRelativeTime = (dateStr: string) => {
         const diff = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 1000);
-        if (diff < 60) return "Vừa xong";
-        if (diff < 3600) return `${Math.floor(diff / 60)} phút`;
-        if (diff < 86400) return `${Math.floor(diff / 3600)} giờ`;
-        return `${Math.floor(diff / 86400)} ngày`;
+        if (diff < 60) return t('notification.justNow');
+        if (diff < 3600) return t('notification.minutesAgo', { count: Math.floor(diff / 60) });
+        if (diff < 86400) return t('notification.hoursAgo', { count: Math.floor(diff / 3600) });
+        return t('notification.daysAgo', { count: Math.floor(diff / 86400) });
     };
 
     const isToday = (dateStr: string) => {
@@ -152,7 +153,7 @@ export default function NotificationBell() {
                 {/* Header */}
                 <div className="px-4 pt-4 pb-2">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Thông báo</h3>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('notification.title')}</h3>
                         <div className="flex items-center gap-2 relative">
                              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-white/60 transition-colors">
                                  <MoreHorizontal className="w-5 h-5" />
@@ -166,7 +167,7 @@ export default function NotificationBell() {
                                             className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-white/90 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3"
                                         >
                                             <div className="w-6 flex justify-center"><Check className="w-5 h-5" /></div>
-                                            Đánh dấu tất cả đã đọc
+                                            {t('notification.markAllRead')}
                                         </button>
                                      </div>
                                  </>
@@ -180,13 +181,13 @@ export default function NotificationBell() {
                             onClick={() => setFilter('ALL')}
                             className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'ALL' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
                         >
-                            Tất cả
+                            {t('notification.filterAll')}
                         </button>
                         <button 
                             onClick={() => setFilter('UNREAD')}
                             className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'UNREAD' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
                         >
-                            Chưa đọc
+                            {t('notification.filterUnread')}
                         </button>
                     </div>
                 </div>
@@ -196,14 +197,14 @@ export default function NotificationBell() {
                     {filteredNotifications.length === 0 ? (
                         <div className="py-8 text-center flex flex-col items-center justify-center opacity-60">
                             <Bell className="w-10 h-10 mb-2 opacity-50 text-slate-500 dark:text-white" />
-                            <p className="text-sm font-medium text-slate-600 dark:text-white/70">Không có thông báo nào</p>
+                            <p className="text-sm font-medium text-slate-600 dark:text-white/70">{t('notification.noNotifications')}</p>
                         </div>
                     ) : (
                         <div className="flex flex-col px-2">
                             {/* Hôm nay Group */}
                             {todayNotifications.length > 0 && (
                                 <div className="mb-2">
-                                    <h4 className="px-2 py-1 text-[15px] font-bold text-slate-800 dark:text-white mb-1">Hôm nay</h4>
+                                    <h4 className="px-2 py-1 text-[15px] font-bold text-slate-800 dark:text-white mb-1">{t('notification.today')}</h4>
                                     {todayNotifications.map(notif => (
                                         <NotificationItem key={notif.id} notif={notif} onClick={() => handleNotificationClick(notif)} renderBadge={renderBadge} formatTime={formatRelativeTime} />
                                     ))}
@@ -213,7 +214,7 @@ export default function NotificationBell() {
                             {/* Trước đó Group */}
                             {earlierNotifications.length > 0 && (
                                 <div>
-                                    <h4 className="px-2 py-1 text-[15px] font-bold text-slate-800 dark:text-white mb-1">Trước đó</h4>
+                                    <h4 className="px-2 py-1 text-[15px] font-bold text-slate-800 dark:text-white mb-1">{t('notification.earlier')}</h4>
                                     {earlierNotifications.map(notif => (
                                         <NotificationItem key={notif.id} notif={notif} onClick={() => handleNotificationClick(notif)} renderBadge={renderBadge} formatTime={formatRelativeTime} />
                                     ))}
@@ -226,7 +227,7 @@ export default function NotificationBell() {
                                     onClick={(e) => { e.stopPropagation(); setVisibleCount(prev => prev + 10); }}
                                     className="mt-2 mx-2 p-2 rounded-lg text-sm font-semibold text-blue-600 dark:text-blue-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center"
                                 >
-                                    Xem thông báo trước đó
+                                    {t('notification.viewMore')}
                                 </button>
                             )}
                         </div>
@@ -238,6 +239,7 @@ export default function NotificationBell() {
 }
 
 function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: Notification, onClick: () => void, renderBadge: (type: string) => React.ReactNode, formatTime: (d: string) => string }) {
+    const { t } = useTranslation();
     return (
         <button
             onClick={onClick}
@@ -257,9 +259,9 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
             <div className="flex-1 min-w-0 pr-4">
                 <p className="text-[14px] text-slate-800 dark:text-white leading-[1.3]">
                     <span className="font-semibold mr-1">{notif.actorName}</span>
-                    {notif.type === 'NEW_COMMENT' && 'đã bình luận vào cuộc thăm dò của bạn:'}
-                    {notif.type === 'NEW_REPLY' && 'đã trả lời bình luận của bạn:'}
-                    {notif.type === 'NEW_VOTE' && 'đã tham gia bình chọn của bạn.'}
+                    {notif.type === 'NEW_COMMENT' && t('notification.commentedPoll')}
+                    {notif.type === 'NEW_REPLY' && t('notification.repliedComment')}
+                    {notif.type === 'NEW_VOTE' && t('notification.votedPoll')}
                 </p>
                 {(notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY') && (
                     <p className="text-[13px] text-slate-600 dark:text-white/60 truncate mt-0.5">"{notif.message}"</p>

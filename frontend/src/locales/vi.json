@@ -241,7 +241,9 @@
     "noCommentsDesc": "Chia sẻ suy nghĩ của bạn trên các bài đăng của cộng đồng!",
     "successUpdate": "Cập nhật hồ sơ thành công!",
     "failUpdate": "Cập nhật hồ sơ thất bại",
-    "deleteConfirm": "Bạn có chắc chắn muốn xóa bài đăng này không?"
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa bài đăng này không?",
+    "deleteFail": "Xóa thất bại. Vui lòng thử lại.",
+    "loadFail": "Tải dữ liệu thất bại. Vui lòng thử lại sau."
   },
   "termsPage": {
     "title": "Điều khoản dịch vụ",
@@ -300,5 +302,31 @@
     "cancellationPolicy": "Chính sách hoàn hủy",
     "connectNow": "Kết nối ngay",
     "copyright": "Bản quyền © 2026 bởi TRẦN VĂN QUÝ"
+  },
+  "notification": {
+    "title": "Thông báo",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "filterAll": "Tất cả",
+    "filterUnread": "Chưa đọc",
+    "noNotifications": "Không có thông báo nào",
+    "today": "Hôm nay",
+    "earlier": "Trước đó",
+    "viewMore": "Xem thông báo trước đó",
+    "commentedPoll": "đã bình luận vào cuộc thăm dò của bạn:",
+    "repliedComment": "đã trả lời bình luận của bạn:",
+    "votedPoll": "đã tham gia bình chọn của bạn.",
+    "justNow": "Vừa xong",
+    "minutesAgo": "{{count}} phút",
+    "hoursAgo": "{{count}} giờ",
+    "daysAgo": "{{count}} ngày"
+  },
+  "liveChart": {
+    "option": "Lựa chọn",
+    "votes": "phiếu",
+    "liveResults": "Live Results",
+    "realTime": "Real-time Updates",
+    "totalVotes": "Tổng số vote",
+    "totalOptions": "Số lượng option",
+    "close": "Đóng live view"
   }
 }

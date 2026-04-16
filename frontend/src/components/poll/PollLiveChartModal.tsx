@@ -8,8 +8,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell
+  Cell,
+  LabelList
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 interface PollLiveChartModalProps {
   isOpen: boolean;
@@ -21,13 +23,14 @@ interface PollLiveChartModalProps {
 const PREMIUM_COLORS = ['#38bdf8', '#818cf8', '#c084fc', '#e879f9', '#f472b6', '#fb7185', '#2dd4bf'];
 
 const CustomTooltip = ({ active, payload }: any) => {
+  const { t } = useTranslation();
   if (active && payload && payload.length) {
     const tooltipData = payload[0].payload;
     return (
       <div className="bg-white/95 dark:bg-[#0f1117]/95 border border-slate-200 dark:border-white/10 p-5 rounded-2xl shadow-xl dark:shadow-2xl backdrop-blur-xl">
         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-white/5">
           <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: tooltipData.color }} />
-          <span className="text-slate-500 dark:text-white/60 text-xs font-bold uppercase tracking-wider">Lựa chọn</span>
+          <span className="text-slate-500 dark:text-white/60 text-xs font-bold uppercase tracking-wider">{t('liveChart.option')}</span>
         </div>
         <p className="text-base font-semibold text-slate-800 dark:text-white mb-3 max-w-[250px] leading-snug">
           {tooltipData.fullText}
@@ -36,7 +39,9 @@ const CustomTooltip = ({ active, payload }: any) => {
           <span className="text-3xl font-black text-indigo-600 dark:text-white leading-none">
             {tooltipData.votes}
           </span>
-          <span className="text-sm font-medium text-slate-500 dark:text-white/50 mb-1">phiếu</span>
+          <span className="text-sm font-medium text-slate-500 dark:text-white/50 mb-1">
+            {t('liveChart.votes')} ({tooltipData.percentage})
+          </span>
         </div>
       </div>
     );
@@ -46,10 +51,10 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle }: PollLiveChartModalProps) {
   const [enableChartAnim, setEnableChartAnim] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isOpen) {
-      // Disable initial "grow from zero" animation, but enable it later for real-time updates
       const timer = setTimeout(() => setEnableChartAnim(true), 100);
       return () => clearTimeout(timer);
     } else {
@@ -58,16 +63,19 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
     }
   }, [isOpen]);
 
-  const data = useMemo(() => options.map((opt, index) => ({
-    name: opt.text.length > 20 ? opt.text.substring(0, 20) + '...' : opt.text,
-    fullText: opt.text,
-    votes: opt.voteCount,
-    // Add tiny fraction so Recharts renders a bar when 0
-    visualVotes: Math.max(opt.voteCount, 0.05),
-    color: PREMIUM_COLORS[index % PREMIUM_COLORS.length]
-  })), [options]);
-
   const totalVotes = options.reduce((sum, opt) => sum + opt.voteCount, 0);
+
+  const data = useMemo(() => options.map((opt, index) => {
+    const pct = totalVotes > 0 ? Math.round((opt.voteCount / totalVotes) * 100) : 0;
+    return {
+      name: opt.text.length > 20 ? opt.text.substring(0, 20) + '...' : opt.text,
+      fullText: opt.text,
+      votes: opt.voteCount,
+      percentage: `${pct}%`,
+      visualVotes: Math.max(opt.voteCount, 0.05),
+      color: PREMIUM_COLORS[index % PREMIUM_COLORS.length]
+    };
+  }), [options, totalVotes]);
 
   if (!isOpen) return null;
 
@@ -95,11 +103,11 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
               <div className="flex flex-wrap items-center gap-3 mb-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 rounded-full shadow-sm">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
-                  <span className="text-xs font-bold tracking-widest text-rose-600 dark:text-rose-400 uppercase">Live Results</span>
+                  <span className="text-xs font-bold tracking-widest text-rose-600 dark:text-rose-400 uppercase">{t('liveChart.liveResults')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-indigo-600 dark:text-sky-400 bg-indigo-50 dark:bg-sky-500/10 px-3 py-1.5 rounded-full border border-indigo-200 dark:border-sky-500/20 text-xs font-semibold">
                   <Activity className="w-4 h-4" />
-                  Real-time Updates
+                  {t('liveChart.realTime')}
                 </div>
               </div>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:to-white/70 mt-4 leading-tight line-clamp-3">
@@ -110,7 +118,7 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
             <button 
               onClick={onClose}
               className="p-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-white/60 hover:text-slate-800 dark:hover:text-white transition-all border border-slate-200 dark:border-white/10 shrink-0"
-              title="Đóng live view"
+              title={t('liveChart.close')}
             >
               <X className="w-6 h-6" />
             </button>
@@ -121,14 +129,14 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
             <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex flex-col justify-center overflow-hidden transition-colors">
               <div className="flex items-center gap-2 text-slate-500 dark:text-white/50 mb-1 text-sm font-semibold">
                 <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                Tổng số vote
+                {t('liveChart.totalVotes')}
               </div>
               <div className="text-3xl font-black text-slate-800 dark:text-white">{totalVotes}</div>
             </div>
             <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex flex-col justify-center overflow-hidden transition-colors">
               <div className="flex items-center gap-2 text-slate-500 dark:text-white/50 mb-1 text-sm font-semibold">
                 <BarChart3 className="w-4 h-4 text-fuchsia-500 dark:text-fuchsia-400" />
-                Số lượng option
+                {t('liveChart.totalOptions')}
               </div>
               <div className="text-3xl font-black text-slate-800 dark:text-white">{options.length}</div>
             </div>
@@ -181,6 +189,15 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
                         style={{ filter: `drop-shadow(0 4px 10px ${entry.color}80)` }} 
                       />
                     ))}
+                    <LabelList 
+                      dataKey="percentage" 
+                      position="top" 
+                      fill="currentColor" 
+                      fontSize={13} 
+                      fontWeight={700}
+                      opacity={0.8}
+                      offset={10}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
