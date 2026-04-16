@@ -151,6 +151,11 @@ public class CommentServiceImpl implements CommentService {
         // Broadcast the new comment to all connected clients watching this poll
         realTimeService.broadcast("/topic/polls/" + poll.getId() + "/comments", responseDTO);
 
+        java.util.Map<String, Object> eventPayload = new java.util.HashMap<>();
+        eventPayload.put("type", "COMMENT_ADDED");
+        eventPayload.put("pollId", poll.getId());
+        realTimeService.broadcast("/topic/polls/events", eventPayload);
+
         return responseDTO;
     }
 
