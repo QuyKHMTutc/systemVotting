@@ -352,12 +352,6 @@ const PollDetail = () => {
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
                   <span className="text-sm">Xem Live</span>
                 </button>
-                <button
-                  onClick={handleShare}
-                  className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-600 dark:text-white/60 hover:text-indigo-600 dark:hover:text-white transition-all border border-slate-200 dark:border-white/10 shrink-0"
-                >
-                  {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />}
-                </button>
               </div>
             </div>
 

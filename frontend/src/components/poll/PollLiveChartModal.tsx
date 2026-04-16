@@ -55,9 +55,14 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
 
   useEffect(() => {
     if (isOpen) {
+      document.body.style.overflow = 'hidden';
       const timer = setTimeout(() => setEnableChartAnim(true), 100);
-      return () => clearTimeout(timer);
+      return () => {
+        document.body.style.overflow = 'auto'; // prefer 'auto' over 'unset' for default scroll behavior
+        clearTimeout(timer);
+      };
     } else {
+      document.body.style.overflow = 'auto';
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setEnableChartAnim(false);
     }
