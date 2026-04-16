@@ -1,0 +1,15 @@
+package com.xxxx.systemvotting.modules.poll.repository;
+
+import com.xxxx.systemvotting.modules.poll.entity.Option;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface OptionRepository extends JpaRepository<Option, Long> {
+    @Modifying
+    @Query("UPDATE Option o SET o.voteCount = o.voteCount + 1 WHERE o.id = :id")
+    void incrementVoteCount(@Param("id") Long id);
+}
