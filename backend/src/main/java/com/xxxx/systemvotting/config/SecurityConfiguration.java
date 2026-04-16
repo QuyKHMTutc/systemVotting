@@ -40,7 +40,8 @@ public class SecurityConfiguration {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/uploads/**",
-            "/avatars/**"
+            "/avatars/**",
+            "/api/test/**"
     };
 
     private final CustomUserDetailService userDetailService;
