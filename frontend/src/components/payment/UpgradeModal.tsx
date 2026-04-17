@@ -219,6 +219,11 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                   <button disabled className="w-full py-4 mt-auto rounded-xl font-bold bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-white/40 cursor-not-allowed">
                     Đang sử dụng
                   </button>
+                ) : currentPlan === 'PLUS' ? (
+                  <button disabled className="w-full py-4 mt-auto rounded-xl font-bold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 cursor-not-allowed flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Đã bao gồm trong PLUS
+                  </button>
                 ) : (
                   <button 
                     onClick={() => handleUpgrade('GO')}
@@ -231,12 +236,12 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
               </div>
 
               {/* PLUS Plan */}
-              <div className={`relative p-8 rounded-[2rem] border-2 bg-slate-900 dark:bg-slate-900 transition-all flex flex-col card-hover-effect overflow-hidden
-                 ${currentPlan === 'PLUS' ? 'border-emerald-500' : 'border-amber-500/40 hover:border-amber-400'}`}>
+              <div className={`relative p-8 rounded-[2rem] border-2 bg-slate-900 transition-transform duration-300 transform hover:-translate-y-2 flex flex-col overflow-hidden shadow-2xl
+                 ${currentPlan === 'PLUS' ? 'border-emerald-500 shadow-emerald-500/20' : 'border-amber-500/40 hover:border-amber-400 shadow-amber-500/10'}`}>
                 
-                {/* Holographic background for VIP */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-purple-500/10 mix-blend-overlay"></div>
-                <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-amber-500 to-transparent shadow-[0_0_15px_rgba(245,158,11,1)] animate-pulse-glow"></div>
+                {/* Holographic background for VIP - optimized */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-slate-900/50 to-purple-500/10 pointer-events-none"></div>
+                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-50"></div>
 
                 <div className="flex items-center gap-3 mb-6 relative z-10">
                   <div className="p-3.5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-[0_0_15px_rgba(245,158,11,0.5)]">
@@ -272,12 +277,12 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                   </button>
                 ) : (
                   <div className="relative mt-auto w-full group">
-                     {/* The glowing border animation behind the button */}
-                     <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 rounded-xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-border-glow"></div>
+                     {/* The glowing border animation behind the button - optimized */}
+                     <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 rounded-xl blur-md opacity-30 group-hover:opacity-70 transition duration-300"></div>
                      <button 
                        onClick={() => handleUpgrade('PLUS')}
                        disabled={loadingPlan === 'PLUS'}
-                       className="relative w-full py-4 rounded-xl font-black tracking-wide text-amber-900 bg-gradient-to-r from-amber-300 to-yellow-500 active:scale-[0.98] transition-all flex items-center justify-center"
+                       className="relative w-full py-4 rounded-xl font-black tracking-wide text-amber-900 bg-gradient-to-r from-amber-300 to-yellow-500 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center transform-gpu"
                      >
                        {loadingPlan === 'PLUS' ? 'Đang tạo mã...' : 'Mua Gói PLUS'}
                      </button>

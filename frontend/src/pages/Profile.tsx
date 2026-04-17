@@ -11,6 +11,8 @@ import UserProfileModal from '../components/UserProfileModal';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
 import { useTranslation } from 'react-i18next';
+import { paymentService, type PaymentHistory } from '../services/payment.service';
+import { CreditCard } from 'lucide-react';
 
 export const Profile = () => {
   const { user } = useAuth();
@@ -18,13 +20,14 @@ export const Profile = () => {
   const { t } = useTranslation();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as 'created' | 'voted' | 'comments') || 'created';
-  const setActiveTab = (tab: 'created' | 'voted' | 'comments') =>
+  const activeTab = (searchParams.get('tab') as 'created' | 'voted' | 'comments' | 'payments') || 'created';
+  const setActiveTab = (tab: 'created' | 'voted' | 'comments' | 'payments') =>
     setSearchParams({ tab }, { replace: true });
 
   const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [myComments, setMyComments] = useState<Comment[]>([]);
+  const [payments, setPayments] = useState<PaymentHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -43,14 +46,16 @@ export const Profile = () => {
     const fetchProfileData = async () => {
       try {
         setLoading(true);
-        const [created, voted, comments] = await Promise.all([
+        const [created, voted, comments, paymentHistory] = await Promise.all([
           pollService.getMyPolls(),
           pollService.getMyVotedPolls(),
-          commentService.getMyComments()
+          commentService.getMyComments(),
+          paymentService.getPaymentHistory().catch(() => [])
         ]);
         setCreatedPolls(created);
         setVotedPolls(voted);
         setMyComments(comments);
+        setPayments(paymentHistory);
       } catch (err) {
         console.error('Failed to fetch profile data', err);
         setError(t('profile.loadFail'));
@@ -267,13 +272,24 @@ export const Profile = () => {
                   {myComments.length}
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`relative flex-1 py-4 px-2 sm:px-6 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${
+                  activeTab === 'payments'
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white/80'
+                }`}
+              >
+                <CreditCard className="w-5 h-5 hidden sm:block" />
+                <span>Thanh toán</span>
+              </button>
             </div>
             {/* Animated glowing underline */}
             <div
               className="absolute bottom-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-[left] duration-300 ease-out"
               style={{
-                left: activeTab === 'created' ? '16.66%' : activeTab === 'voted' ? '50%' : '83.33%',
-                width: '33.33%',
+                left: activeTab === 'created' ? '12.5%' : activeTab === 'voted' ? '37.5%' : activeTab === 'comments' ? '62.5%' : '87.5%',
+                width: '25%',
                 transform: 'translateX(-50%)',
                 boxShadow: '0 0 12px rgba(99, 102, 241, 0.6)',
               }}
@@ -405,6 +421,50 @@ export const Profile = () => {
                     >
                       {t('profile.browsePollsBtn')}
                     </button>
+                  </div>
+                )
+              )}
+              
+              {/* PAYMENTS TAB LOGIC */}
+              {activeTab === 'payments' && (
+                payments.length > 0 ? (
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
+                    <table className="w-full text-left text-sm text-slate-500 dark:text-white/60">
+                      <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase font-semibold text-slate-700 dark:text-white/80">
+                        <tr>
+                          <th className="px-6 py-4 rounded-tl-xl">Mã GD</th>
+                          <th className="px-6 py-4">Thời gian</th>
+                          <th className="px-6 py-4">Gói</th>
+                          <th className="px-6 py-4">Số tiền</th>
+                          <th className="px-6 py-4 rounded-tr-xl">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-white/10 bg-white dark:bg-transparent">
+                        {payments.map((txn) => (
+                          <tr key={txn.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-4 font-mono text-xs">{txn.txnRef}</td>
+                            <td className="px-6 py-4">{new Date(txn.createdAt).toLocaleDateString('vi-VN')} {new Date(txn.createdAt).toLocaleTimeString('vi-VN')}</td>
+                            <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{txn.targetPlan}</td>
+                            <td className="px-6 py-4 font-semibold text-emerald-600 dark:text-emerald-400">{(txn.amount).toLocaleString('vi-VN')}đ</td>
+                            <td className="px-6 py-4">
+                              {txn.status === 'SUCCESS' && <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded-full text-xs font-semibold">Thành công</span>}
+                              {txn.status === 'PENDING' && <span className="px-2.5 py-1 bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 rounded-full text-xs font-semibold">Đang xử lý</span>}
+                              {txn.status === 'FAILED' && <span className="px-2.5 py-1 bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 rounded-full text-xs font-semibold">Thất bại</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] animate-fade-in-up">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                      <CreditCard className="h-8 w-8 text-slate-400 dark:text-white/40" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Chưa có giao dịch</h3>
+                    <p className="text-slate-500 dark:text-white/50 text-sm mb-4">
+                      Bạn chưa thực hiện giao dịch thanh toán nâng cấp gói nào.
+                    </p>
                   </div>
                 )
               )}

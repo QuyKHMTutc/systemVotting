@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, User, ArrowRight, Loader2, Sparkles, ShieldCheck
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
-import confetti from 'canvas-confetti';
+
 
 export default function PaymentResult() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -15,33 +15,6 @@ export default function PaymentResult() {
   const { updateUser } = useAuth();
 
   useEffect(() => {
-    const fireConfetti = () => {
-      const duration = 3000;
-      const end = Date.now() + duration;
-
-      const frame = () => {
-        confetti({
-          particleCount: 5,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ['#a855f7', '#ec4899', '#3b82f6']
-        });
-        confetti({
-          particleCount: 5,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ['#a855f7', '#ec4899', '#3b82f6']
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      };
-      frame();
-    };
-
     const verifyPayment = async () => {
       const searchParams = new URLSearchParams(location.search);
       const vnp_ResponseCode = searchParams.get('vnp_ResponseCode');
@@ -71,9 +44,6 @@ export default function PaymentResult() {
             setPlanType(userRes.data.plan || 'PLUS');
           }
           
-          // Fire confetti on success!
-          setTimeout(fireConfetti, 300);
-
         } else {
           setStatus('error');
           setMessage(response.data.message || 'Xác thực chữ ký thất bại.');
