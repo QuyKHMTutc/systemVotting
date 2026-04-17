@@ -51,11 +51,13 @@ const Navbar = () => {
 
                 {/* Center: Navigation Links */}
                 <div className="hidden lg:flex flex-1 justify-center items-center gap-6 xl:gap-10 px-4">
-                    <Link to="/" className="text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white font-bold transition-colors text-sm uppercase tracking-wider whitespace-nowrap">
+                    <Link to="/" className="relative group text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white font-bold transition-colors text-sm uppercase tracking-wider whitespace-nowrap">
                         {t('navbar.home')}
+                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300 rounded-full" />
                     </Link>
-                    <Link to="/explore" className="text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white font-bold transition-colors text-sm uppercase tracking-wider whitespace-nowrap">
+                    <Link to="/explore" className="relative group text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white font-bold transition-colors text-sm uppercase tracking-wider whitespace-nowrap">
                         {t('navbar.explore')}
+                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300 rounded-full" />
                     </Link>
                 </div>
 
@@ -72,7 +74,7 @@ const Navbar = () => {
                             </span>
                         </button>
                     )}
-                    <Link to="/create-poll" className="hidden sm:inline-flex px-4 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl text-sm transition-all shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] border border-white/10 whitespace-nowrap">
+                    <Link to="/create-poll" className="hidden sm:inline-flex px-5 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl text-sm transition-all shadow-[0_4px_20px_rgba(236,72,153,0.4)] hover:shadow-[0_6px_30px_rgba(236,72,153,0.65)] hover:-translate-y-0.5 active:scale-[0.98] border border-white/10 whitespace-nowrap">
                         {t('navbar.createPoll')}
                     </Link>
                     {/* Theme Switcher */}
@@ -127,8 +129,8 @@ const Navbar = () => {
                                 </button>
 
                                 {/* Dropdown Menu */}
-                                <div className={`absolute top-full right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-[#1e1b4b]/95 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] transform origin-top-right transition-all duration-200 z-50 ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
-                                    <div className="p-2 space-y-1">
+                                <div className={`absolute top-full right-0 mt-3 w-60 rounded-2xl bg-white/90 dark:bg-[#13102b]/95 backdrop-blur-2xl border border-slate-200/60 dark:border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.15),0_4px_20px_rgba(99,102,241,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6),0_4px_20px_rgba(99,102,241,0.2)] transform origin-top-right transition-all duration-200 z-50 ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
+                                    <div className="p-2 space-y-0.5">
                                         {user?.role === 'ADMIN' && (
                                             <div className="mb-2 px-2 pt-1 pb-2 border-b border-slate-200 dark:border-white/5">
                                                 <Link to="/admin" onClick={() => setIsDropdownOpen(false)} className="flex items-center justify-center gap-2 px-3 py-1.5 text-xs bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-200 hover:bg-purple-500/20 dark:hover:bg-purple-500/30 border border-purple-500/20 dark:border-purple-500/30 rounded-lg transition-colors font-bold tracking-wide">
@@ -137,44 +139,44 @@ const Navbar = () => {
                                             </div>
                                         )}
                                         
-                                        <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
+                                        <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
                                             <div className="w-8 h-8 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400 shrink-0">
                                                 <PenLine className="w-4 h-4" />
                                             </div>
                                             {t('navbar.editProfile')}
                                         </Link>
 
-                                        <Link to="/profile?tab=created" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
+                                        <Link to="/profile?tab=created" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
                                             <div className="w-8 h-8 rounded-full bg-pink-500/10 dark:bg-pink-500/20 flex items-center justify-center text-pink-500 dark:text-pink-400 shrink-0">
                                                 <ListPlus className="w-4 h-4" />
                                             </div>
                                             {t('navbar.myPolls')}
                                         </Link>
 
-                                        <Link to="/profile?tab=comments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
+                                        <Link to="/profile?tab=comments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
                                             <div className="w-8 h-8 rounded-full bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0">
                                                 <MessageSquare className="w-4 h-4" />
                                             </div>
                                             {t('navbar.myComments')}
                                         </Link>
 
-                                        <Link to="/profile?tab=voted" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
+                                        <Link to="/profile?tab=voted" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
                                             <div className="w-8 h-8 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0">
                                                 <CheckSquare className="w-4 h-4" />
                                             </div>
                                             {t('navbar.myVotes')}
                                         </Link>
 
-                                        <Link to="/profile?tab=payments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
+                                        <Link to="/profile?tab=payments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
                                             <div className="w-8 h-8 rounded-full bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 shrink-0">
                                                 <CreditCard className="w-4 h-4" />
                                             </div>
                                             Lịch sử thanh toán
                                         </Link>
 
-                                        <div className="h-px bg-slate-200 dark:bg-white/10 my-2 mx-2"></div>
+                                        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent my-1.5 mx-2"></div>
 
-                                        <button onClick={() => { logout(); setIsDropdownOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors text-left">
+                                        <button onClick={() => { logout(); setIsDropdownOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all text-left">
                                             <div className="w-8 h-8 rounded-full bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center text-red-500 shrink-0">
                                                 <LogOut className="w-4 h-4" />
                                             </div>

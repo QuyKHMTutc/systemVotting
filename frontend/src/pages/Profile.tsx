@@ -4,7 +4,10 @@ import { pollService } from '../services/poll.service';
 import { commentService, type Comment } from '../services/comment.service';
 import type { Poll } from '../services/poll.service';
 import { PollCard } from '../components/PollCard';
-import { ListPlus, CheckSquare, X, PenLine, MessageSquare, CreditCard } from 'lucide-react';
+import {
+  ListPlus, CheckSquare, X, PenLine, MessageSquare,
+  CreditCard, Crown, Zap, ArrowLeft
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import UserProfileModal from '../components/UserProfileModal';
@@ -42,10 +45,10 @@ export const Profile = () => {
   };
 
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const fetch = async () => {
       try {
         setLoading(true);
-        const [created, voted, comments, paymentHistory] = await Promise.all([
+        const [created, voted, comments, ph] = await Promise.all([
           pollService.getMyPolls(),
           pollService.getMyVotedPolls(),
           commentService.getMyComments(),
@@ -54,356 +57,370 @@ export const Profile = () => {
         setCreatedPolls(created);
         setVotedPolls(voted);
         setMyComments(comments);
-        setPayments(paymentHistory || []);
-      } catch (err) {
-        console.error('Failed to fetch profile data', err);
+        setPayments(ph || []);
+      } catch {
         setError(t('profile.loadFail'));
       } finally {
         setLoading(false);
       }
     };
-
-    if (user) fetchProfileData();
+    if (user) fetch();
   }, [user]);
 
   const handlePollEvent = useCallback((payload: PollEventPayload) => {
-    const updateList = (prev: Poll[]) => {
-      let newContent = [...prev];
+    const up = (prev: Poll[]) => {
+      let list = [...prev];
       if (payload.type === 'CREATED') {
-        if (user && payload.poll.creator.id === user.id && !newContent.some(p => p.id === payload.poll.id)) {
-          newContent.unshift(payload.poll);
-        }
+        if (user && payload.poll.creator.id === user.id && !list.some(p => p.id === payload.poll.id)) list.unshift(payload.poll);
       } else if (payload.type === 'DELETED') {
-        newContent = newContent.filter(p => p.id !== payload.pollId);
+        list = list.filter(p => p.id !== payload.pollId);
       } else if (payload.type === 'VOTED') {
-        newContent = newContent.map(p => {
-          if (p.id === payload.pollId) {
-            return { ...p, options: p.options.map(opt => { const updated = payload.options.find(o => o.optionId === opt.id); return updated ? { ...opt, voteCount: updated.voteCount } : opt; }) };
-          }
-          return p;
-        });
+        list = list.map(p => p.id === payload.pollId
+          ? { ...p, options: p.options.map(o => { const u = payload.options.find(x => x.optionId === o.id); return u ? { ...o, voteCount: u.voteCount } : o; }) }
+          : p);
       } else if (payload.type === 'COMMENT_ADDED') {
-        newContent = newContent.map(p => p.id === payload.pollId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p);
+        list = list.map(p => p.id === payload.pollId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p);
       }
-      return newContent;
+      return list;
     };
-    setCreatedPolls(prev => updateList(prev));
-    setVotedPolls(prev => updateList(prev));
+    setCreatedPolls(p => up(p));
+    setVotedPolls(p => up(p));
   }, [user]);
 
   usePollEventsWebSocket({ onEvent: handlePollEvent });
 
+  /* ── helpers ── */
   const avatarSrc = user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== ''
     ? (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')
-        ? user.avatarUrl
-        : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`)
+      ? user.avatarUrl
+      : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`)
     : null;
+
+  const planUpper = (user?.plan || 'FREE').toUpperCase();
+  const planMeta = planUpper === 'PLUS'
+    ? { label: 'PLUS', gradient: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-500/40', icon: <Crown className="w-3.5 h-3.5" />, pill: 'bg-amber-500/10 border-amber-400/40 text-amber-600 dark:text-amber-300' }
+    : planUpper === 'PRO'
+    ? { label: 'PRO', gradient: 'from-rose-500 to-pink-600', shadow: 'shadow-rose-500/40', icon: <Crown className="w-4 h-4" />, pill: 'bg-rose-500/10 border-rose-400/40 text-rose-600 dark:text-rose-300' }
+    : planUpper === 'GO'
+    ? { label: 'GO', gradient: 'from-violet-500 to-indigo-600', shadow: 'shadow-violet-500/40', icon: <Zap className="w-3.5 h-3.5" />, pill: 'bg-violet-500/10 border-violet-400/40 text-violet-600 dark:text-violet-300' }
+    : null;
+
+  const expDate = user?.plan && user.plan !== 'FREE' ? (user as any).planExpirationDate : null;
+  const daysLeft = expDate ? Math.ceil((new Date(expDate).getTime() - Date.now()) / 86400000) : null;
+  const expiryUI = daysLeft === null ? null
+    : daysLeft <= 0 ? { text: 'Đã hết hạn', color: 'text-red-500 dark:text-red-400', dot: 'bg-red-500 animate-ping' }
+      : daysLeft <= 7 ? { text: `⚠ Còn ${daysLeft} ngày`, color: 'text-orange-500 dark:text-orange-400', dot: 'bg-orange-500 animate-pulse' }
+        : { text: `Còn ${daysLeft} ngày`, color: 'text-slate-500 dark:text-white/40', dot: 'bg-emerald-400' };
+
+  const tabs = [
+    { key: 'created', icon: <ListPlus className="w-4 h-4" />, label: t('profile.createdPolls'), count: createdPolls.length },
+    { key: 'voted', icon: <CheckSquare className="w-4 h-4" />, label: t('profile.votedPolls'), count: votedPolls.length },
+    { key: 'comments', icon: <MessageSquare className="w-4 h-4" />, label: t('profile.myComments'), count: myComments.length },
+    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: 'Thanh toán', count: null },
+  ];
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen pb-16">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#07050f]">
       <Navbar />
 
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+      {/* ══════════════════ HERO COVER ══════════════════ */}
+      <div className="relative w-full h-56 sm:h-72 overflow-hidden">
+        {/* Base gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0533] via-[#2d1060] to-[#0f0a2e]" />
+        {/* Mesh blobs */}
+        <div className="absolute w-[600px] h-[600px] rounded-full bg-purple-600/30 blur-[120px] -top-40 -left-20" />
+        <div className="absolute w-[400px] h-[400px] rounded-full bg-pink-600/25 blur-[90px] top-0 right-10" />
+        <div className="absolute w-[300px] h-[300px] rounded-full bg-indigo-500/20 blur-[80px] bottom-0 left-1/3" />
+        {/* Grid overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }}
+        />
+        {/* Bottom fade */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#f5f5f7] dark:from-[#07050f] to-transparent" />
+        {/* Back btn */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-5 left-5 z-10 flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white/80 text-sm font-medium transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" /> Quay lại
+        </button>
+      </div>
 
-          {/* =========== SIDEBAR TRÁI - STICKY =========== */}
-          <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-24">
-            <div className="glass-panel rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden bg-white/80 dark:bg-transparent">
-              
-              {/* Cover gradient */}
-              <div className="relative h-28 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600" />
-                <div className="absolute top-0 left-1/4 w-64 h-64 rounded-full bg-indigo-400/30 blur-3xl -translate-y-1/2" />
-                <div className="absolute bottom-0 right-1/4 w-48 h-48 rounded-full bg-purple-400/25 blur-3xl translate-y-1/2" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/5" />
-                <button
-                  onClick={() => navigate(-1)}
-                  className="absolute top-3 right-3 z-20 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full text-white transition-all duration-200"
-                  aria-label="Back"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+      {/* ══════════════════ PROFILE CARD ══════════════════ */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 -mt-16 sm:-mt-20 relative z-20">
+        <div className="bg-white dark:bg-[#0e0b1f] rounded-3xl shadow-[0_2px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_40px_rgba(0,0,0,0.5)] border border-slate-200/60 dark:border-white/[0.06] overflow-hidden">
+
+          {/* ── profile info row ── */}
+          <div className="px-6 sm:px-10 pt-5 pb-0 flex flex-col sm:flex-row sm:items-end gap-5 sm:gap-8">
+
+            {/* Avatar */}
+            <div className="relative shrink-0 -mt-16 sm:-mt-20 self-start sm:self-auto">
+              <div className={`p-[3px] rounded-[28px] bg-gradient-to-br ${planMeta?.gradient ?? 'from-slate-300 to-slate-400 dark:from-white/20 dark:to-white/10'} shadow-2xl ${planMeta?.shadow ?? ''}`}>
+                <div className="w-28 h-28 sm:w-[140px] sm:h-[140px] rounded-[26px] overflow-hidden bg-slate-50 dark:bg-slate-800">
+                  {avatarSrc ? (
+                    <img src={avatarSrc} alt={user?.username} className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}`; }} />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 flex items-center justify-center">
+                      <span className="text-5xl font-black text-white select-none">{user?.username?.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Plan icon dot */}
+              {planMeta && (
+                <div className={`absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-gradient-to-br ${planMeta.gradient} flex items-center justify-center text-white ring-2 ring-white dark:ring-[#0e0b1f] shadow-md`}>
+                  {planMeta.icon}
+                </div>
+              )}
+            </div>
+
+            {/* Name + meta */}
+            <div className="flex-1 min-w-0 pb-6">
+              {/* Row: name + plan badge */}
+              <div className="flex flex-wrap items-center gap-2.5 mb-1">
+                <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                  {user?.username}
+                </h1>
+                {planMeta && (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 border rounded-full text-[11px] font-black tracking-wide ${planMeta.pill}`}>
+                    {planMeta.icon} {planMeta.label}
+                  </span>
+                )}
+                {!planMeta && (
+                  <span className="inline-flex items-center px-2.5 py-1 border border-slate-200 dark:border-white/10 rounded-full text-[11px] font-bold text-slate-400 dark:text-white/30 bg-slate-50 dark:bg-white/[0.03]">
+                    FREE
+                  </span>
+                )}
               </div>
 
-              {/* Avatar + info */}
-              <div className="flex flex-col items-center text-center px-6 pb-6 -mt-12">
-                {/* Avatar */}
-                <div className="relative mb-3">
-                  <div className="w-24 h-24 rounded-full ring-4 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden shadow-xl shadow-black/20">
-                    {avatarSrc ? (
-                      <img
-                        src={avatarSrc}
-                        alt={user?.username}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}`;
-                        }}
-                      />
-                    ) : (
-                      <span className="text-3xl font-bold text-slate-800 dark:text-white/90">
-                        {user?.username?.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="absolute inset-0 rounded-full bg-indigo-500/20 blur-xl -z-10 scale-110" />
-                </div>
+              {/* Email */}
+              <p className="text-slate-500 dark:text-white/40 text-sm mb-3">{user?.email}</p>
 
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-0.5 tracking-tight">{user?.username}</h1>
-                <p className="text-slate-500 dark:text-white/50 text-xs mb-4">{user?.email}</p>
-
-                {/* Plan badge */}
-                <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${
-                    user?.plan === 'PLUS' ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300' :
-                    user?.plan === 'GO'   ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-300 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300' :
-                                            'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60'
-                  }`}>
-                    Gói: <span className="font-black">{user?.plan || 'FREE'}</span>
-                  </span>
-                  {user?.plan && user.plan !== 'FREE' && (user as any).planExpirationDate && (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold border bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50">
-                      HH: {new Date((user as any).planExpirationDate).toLocaleDateString('vi-VN')}
+              {/* Expiry */}
+              {expiryUI && (
+                <div className="flex items-center gap-1.5 mb-4">
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${expiryUI.dot}`} />
+                  <span className={`text-xs font-semibold ${expiryUI.color}`}>{expiryUI.text}</span>
+                  {daysLeft !== null && daysLeft > 0 && (
+                    <span className="text-xs text-slate-400 dark:text-white/25">
+                      · {new Date(expDate).toLocaleDateString('vi-VN')}
                     </span>
                   )}
                 </div>
+              )}
 
-                {/* Edit profile button */}
-                <button
-                  onClick={() => setIsProfileModalOpen(true)}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white rounded-xl text-sm font-medium transition-all duration-200"
-                >
-                  <PenLine className="w-4 h-4" />
-                  {t('profile.editProfile')}
-                </button>
-
-                {/* Stats */}
-                <div className="w-full grid grid-cols-3 gap-1 mt-5 pt-5 border-t border-slate-200 dark:border-white/10">
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{createdPolls.length}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-white/40 uppercase tracking-wide font-medium mt-0.5">Polls</p>
+              {/* Stats inline — kiểu GitHub/Twitter */}
+              <div className="flex items-center gap-5 flex-wrap">
+                {[
+                  { val: createdPolls.length, label: 'bài đăng' },
+                  { val: votedPolls.length, label: 'lượt vote' },
+                  { val: myComments.length, label: 'bình luận' },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <span className="text-xl font-black text-slate-900 dark:text-white">{s.val}</span>
+                    <span className="text-sm text-slate-500 dark:text-white/40 font-medium">{s.label}</span>
                   </div>
-                  <div className="text-center border-x border-slate-200 dark:border-white/10">
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{votedPolls.length}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-white/40 uppercase tracking-wide font-medium mt-0.5">Votes</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{myComments.length}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-white/40 uppercase tracking-wide font-medium mt-0.5">Bình luận</p>
-                  </div>
-                </div>
+                ))}
               </div>
+            </div>
+
+            {/* Edit button — top-right on desktop */}
+            <div className="sm:pb-6 shrink-0 self-start sm:self-end">
+              <button
+                onClick={() => setIsProfileModalOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
+                  bg-slate-900 dark:bg-white text-white dark:text-slate-900
+                  hover:bg-slate-700 dark:hover:bg-slate-100
+                  shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
+                  border border-slate-800 dark:border-white/10"
+              >
+                <PenLine className="w-4 h-4" />
+                {t('profile.editProfile')}
+              </button>
             </div>
           </div>
 
-          {/* =========== PHẦN NỘI DUNG PHẢI =========== */}
-          <div className="flex-1 min-w-0">
-            <div className="glass-panel rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-transparent overflow-hidden">
-              
-              {/* Tabs */}
-              <div className="relative border-b border-slate-200 dark:border-white/10">
-                <div className="flex">
-                  {[
-                    { key: 'created', icon: <ListPlus className="w-4 h-4" />, label: t('profile.createdPolls'), count: createdPolls.length },
-                    { key: 'voted',   icon: <CheckSquare className="w-4 h-4" />, label: t('profile.votedPolls'), count: votedPolls.length },
-                    { key: 'comments', icon: <MessageSquare className="w-4 h-4" />, label: t('profile.myComments'), count: myComments.length },
-                    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: 'Lịch sử thanh toán', count: null },
-                  ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key as any)}
-                      className={`relative flex-1 py-4 px-1 sm:px-3 text-sm font-medium flex items-center justify-center gap-1 transition-colors duration-200 ${
-                        activeTab === tab.key
-                          ? 'text-indigo-600 dark:text-indigo-400'
-                          : 'text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white/80'
+          {/* ── Tabs ── */}
+          <div className="relative mt-2 border-t border-slate-100 dark:border-white/[0.06]">
+            <div className="flex overflow-x-auto px-6 sm:px-10 scrollbar-none">
+              {tabs.map((tab, idx) => {
+                const active = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`flex-none flex items-center gap-2 py-4 px-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-all duration-200 ${active
+                        ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
+                        : 'border-transparent text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white/70 hover:border-slate-300 dark:hover:border-white/20'
                       }`}
-                    >
-                      <span className="hidden sm:block">{tab.icon}</span>
-                      <span className="text-[11px] sm:text-sm">{tab.label}</span>
-                      {tab.count !== null && (
-                        <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold hidden sm:inline-block ${
-                          activeTab === tab.key
-                            ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300'
-                            : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60'
-                        }`}>
-                          {tab.count}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                {/* Glowing underline indicator */}
-                <div
-                  className="absolute bottom-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-[left] duration-300 ease-out"
-                  style={{
-                    left: activeTab === 'created' ? '12.5%' : activeTab === 'voted' ? '37.5%' : activeTab === 'comments' ? '62.5%' : '87.5%',
-                    width: '25%',
-                    transform: 'translateX(-50%)',
-                    boxShadow: '0 0 12px rgba(99, 102, 241, 0.6)',
-                  }}
-                />
-              </div>
-
-              {/* Tab Content */}
-              <div className="p-6 sm:p-8">
-                {error && (
-                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-sm text-center">{error}</div>
-                )}
-
-                <div className="space-y-5">
-                  {/* Created polls */}
-                  {activeTab === 'created' && (
-                    createdPolls.length > 0 ? (
-                      createdPolls.map((poll, i) => (
-                        <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-                          <div className="transition-transform duration-200 hover:-translate-y-0.5">
-                            <PollCard poll={poll} onDelete={handleDeletePoll} showDelete={true} />
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                          <ListPlus className="h-8 w-8 text-slate-400 dark:text-white/40" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('profile.noPollsYet')}</h3>
-                        <p className="text-slate-500 dark:text-white/50 text-sm mb-4">{t('profile.noPollsDesc')}</p>
-                        <button onClick={() => navigate('/create-poll')} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium text-sm">{t('profile.createPollBtn')}</button>
-                      </div>
-                    )
-                  )}
-
-                  {/* Voted polls */}
-                  {activeTab === 'voted' && (
-                    votedPolls.length > 0 ? (
-                      votedPolls.map((poll, i) => (
-                        <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-                          <div className="transition-transform duration-200 hover:-translate-y-0.5">
-                            <PollCard poll={poll} showDelete={false} />
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                          <CheckSquare className="h-8 w-8 text-slate-400 dark:text-white/40" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('profile.noVotesYet')}</h3>
-                        <p className="text-slate-500 dark:text-white/50 text-sm mb-4">{t('profile.noVotesDesc')}</p>
-                        <button onClick={() => navigate('/')} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium text-sm">{t('profile.browsePollsBtn')}</button>
-                      </div>
-                    )
-                  )}
-
-                  {/* Comments */}
-                  {activeTab === 'comments' && (
-                    myComments.length > 0 ? (
-                      myComments.map((comment, i) => (
-                        <div
-                          key={comment.id}
-                          className="animate-fade-in-up p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.03] hover:bg-slate-100/50 dark:hover:bg-white/[0.05] transition-colors"
-                          style={{ animationDelay: `${i * 40}ms` }}
-                        >
-                          <div className="flex gap-4">
-                            <div className="shrink-0 w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-bold border border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
-                               {comment.isAnonymous ? 'A' : (
-                                   comment.avatarUrl && comment.avatarUrl !== 'null' && comment.avatarUrl.trim() !== '' ? (
-                                       <img src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`} alt={comment.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.username}` }} />
-                                   ) : comment.username.charAt(0).toUpperCase()
-                               )}
-                            </div>
-                            <div className="flex-grow min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="font-semibold text-slate-800 dark:text-white/90 text-sm">{comment.isAnonymous ? 'Anonymous' : comment.username}</span>
-                                <span className="text-xs text-slate-400 dark:text-white/40">•</span>
-                                <span className="text-xs text-slate-500 dark:text-white/50">{new Date(comment.createdAt).toLocaleDateString()}</span>
-                                {comment.pollTitle && (
-                                  <>
-                                    <span className="text-xs text-slate-400 dark:text-white/40">•</span>
-                                    <button onClick={() => navigate(`/poll/${comment.pollId}`)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 truncate max-w-[150px] sm:max-w-xs">{comment.pollTitle}</button>
-                                  </>
-                                )}
-                              </div>
-                              <p className="text-slate-700 dark:text-white/80 text-sm whitespace-pre-wrap">{comment.content}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                          <MessageSquare className="h-8 w-8 text-slate-400 dark:text-white/40" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('profile.noCommentsYet')}</h3>
-                        <p className="text-slate-500 dark:text-white/50 text-sm mb-4">{t('profile.noCommentsDesc')}</p>
-                        <button onClick={() => navigate('/')} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium text-sm">{t('profile.browsePollsBtn')}</button>
-                      </div>
-                    )
-                  )}
-
-                  {/* Payment history */}
-                  {activeTab === 'payments' && (
-                    payments.length > 0 ? (
-                      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
-                        <table className="w-full text-left text-sm">
-                          <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase font-semibold text-slate-600 dark:text-white/70">
-                            <tr>
-                              <th className="px-5 py-4 rounded-tl-xl">Mã GD</th>
-                              <th className="px-5 py-4">Thời gian</th>
-                              <th className="px-5 py-4">Gói</th>
-                              <th className="px-5 py-4">Số tiền</th>
-                              <th className="px-5 py-4 rounded-tr-xl">Trạng thái</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-200 dark:divide-white/10 bg-white dark:bg-transparent">
-                            {payments.map((txn) => (
-                              <tr key={txn.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                                <td className="px-5 py-4 font-mono text-xs text-slate-500 dark:text-white/40">{txn.txnRef}</td>
-                                <td className="px-5 py-4 text-slate-600 dark:text-white/60 whitespace-nowrap text-xs">
-                                  {new Date(txn.createdAt).toLocaleDateString('vi-VN')}<br />
-                                  <span className="text-slate-400 dark:text-white/30">{new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                                </td>
-                                <td className="px-5 py-4">
-                                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                    txn.targetPlan === 'PLUS'
-                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-                                      : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300'
-                                  }`}>{txn.targetPlan}</span>
-                                </td>
-                                <td className="px-5 py-4 font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{(txn.amount).toLocaleString('vi-VN')}đ</td>
-                                <td className="px-5 py-4">
-                                  {txn.status === 'SUCCESS' && <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded-full text-xs font-semibold">Thành công</span>}
-                                  {txn.status === 'PENDING' && <span className="px-2.5 py-1 bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 rounded-full text-xs font-semibold">Đang xử lý</span>}
-                                  {txn.status === 'FAILED' && <span className="px-2.5 py-1 bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 rounded-full text-xs font-semibold">Thất bại</span>}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-16 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                          <CreditCard className="h-8 w-8 text-slate-400 dark:text-white/40" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Chưa có giao dịch</h3>
-                        <p className="text-slate-500 dark:text-white/50 text-sm">Bạn chưa thực hiện giao dịch thanh toán nâng cấp gói nào.</p>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
+                  >
+                    <span className={active ? 'text-indigo-500' : 'text-slate-400 dark:text-white/30'}>{tab.icon}</span>
+                    {tab.label}
+                    {tab.count !== null && (
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${active ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/30'
+                        }`}>{tab.count}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
+        </div>
 
+        {/* ══════════════════ TAB CONTENT ══════════════════ */}
+        <div className="mt-5 pb-20">
+          {error && (
+            <div className="mb-5 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 rounded-2xl text-sm text-center">{error}</div>
+          )}
+
+          {/* Created */}
+          {activeTab === 'created' && (
+            createdPolls.length > 0
+              ? <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {createdPolls.map((poll, i) => (
+                  <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
+                    <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
+                      <PollCard poll={poll} onDelete={handleDeletePoll} showDelete={true} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              : <ProfileEmpty icon={<ListPlus className="w-8 h-8" />} title={t('profile.noPollsYet')} desc={t('profile.noPollsDesc')} action={{ label: t('profile.createPollBtn'), onClick: () => navigate('/create-poll') }} />
+          )}
+
+          {/* Voted */}
+          {activeTab === 'voted' && (
+            votedPolls.length > 0
+              ? <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {votedPolls.map((poll, i) => (
+                  <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
+                    <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
+                      <PollCard poll={poll} showDelete={false} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              : <ProfileEmpty icon={<CheckSquare className="w-8 h-8" />} title={t('profile.noVotesYet')} desc={t('profile.noVotesDesc')} action={{ label: t('profile.browsePollsBtn'), onClick: () => navigate('/') }} />
+          )}
+
+          {/* Comments */}
+          {activeTab === 'comments' && (
+            myComments.length > 0
+              ? <div className="space-y-3">
+                {myComments.map((c, i) => (
+                  <div key={c.id} className="animate-fade-in-up bg-white dark:bg-[#0e0b1f] rounded-2xl border border-slate-100 dark:border-white/[0.05] p-5 hover:shadow-md hover:border-slate-200 dark:hover:border-white/[0.1] transition-all" style={{ animationDelay: `${i * 30}ms` }}>
+                    <div className="flex gap-4">
+                      <div className="shrink-0 w-9 h-9 rounded-xl overflow-hidden bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 font-bold text-sm">
+                        {c.isAnonymous ? 'A' : (
+                          c.avatarUrl && c.avatarUrl !== 'null' && c.avatarUrl.trim() !== '' ? (
+                            <img src={c.avatarUrl.startsWith('http') || c.avatarUrl.startsWith('blob') ? c.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${c.avatarUrl}`} alt={c.username} className="w-full h-full object-cover" />
+                          ) : c.username.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          <span className="font-semibold text-slate-900 dark:text-white text-sm">{c.isAnonymous ? 'Anonymous' : c.username}</span>
+                          <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
+                          <span className="text-slate-400 dark:text-white/30 text-xs">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</span>
+                          {c.pollTitle && (
+                            <>
+                              <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
+                              <button onClick={() => navigate(`/poll/${c.pollId}`)} className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 truncate max-w-[200px]">{c.pollTitle}</button>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-slate-600 dark:text-white/60 text-sm leading-relaxed">{c.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              : <ProfileEmpty icon={<MessageSquare className="w-8 h-8" />} title={t('profile.noCommentsYet')} desc={t('profile.noCommentsDesc')} action={{ label: t('profile.browsePollsBtn'), onClick: () => navigate('/') }} />
+          )}
+
+          {/* Payments */}
+          {activeTab === 'payments' && (
+            payments.length > 0
+              ? <div className="bg-white dark:bg-[#0e0b1f] rounded-2xl border border-slate-100 dark:border-white/[0.05] overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 dark:border-white/[0.06]">
+                      {['Mã giao dịch', 'Thời gian', 'Gói', 'Số tiền', 'Trạng thái'].map((h, i) => (
+                        <th key={i} className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/30">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((txn, i) => (
+                      <tr key={txn.id} className={`border-b border-slate-50 dark:border-white/[0.03] last:border-0 hover:bg-slate-50/80 dark:hover:bg-white/[0.025] transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40 dark:bg-white/[0.015]'}`}>
+                        <td className="px-6 py-4 font-mono text-[11px] text-slate-400 dark:text-white/25">{txn.txnRef}</td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-medium text-slate-700 dark:text-white/60">{new Date(txn.createdAt).toLocaleDateString('vi-VN')}</span>
+                          <br />
+                          <span className="text-[10px] text-slate-400 dark:text-white/25">{new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${txn.targetPlan === 'PLUS' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'}`}>
+                            {txn.targetPlan}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-black text-emerald-600 dark:text-emerald-400 text-sm">{txn.amount.toLocaleString('vi-VN')}đ</td>
+                        <td className="px-6 py-4">
+                          {txn.status === 'SUCCESS' && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-200 dark:border-emerald-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Thành công
+                            </span>
+                          )}
+                          {txn.status === 'PENDING' && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold border border-amber-200 dark:border-amber-500/20">
+                              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Đang xử lý
+                            </span>
+                          )}
+                          {txn.status === 'FAILED' && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg text-xs font-semibold border border-red-100 dark:border-red-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />Thất bại
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              : <ProfileEmpty icon={<CreditCard className="w-8 h-8" />} title="Chưa có giao dịch" desc="Bạn chưa thực hiện giao dịch thanh toán gói nào." />
+          )}
         </div>
       </div>
 
-      <UserProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-      />
+      <UserProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
     </div>
   );
 };
+
+/* ── Empty state ── */
+function ProfileEmpty({ icon, title, desc, action }: {
+  icon: React.ReactNode; title: string; desc: string;
+  action?: { label: string; onClick: () => void };
+}) {
+  return (
+    <div className="text-center py-24 animate-fade-in-up">
+      <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] flex items-center justify-center text-slate-300 dark:text-white/20">
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{title}</h3>
+      <p className="text-slate-500 dark:text-white/40 text-sm mb-8 max-w-xs mx-auto leading-relaxed">{desc}</p>
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-sm font-semibold hover:bg-slate-700 dark:hover:bg-slate-100 transition-all hover:scale-[1.02] shadow-md"
+        >
+          {action.label} →
+        </button>
+      )}
+    </div>
+  );
+}
