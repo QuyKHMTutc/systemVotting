@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, Long> {
     Optional<PaymentTransaction> findByTxnRef(String txnRef);
+    java.util.List<PaymentTransaction> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

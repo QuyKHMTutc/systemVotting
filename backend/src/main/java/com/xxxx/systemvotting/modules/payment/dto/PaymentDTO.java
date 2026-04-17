@@ -17,4 +17,15 @@ public class PaymentDTO {
     public static class PaymentResponse {
         private String paymentUrl;
     }
+
+    @Getter
+    @Setter
+    public static class PaymentHistory {
+        private Long id;
+        private String txnRef;
+        private Long amount;
+        private PlanType targetPlan;
+        private com.xxxx.systemvotting.modules.payment.enums.TransactionStatus status;
+        private java.time.LocalDateTime createdAt;
+    }
 }

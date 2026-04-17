@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -182,6 +183,14 @@ public class PaymentService {
             txn.setStatus(TransactionStatus.SUCCESS);
             User user = txn.getUser();
             user.setPlan(txn.getTargetPlan());
+            
+            // Set expiration date logic
+            if (txn.getTargetPlan() == PlanType.GO) {
+                user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+            } else if (txn.getTargetPlan() == PlanType.PLUS) {
+                user.setPlanExpirationDate(null); // Lifetime for PLUS
+            }
+
             userRepository.save(user);
             
             // Evict cache so the frontend can fetch the updated plan
@@ -195,5 +204,22 @@ public class PaymentService {
 
         paymentTransactionRepository.save(txn);
         return 1; // Success
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.xxxx.systemvotting.modules.payment.dto.PaymentDTO.PaymentHistory> getPaymentHistory(Long userId) {
+        return paymentTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
+            .stream()
+            .map(txn -> {
+                com.xxxx.systemvotting.modules.payment.dto.PaymentDTO.PaymentHistory dto = new com.xxxx.systemvotting.modules.payment.dto.PaymentDTO.PaymentHistory();
+                dto.setId(txn.getId());
+                dto.setTxnRef(txn.getTxnRef());
+                dto.setAmount(txn.getAmount());
+                dto.setTargetPlan(txn.getTargetPlan());
+                dto.setStatus(txn.getStatus());
+                dto.setCreatedAt(txn.getCreatedAt());
+                return dto;
+            })
+            .collect(java.util.stream.Collectors.toList());
     }
 }

@@ -64,9 +64,24 @@ public class VoteServiceImpl implements VoteService {
             "local userId = ARGV[1] " +
             "local newOptionId = ARGV[2] " +
             "local eventJson = ARGV[3] " +
+            "local maxLimitStr = ARGV[4] " +
+            "local baselineTotalStr = ARGV[5] " +
             "local oldOptionId = redis.call('HGET', userVotesKey, userId) " +
             "if oldOptionId == newOptionId then " +
             "    return '-1' " +
+            "end " +
+            "if not oldOptionId and maxLimitStr ~= '0' then " +
+            "    local currentTotal = tonumber(baselineTotalStr or '0') " +
+            "    if redis.call('EXISTS', pollVotesKey) == 1 then " +
+            "        currentTotal = 0 " +
+            "        local allCounts = redis.call('HVALS', pollVotesKey) " +
+            "        for i=1, #allCounts do " +
+            "            currentTotal = currentTotal + tonumber(allCounts[i] or '0') " +
+            "        end " +
+            "    end " +
+            "    if currentTotal >= tonumber(maxLimitStr) then " +
+            "        return '-2' " +
+            "    end " +
             "end " +
             "redis.call('HSET', userVotesKey, userId, newOptionId) " +
             "if oldOptionId then " +
@@ -109,32 +124,15 @@ public class VoteServiceImpl implements VoteService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        // 2.5 Limit Enforcement based on Creator's Plan
+        // 2.5 Prepare Arguments for Lua
         PlanType creatorPlan = poll.getCreator().getPlan();
-        if (creatorPlan != PlanType.PLUS) {
-            String pollVotesKeyForLimit = RedisKeyUtils.getPollVotesKey(pollId);
-            Map<Object, Object> allCounts = redisTemplate.opsForHash().entries(pollVotesKeyForLimit);
-            
-            // Check if user has already voted (to allow changing vote without throwing limit error if limit is exactly met)
-            String userVotesKeyForLimit = RedisKeyUtils.getPollUserVotesKey(pollId);
-            boolean hasVoted = redisTemplate.opsForHash().hasKey(userVotesKeyForLimit, String.valueOf(userId));
-            
-            if (!hasVoted) {
-                int totalVotes = allCounts.values().stream()
-                    .mapToInt(v -> Integer.parseInt(v.toString()))
-                    .sum();
-                    
-                if (totalVotes == 0) {
-                    totalVotes = poll.getOptions().stream().mapToInt(o -> o.getVoteCount()).sum();
-                }
-                
-                if (creatorPlan == PlanType.FREE && totalVotes >= 200) {
-                    throw new AppException(ErrorCode.POLL_LIMIT_EXCEEDED);
-                }
-                if (creatorPlan == PlanType.GO && totalVotes >= 1000) {
-                    throw new AppException(ErrorCode.POLL_LIMIT_EXCEEDED);
-                }
-            }
+        String maxLimit = "0";
+        if (creatorPlan == PlanType.FREE) maxLimit = "200";
+        if (creatorPlan == PlanType.GO) maxLimit = "1000";
+
+        int baselineTotal = 0;
+        if (!maxLimit.equals("0")) {
+            baselineTotal = poll.getOptions().stream().mapToInt(o -> o.getVoteCount()).sum();
         }
 
         // 3. Atomically track user's choice and push event via Lua Script
@@ -161,11 +159,14 @@ public class VoteServiceImpl implements VoteService {
         String result = redisTemplate.execute(
                 voteScript,
                 Arrays.asList(userVotesKey, pollVotesKey, queueKey),
-                String.valueOf(userId), String.valueOf(newOptionId), eventJsonTemplate
+                String.valueOf(userId), String.valueOf(newOptionId), eventJsonTemplate, maxLimit, String.valueOf(baselineTotal)
         );
 
         if ("-1".equals(result)) {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+        if ("-2".equals(result)) {
+            throw new AppException(ErrorCode.POLL_LIMIT_EXCEEDED);
         }
         
         Long oldOptionId = null;

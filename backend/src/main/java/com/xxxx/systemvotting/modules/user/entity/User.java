@@ -33,7 +33,6 @@ import java.util.List;
 @AllArgsConstructor
 public class User implements UserDetails {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -59,6 +58,8 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private PlanType plan = PlanType.FREE;
+
+    private LocalDateTime planExpirationDate;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -89,5 +90,12 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return this.isVerified;
+    }
+
+    public PlanType getPlan() {
+        if (this.planExpirationDate != null && LocalDateTime.now().isAfter(this.planExpirationDate)) {
+            return PlanType.FREE;
+        }
+        return this.plan;
     }
 }

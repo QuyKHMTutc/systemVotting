@@ -92,4 +92,14 @@ public class PaymentController {
         }
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getPaymentHistory(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+        Long userId = Long.valueOf(jwt.getSubject());
+        java.util.List<PaymentDTO.PaymentHistory> history = paymentService.getPaymentHistory(userId);
+        return ResponseEntity.ok(Map.of("success", true, "data", history));
+    }
 }
