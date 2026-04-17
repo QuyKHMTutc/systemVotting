@@ -11,6 +11,7 @@ interface User {
     avatarUrl?: string;
     role: string;
     plan?: string;
+    planExpirationDate?: string | null;
 }
 
 interface AuthContextType {
@@ -39,6 +40,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     });
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const storedAccessToken = localStorage.getItem('accessToken');
+        if (storedAccessToken) {
+            setMemoryToken(storedAccessToken);
+            setToken(storedAccessToken);
+        }
+    }, []);
 
     const login = (accessToken: string, _refreshToken: string | null, userData: User) => {
         setMemoryToken(accessToken);

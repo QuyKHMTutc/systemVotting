@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { authService } from '../services/auth.service';
 import { useTheme } from '../contexts/ThemeContext';
 import { Eye, EyeOff, Mail, Lock, LogIn, Activity, Fingerprint, Zap } from 'lucide-react';
+import { setMemoryToken } from '../services/api';
 
 function decodeJwtPayload(token: string): any {
     const part = token.split('.')[1];
@@ -73,10 +74,13 @@ const Login = () => {
                 // Store tokens immediately so api.interceptors can pick them up for the .me() call
                 localStorage.setItem('accessToken', response.data.accessToken);
                 localStorage.setItem('refreshToken', response.data.refreshToken);
+                setMemoryToken(response.data.accessToken);
 
                 let actualUsername = email.split('@')[0];
                 let actualAvatarUrl = '';
                 let actualId = 0;
+                let actualPlan = 'FREE';
+                let actualPlanExpirationDate: string | null = null;
 
                 try {
                     const meRes = await authService.me();
@@ -84,6 +88,8 @@ const Login = () => {
                         actualUsername = meRes.data.username || actualUsername;
                         actualAvatarUrl = meRes.data.avatarUrl || actualAvatarUrl;
                         actualId = meRes.data.id || actualId;
+                        actualPlan = meRes.data.plan || actualPlan;
+                        actualPlanExpirationDate = meRes.data.planExpirationDate ?? actualPlanExpirationDate;
                     }
                 } catch (e) {
                     console.error("Failed to fetch full profile after login", e);
@@ -95,7 +101,9 @@ const Login = () => {
                     username: actualUsername,
                     email: email,
                     avatarUrl: actualAvatarUrl,
-                    role: tokenPayload.role || 'USER'
+                    role: tokenPayload.role || 'USER',
+                    plan: actualPlan,
+                    planExpirationDate: actualPlanExpirationDate,
                 };
 
                 login(response.data.accessToken, response.data.refreshToken, userData);
@@ -240,12 +248,15 @@ const Login = () => {
                                                 if (res.code === 200 && res.data) {
                                                     localStorage.setItem('accessToken', res.data.accessToken);
                                                     localStorage.setItem('refreshToken', res.data.refreshToken);
+                                                    setMemoryToken(res.data.accessToken);
 
                                                     const tokenPayload = decodeJwtPayload(res.data.accessToken);
                                                     let actualUsername = tokenPayload.username || tokenPayload.sub || '';
                                                     let actualAvatarUrl = tokenPayload.avatarUrl || '';
                                                     let actualEmail = tokenPayload.email || '';
                                                     let actualId = tokenPayload.id || parseInt(tokenPayload.sub) || 0;
+                                                    let actualPlan = 'FREE';
+                                                    let actualPlanExpirationDate: string | null = null;
 
                                                     try {
                                                         const meRes = await authService.me();
@@ -254,6 +265,8 @@ const Login = () => {
                                                             actualAvatarUrl = meRes.data.avatarUrl || actualAvatarUrl;
                                                             actualEmail = meRes.data.email || actualEmail;
                                                             actualId = meRes.data.id || actualId;
+                                                            actualPlan = meRes.data.plan || actualPlan;
+                                                            actualPlanExpirationDate = meRes.data.planExpirationDate ?? actualPlanExpirationDate;
                                                         }
                                                     } catch (e) {
                                                         console.error("Failed to fetch full profile after google login", e);
@@ -264,7 +277,9 @@ const Login = () => {
                                                         username: actualUsername,
                                                         email: actualEmail,
                                                         avatarUrl: actualAvatarUrl,
-                                                        role: tokenPayload.role || 'USER'
+                                                        role: tokenPayload.role || 'USER',
+                                                        plan: actualPlan,
+                                                        planExpirationDate: actualPlanExpirationDate,
                                                     };
                                                     login(res.data.accessToken, res.data.refreshToken, userData);
                                                     navigate('/');

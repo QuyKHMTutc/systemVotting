@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown } from 'lucide-react';
+import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UpgradeModal from './payment/UpgradeModal';
 
@@ -163,6 +163,13 @@ const Navbar = () => {
                                                 <CheckSquare className="w-4 h-4" />
                                             </div>
                                             {t('navbar.myVotes')}
+                                        </Link>
+
+                                        <Link to="/profile?tab=payments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-white/10 rounded-xl transition-colors">
+                                            <div className="w-8 h-8 rounded-full bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 shrink-0">
+                                                <CreditCard className="w-4 h-4" />
+                                            </div>
+                                            Lịch sử thanh toán
                                         </Link>
 
                                         <div className="h-px bg-slate-200 dark:bg-white/10 my-2 mx-2"></div>
