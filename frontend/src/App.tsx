@@ -12,6 +12,7 @@ import AdminPanel from './pages/AdminPanel';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import { Profile } from './pages/Profile';
+import PaymentResult from './pages/PaymentResult';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Footer from './components/Footer';
@@ -69,6 +70,7 @@ function App() {
             } />
 
             <Route path="/poll/:id" element={<PollDetail />} />
+            <Route path="/payment-result" element={<PaymentResult />} />
 
             <Route path="/admin" element={
               <ProtectedRoute requireRole="ADMIN">

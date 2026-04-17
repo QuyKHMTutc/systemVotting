@@ -4,7 +4,7 @@ import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import { Share2, Check, X, Users, MessageCircle, BarChart3 } from 'lucide-react';
+import { Check, X, Users, MessageCircle, BarChart3 } from 'lucide-react';
 import PostActions from '../components/post/PostActions';
 import CommentList from '../components/comments/CommentList';
 import CommentInput from '../components/comments/CommentInput';

@@ -213,3 +213,45 @@ h1, h2, h3, h4, h5, h6, .font-heading,
   background: rgba(255, 255, 255, 0.2);
   border-radius: 6px;
 }
+
+/* Animated gradient border for PLUS plan */
+@keyframes borderGlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-border-glow {
+  background-size: 200% 200%;
+  animation: borderGlow 3s ease infinite;
+}
+
+/* Scanning line for QR code */
+@keyframes scanLine {
+  0% { transform: translateY(0); opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { transform: translateY(240px); opacity: 0; }
+}
+
+.animate-scan {
+  animation: scanLine 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Hologram effect */
+.hologram-effect {
+  position: relative;
+  overflow: hidden;
+}
+.hologram-effect::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+  transform: skewX(-20deg);
+  animation: hologram 4s infinite linear;
+}
+@keyframes hologram {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}

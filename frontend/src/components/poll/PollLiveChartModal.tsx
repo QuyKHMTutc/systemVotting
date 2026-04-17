@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { X, Activity, BarChart3, Users } from 'lucide-react';
 import {
   BarChart,

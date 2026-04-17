@@ -3,14 +3,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
+import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import UpgradeModal from './payment/UpgradeModal';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { t, i18n } = useTranslation();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(() => typeof window !== 'undefined' ? window.scrollY > 20 : false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +61,17 @@ const Navbar = () => {
 
                 {/* Right: Actions */}
                 <div className="flex items-center justify-end space-x-3 sm:space-x-4 shrink-0">
+                    {user && (
+                        <button 
+                            onClick={() => setIsUpgradeModalOpen(true)}
+                            className="hidden md:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/30 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                        >
+                            <Crown className="w-5 h-5 text-amber-500" />
+                            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400">
+                                {user.plan && user.plan !== 'FREE' ? `Gói ${user.plan}` : 'Nâng cấp'}
+                            </span>
+                        </button>
+                    )}
                     <Link to="/create-poll" className="hidden sm:inline-flex px-4 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl text-sm transition-all shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)] border border-white/10 whitespace-nowrap">
                         {t('navbar.createPoll')}
                     </Link>
@@ -174,6 +187,14 @@ const Navbar = () => {
                     )}
                 </div>
             </div>
+            
+            {user && (
+                <UpgradeModal 
+                    isOpen={isUpgradeModalOpen} 
+                    onClose={() => setIsUpgradeModalOpen(false)} 
+                    currentPlan={user.plan || 'FREE'}
+                />
+            )}
         </nav>
     );
 };
