@@ -2,6 +2,7 @@ package com.xxxx.systemvotting.modules.user.entity;
 
 import com.xxxx.systemvotting.modules.user.enums.PlanType;
 import com.xxxx.systemvotting.modules.user.enums.Role;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -57,6 +58,7 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
+    @Column(length = 20)
     private PlanType plan = PlanType.FREE;
 
     private LocalDateTime planExpirationDate;

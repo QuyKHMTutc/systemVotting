@@ -41,4 +41,7 @@ public class UserResponseDTO implements Serializable {
 
     @Schema(description = "Gói hội viên", example = "FREE")
     private String plan;
+
+    @Schema(description = "Ngày hết hạn gói (null nếu FREE hoặc chưa có)", example = "2026-04-17T10:15:30")
+    private LocalDateTime planExpirationDate;
 }

@@ -27,5 +27,6 @@ public class PaymentDTO {
         private PlanType targetPlan;
         private com.xxxx.systemvotting.modules.payment.enums.TransactionStatus status;
         private java.time.LocalDateTime createdAt;
+        private java.time.LocalDateTime expiresAt;
     }
 }

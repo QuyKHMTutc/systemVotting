@@ -50,6 +50,8 @@ public class PaymentService {
             amount = 50000;
         } else if (planType == PlanType.PLUS) {
             amount = 200000;
+        } else if (planType == PlanType.PRO) {
+            amount = 500000;
         } else {
             throw new IllegalArgumentException("Cannot purchase FREE plan");
         }
@@ -188,7 +190,9 @@ public class PaymentService {
             if (txn.getTargetPlan() == PlanType.GO) {
                 user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
             } else if (txn.getTargetPlan() == PlanType.PLUS) {
-                user.setPlanExpirationDate(null); // Lifetime for PLUS
+                user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+            } else if (txn.getTargetPlan() == PlanType.PRO) {
+                user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
             }
 
             userRepository.save(user);
@@ -218,6 +222,7 @@ public class PaymentService {
                 dto.setTargetPlan(txn.getTargetPlan());
                 dto.setStatus(txn.getStatus());
                 dto.setCreatedAt(txn.getCreatedAt());
+                dto.setExpiresAt(txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(30) : null);
                 return dto;
             })
             .collect(java.util.stream.Collectors.toList());

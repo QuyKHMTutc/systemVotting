@@ -3,6 +3,7 @@ package com.xxxx.systemvotting.modules.payment.entity;
 import com.xxxx.systemvotting.modules.payment.enums.TransactionStatus;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.enums.PlanType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -41,6 +42,7 @@ public class PaymentTransaction {
     private Long amount; // in VND
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "target_plan", length = 20)
     private PlanType targetPlan;
 
     private String orderInfo;

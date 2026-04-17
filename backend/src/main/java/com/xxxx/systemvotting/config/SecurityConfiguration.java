@@ -35,6 +35,8 @@ public class SecurityConfiguration {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
             "/api/v1/users",
+            "/api/v1/payments/vnpay-return",
+            "/api/v1/payments/vnpay-ipn",
             "/ws/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",

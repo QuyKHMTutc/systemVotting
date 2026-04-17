@@ -32,12 +32,12 @@ public class PaymentController {
     public ResponseEntity<?> createPayment(
             @RequestBody PaymentDTO.PaymentRequest requestDto,
             HttpServletRequest request,
-            java.security.Principal principal) {
+            @AuthenticationPrincipal Jwt jwt) {
         try {
-            if (principal == null) {
-                throw new RuntimeException("Unauthorized: No principal found");
+            if (jwt == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
             }
-            Long userId = Long.valueOf(principal.getName());
+            Long userId = Long.valueOf(jwt.getSubject());
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 

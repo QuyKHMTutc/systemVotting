@@ -127,8 +127,10 @@ public class VoteServiceImpl implements VoteService {
         // 2.5 Prepare Arguments for Lua
         PlanType creatorPlan = poll.getCreator().getPlan();
         String maxLimit = "0";
-        if (creatorPlan == PlanType.FREE) maxLimit = "200";
-        if (creatorPlan == PlanType.GO) maxLimit = "1000";
+        if (creatorPlan == PlanType.FREE) maxLimit = "100";
+        if (creatorPlan == PlanType.GO) maxLimit = "300";
+        if (creatorPlan == PlanType.PLUS) maxLimit = "1000";
+        if (creatorPlan == PlanType.PRO) maxLimit = "2000";
 
         int baselineTotal = 0;
         if (!maxLimit.equals("0")) {
