@@ -38,4 +38,7 @@ public class UserResponseDTO implements Serializable {
 
     @Schema(description = "Vai trò", example = "USER")
     private String role;
+
+    @Schema(description = "Gói hội viên", example = "FREE")
+    private String plan;
 }

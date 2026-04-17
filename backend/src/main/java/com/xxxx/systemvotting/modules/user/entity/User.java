@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.user.entity;
 
+import com.xxxx.systemvotting.modules.user.enums.PlanType;
 import com.xxxx.systemvotting.modules.user.enums.Role;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -54,6 +55,10 @@ public class User implements UserDetails {
 
     @Builder.Default
     private boolean isVerified = false;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private PlanType plan = PlanType.FREE;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

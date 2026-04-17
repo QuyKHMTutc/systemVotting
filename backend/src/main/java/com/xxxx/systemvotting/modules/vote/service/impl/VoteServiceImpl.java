@@ -7,6 +7,7 @@ import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.repository.OptionRepository;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.modules.user.enums.PlanType;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.common.service.RealTimeService;
 import com.xxxx.systemvotting.modules.vote.service.RateLimitService;
@@ -106,6 +107,34 @@ public class VoteServiceImpl implements VoteService {
 
         if (!newOption.getPoll().getId().equals(poll.getId())) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        // 2.5 Limit Enforcement based on Creator's Plan
+        PlanType creatorPlan = poll.getCreator().getPlan();
+        if (creatorPlan != PlanType.PLUS) {
+            String pollVotesKeyForLimit = RedisKeyUtils.getPollVotesKey(pollId);
+            Map<Object, Object> allCounts = redisTemplate.opsForHash().entries(pollVotesKeyForLimit);
+            
+            // Check if user has already voted (to allow changing vote without throwing limit error if limit is exactly met)
+            String userVotesKeyForLimit = RedisKeyUtils.getPollUserVotesKey(pollId);
+            boolean hasVoted = redisTemplate.opsForHash().hasKey(userVotesKeyForLimit, String.valueOf(userId));
+            
+            if (!hasVoted) {
+                int totalVotes = allCounts.values().stream()
+                    .mapToInt(v -> Integer.parseInt(v.toString()))
+                    .sum();
+                    
+                if (totalVotes == 0) {
+                    totalVotes = poll.getOptions().stream().mapToInt(o -> o.getVoteCount()).sum();
+                }
+                
+                if (creatorPlan == PlanType.FREE && totalVotes >= 200) {
+                    throw new AppException(ErrorCode.POLL_LIMIT_EXCEEDED);
+                }
+                if (creatorPlan == PlanType.GO && totalVotes >= 1000) {
+                    throw new AppException(ErrorCode.POLL_LIMIT_EXCEEDED);
+                }
+            }
         }
 
         // 3. Atomically track user's choice and push event via Lua Script
