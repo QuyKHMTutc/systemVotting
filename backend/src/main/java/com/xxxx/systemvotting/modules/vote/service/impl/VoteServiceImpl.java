@@ -73,10 +73,13 @@ public class VoteServiceImpl implements VoteService {
             "if not oldOptionId and maxLimitStr ~= '0' then " +
             "    local currentTotal = tonumber(baselineTotalStr or '0') " +
             "    if redis.call('EXISTS', pollVotesKey) == 1 then " +
-            "        currentTotal = 0 " +
+            "        local redisDelta = 0 " +
             "        local allCounts = redis.call('HVALS', pollVotesKey) " +
             "        for i=1, #allCounts do " +
-            "            currentTotal = currentTotal + tonumber(allCounts[i] or '0') " +
+            "            redisDelta = redisDelta + tonumber(allCounts[i] or '0') " +
+            "        end " +
+            "        if redisDelta > currentTotal then " +
+            "            currentTotal = redisDelta " +
             "        end " +
             "    end " +
             "    if currentTotal >= tonumber(maxLimitStr) then " +

@@ -188,11 +188,14 @@ public class PaymentService {
             
             // Set expiration date logic
             if (txn.getTargetPlan() == PlanType.GO) {
-                user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+               // user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+                user.setPlanExpirationDate(LocalDateTime.now().plusMinutes(2));
             } else if (txn.getTargetPlan() == PlanType.PLUS) {
-                user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+               // user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+                user.setPlanExpirationDate(LocalDateTime.now().plusMinutes(2));
             } else if (txn.getTargetPlan() == PlanType.PRO) {
-                user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+               // user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
+                user.setPlanExpirationDate(LocalDateTime.now().plusMinutes(2));
             }
 
             userRepository.save(user);
