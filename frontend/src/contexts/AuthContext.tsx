@@ -90,26 +90,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [navigate]);
 
     useEffect(() => {
-        authService.me()
-            .then(res => {
-                if (res?.code === 200 && res.data) {
-                    const currentToken = getMemoryToken();
-                    if (currentToken) {
-                        setToken(currentToken);
+        const syncUser = () => {
+            authService.me()
+                .then(res => {
+                    if (res?.code === 200 && res.data) {
+                        const currentToken = getMemoryToken();
+                        if (currentToken) setToken(currentToken);
+                        updateUser(res.data);
                     }
-                    updateUser(res.data);
-                }
-            })
-            .catch(err => {
-                console.error('Failed to sync user profile:', err);
-                setToken(null);
-                setUser(null);
-                localStorage.removeItem('user');
-            })
-            .finally(() => {
-                setIsInitializing(false);
-            });
+                })
+                .catch(err => {
+                    console.error('Failed to sync user profile:', err);
+                    setToken(null);
+                    setUser(null);
+                    localStorage.removeItem('user');
+                })
+                .finally(() => {
+                    setIsInitializing(false);
+                });
+        };
+
+        // Gọi ngay khi khởi động
+        syncUser();
+
+        // Refresh mỗi 5 phút để cập nhật plan hết hạn
+        const interval = setInterval(syncUser, 5 * 60 * 1000);
+
+        return () => clearInterval(interval);
     }, []);
+
+    // Kiểm tra client-side: nếu planExpirationDate đã qua, reset plan ngay
+    useEffect(() => {
+        if (!user?.planExpirationDate || !user?.plan || user.plan === 'FREE') return;
+        const expiry = new Date(user.planExpirationDate).getTime();
+        const now = Date.now();
+        if (now >= expiry) {
+            updateUser({ ...user, plan: 'FREE', planExpirationDate: null });
+            return;
+        }
+        // Set timer tự động reset khi đúng lúc hết hạn
+        const timeout = setTimeout(() => {
+            updateUser({ ...user, plan: 'FREE', planExpirationDate: null });
+        }, expiry - now);
+        return () => clearTimeout(timeout);
+    }, [user?.planExpirationDate, user?.plan]);
 
     return (
         <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated: !!token, isInitializing }}>

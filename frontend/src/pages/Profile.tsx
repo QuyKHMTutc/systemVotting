@@ -116,7 +116,7 @@ export const Profile = () => {
     { key: 'created', icon: <ListPlus className="w-4 h-4" />, label: t('profile.createdPolls'), count: createdPolls.length },
     { key: 'voted', icon: <CheckSquare className="w-4 h-4" />, label: t('profile.votedPolls'), count: votedPolls.length },
     { key: 'comments', icon: <MessageSquare className="w-4 h-4" />, label: t('profile.myComments'), count: myComments.length },
-    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: 'Thanh toán', count: null },
+    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: 'Lịch sử thanh toán', count: null },
   ];
 
   if (loading) return <LoadingSpinner />;

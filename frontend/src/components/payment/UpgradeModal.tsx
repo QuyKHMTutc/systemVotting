@@ -278,7 +278,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                 {isCurrentPlan('FREE') ? (
                   <ActionButton variant="success" disabled>
                     <CheckCircle2 className="w-5 h-5" />
-                    Đang sử dụng
+                    Gói hiện tại của bạn
                   </ActionButton>
                 ) : (
                   <ActionButton variant="neutral" disabled>
@@ -324,7 +324,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                 {isCurrentPlan('GO') ? (
                   <ActionButton variant="success" disabled>
                     <CheckCircle2 className="w-5 h-5" />
-                    Đang sử dụng
+                    Gói hiện tại của bạn
                   </ActionButton>
                 ) : isIncludedByHigherPlan('GO') ? (
                   <ActionButton variant="neutral" disabled>
@@ -337,7 +337,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                     onClick={() => handleUpgrade('GO')}
                     disabled={loadingPlan === 'GO'}
                   >
-                    {loadingPlan === 'GO' ? 'Đang tạo mã...' : 'Chọn gói Go'}
+                    {loadingPlan === 'GO' ? 'Đang tạo mã...' : 'Nâng cấp lên Go'}
                   </ActionButton>
                 )}
               </div>
@@ -378,7 +378,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                 {isCurrentPlan('PLUS') ? (
                   <ActionButton variant="success" disabled>
                     <CheckCircle2 className="w-5 h-5" />
-                    Đang sử dụng
+                    Gói hiện tại của bạn
                   </ActionButton>
                 ) : isIncludedByHigherPlan('PLUS') ? (
                   <ActionButton variant="neutral" disabled>
@@ -387,13 +387,13 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                   </ActionButton>
                 ) : (
                   <div className="relative mt-auto w-full group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-400 rounded-xl blur-md opacity-30 group-hover:opacity-70 transition duration-300"></div>
+                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-400 rounded-xl blur-md opacity-30 group-hover:opacity-70 transition duration-300 pointer-events-none"></div>
                     <ActionButton
                       variant="amber"
                       onClick={() => handleUpgrade('PLUS')}
                       disabled={loadingPlan === 'PLUS'}
                     >
-                      {loadingPlan === 'PLUS' ? 'Đang tạo mã...' : 'Chọn gói Plus'}
+                      {loadingPlan === 'PLUS' ? 'Đang tạo mã...' : 'Nâng cấp lên Plus'}
                     </ActionButton>
                   </div>
                 )}
@@ -440,7 +440,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                 {isCurrentPlan('PRO') ? (
                   <ActionButton variant="success" disabled>
                     <CheckCircle2 className="w-5 h-5" />
-                    Đang sử dụng
+                    Gói hiện tại của bạn
                   </ActionButton>
                 ) : (
                   <ActionButton
@@ -448,7 +448,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                     onClick={() => handleUpgrade('PRO')}
                     disabled={loadingPlan === 'PRO'}
                   >
-                    {loadingPlan === 'PRO' ? 'Đang tạo mã...' : 'Chọn gói Pro'}
+                    {loadingPlan === 'PRO' ? 'Đang tạo mã...' : 'Nâng cấp lên Pro'}
                   </ActionButton>
                 )}
               </div>
