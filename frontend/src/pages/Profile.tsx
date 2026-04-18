@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { pollService } from '../services/poll.service';
 import { commentService, type Comment } from '../services/comment.service';
@@ -33,6 +33,7 @@ export const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const initialLoaded = useRef(false); // chỉ show spinner lần đầu tiên
 
   const handleDeletePoll = async (pollId: number) => {
     if (!window.confirm(t('profile.deleteConfirm'))) return;
@@ -47,7 +48,8 @@ export const Profile = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        setLoading(true);
+        // Chỉ hiện loading spinner lần đầu — các lần sau bảo toàn UI (tránh unmount Navbar)
+        if (!initialLoaded.current) setLoading(true);
         const [created, voted, comments, ph] = await Promise.all([
           pollService.getMyPolls(),
           pollService.getMyVotedPolls(),
@@ -61,11 +63,13 @@ export const Profile = () => {
       } catch {
         setError(t('profile.loadFail'));
       } finally {
+        initialLoaded.current = true;
         setLoading(false);
       }
     };
     if (user) fetch();
-  }, [user]);
+  // Dùng user?.id thay vì user — chỉ re-fetch khi đổi user, không phải khi plan/avatar update
+  }, [user?.id]);
 
   const handlePollEvent = useCallback((payload: PollEventPayload) => {
     const up = (prev: Poll[]) => {
@@ -85,7 +89,7 @@ export const Profile = () => {
     };
     setCreatedPolls(p => up(p));
     setVotedPolls(p => up(p));
-  }, [user]);
+  }, [user?.id]);
 
   usePollEventsWebSocket({ onEvent: handlePollEvent });
 
@@ -376,9 +380,12 @@ export const Profile = () => {
                             </span>
                           )}
                           {txn.status === 'PENDING' && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold border border-amber-200 dark:border-amber-500/20">
-                              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Đang xử lý
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/[0.08]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30" />Chờ thanh toán
+                              </span>
+                              <span className="text-[10px] text-slate-400 dark:text-white/25 px-1">Chưa quét mã QR</span>
+                            </div>
                           )}
                           {txn.status === 'FAILED' && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg text-xs font-semibold border border-red-100 dark:border-red-500/20">

@@ -26,13 +26,15 @@ const Navbar = () => {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            // Không xử lý khi upgrade modal đang mở
+            if (isUpgradeModalOpen) return;
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [isUpgradeModalOpen]);
 
     return (
         <nav className={`sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 mb-8 transition-all duration-300 ${
@@ -65,7 +67,7 @@ const Navbar = () => {
                 <div className="flex items-center justify-end space-x-3 sm:space-x-4 shrink-0">
                     {user && (
                         <button 
-                            onClick={() => setIsUpgradeModalOpen(true)}
+                            onClick={(e) => { e.stopPropagation(); setIsUpgradeModalOpen(true); }}
                             className="hidden md:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/30 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                         >
                             <Crown className="w-5 h-5 text-amber-500" />
@@ -197,13 +199,12 @@ const Navbar = () => {
                 </div>
             </div>
             
-            {user && (
-                <UpgradeModal 
-                    isOpen={isUpgradeModalOpen} 
-                    onClose={() => setIsUpgradeModalOpen(false)} 
-                    currentPlan={user.plan || 'FREE'}
-                />
-            )}
+            {/* UpgradeModal — đặt ngoài {user&&} để không bị unmount khi user sync */}
+            <UpgradeModal
+                isOpen={isUpgradeModalOpen && !!user}
+                onClose={() => setIsUpgradeModalOpen(false)}
+                currentPlan={user?.plan || 'FREE'}
+            />
         </nav>
     );
 };

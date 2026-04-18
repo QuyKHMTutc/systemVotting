@@ -46,7 +46,8 @@ const Dashboard = () => {
         localStorage.setItem('votedPolls', JSON.stringify(votedIds));
       }).catch(() => {});
     }
-  }, [user]);
+  // Dùng user?.id thay vì user object — tránh re-fetch mỗi lần plan/avatar update tạo object mới
+  }, [user?.id]);
 
   useEffect(() => {
     const t = setTimeout(() => {

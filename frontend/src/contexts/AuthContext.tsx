@@ -77,8 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateUser = (userData: User) => {
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        // So sánh JSON trước khi setUser — tránh tạo object mới khi data giống nhau
+        // gây re-render vô tận qua tất cả useEffect([user]) trong app
+        setUser(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(userData)) return prev; // giữ reference cũ
+            localStorage.setItem('user', JSON.stringify(userData));
+            return userData;
+        });
     };
 
     useEffect(() => {
@@ -96,7 +101,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     if (res?.code === 200 && res.data) {
                         const currentToken = getMemoryToken();
                         if (currentToken) setToken(currentToken);
-                        updateUser(res.data);
+
+                        let userData = res.data;
+                        // Normalize plan: nếu planExpirationDate đã qua → hạ về FREE ngay tại đây
+                        // (backend không tự cập nhật plan field khi hết hạn)
+                        if (
+                            userData.plan &&
+                            userData.plan !== 'FREE' &&
+                            userData.planExpirationDate
+                        ) {
+                            const expiry = new Date(userData.planExpirationDate).getTime();
+                            if (Date.now() >= expiry) {
+                                userData = { ...userData, plan: 'FREE', planExpirationDate: null };
+                            }
+                        }
+
+                        updateUser(userData);
                     }
                 })
                 .catch(err => {
