@@ -15,6 +15,19 @@ export interface Comment {
     replies?: Comment[];
 }
 
+export interface CommentPage {
+    content: Comment[];
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
+    totalElements: number;
+}
+
+export interface CommentThreadResponse {
+    page: CommentPage;
+    totalAllComments: number;
+}
+
 export interface CommentCreateRequest {
     pollId: number;
     parentId?: number;
@@ -28,8 +41,14 @@ export interface IdentityStatus {
 }
 
 export const commentService = {
-    getCommentsByPollId: async (pollId: number): Promise<Comment[]> => {
-        const response = await api.get(`/comments/poll/${pollId}`);
+    getCommentsByPollId: async (
+        pollId: number,
+        page = 0,
+        size = 20
+    ): Promise<CommentThreadResponse> => {
+        const response = await api.get(`/comments/poll/${pollId}`, {
+            params: { page, size },
+        });
         return response.data.data;
     },
 
@@ -46,5 +65,5 @@ export const commentService = {
     getIdentityStatus: async (pollId: number): Promise<IdentityStatus> => {
         const response = await api.get(`/comments/identity-status?pollId=${pollId}`);
         return response.data.data;
-    }
+    },
 };

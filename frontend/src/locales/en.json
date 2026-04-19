@@ -75,6 +75,7 @@
     "loginToVote": "Login to Vote",
     "youVoted": "You voted",
     "noComments": "No comments yet. Be the first!",
+    "loadMoreComments": "Load more comments",
     "writeComment": "Write a comment...",
     "loginToComment": "Login to join the discussion",
     "pollNotFound": "Poll not found",

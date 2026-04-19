@@ -5,7 +5,7 @@ import { commentService, type Comment } from '../services/comment.service';
 import type { Poll } from '../services/poll.service';
 import { PollCard } from '../components/PollCard';
 import {
-  ListPlus, CheckSquare, X, PenLine, MessageSquare,
+  ListPlus, CheckSquare, PenLine, MessageSquare,
   CreditCard, Crown, Zap, ArrowLeft
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -251,7 +251,7 @@ export const Profile = () => {
           {/* ── Tabs ── */}
           <div className="relative mt-2 border-t border-slate-100 dark:border-white/[0.06]">
             <div className="flex overflow-x-auto px-6 sm:px-10 scrollbar-none">
-              {tabs.map((tab, idx) => {
+              {tabs.map((tab) => {
                 const active = activeTab === tab.key;
                 return (
                   <button
@@ -288,7 +288,7 @@ export const Profile = () => {
                 {createdPolls.map((poll, i) => (
                   <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
                     <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
-                      <PollCard poll={poll} onDelete={handleDeletePoll} showDelete={true} />
+                      <PollCard poll={poll} onDelete={handleDeletePoll} showDeleteButton />
                     </div>
                   </div>
                 ))}
@@ -303,7 +303,7 @@ export const Profile = () => {
                 {votedPolls.map((poll, i) => (
                   <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
                     <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
-                      <PollCard poll={poll} showDelete={false} />
+                      <PollCard poll={poll} />
                     </div>
                   </div>
                 ))}

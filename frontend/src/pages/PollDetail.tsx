@@ -18,12 +18,7 @@ import { usePollWebSocket } from '../hooks/usePollWebSocket';
 import { useTranslation } from 'react-i18next';
 import PollLiveChartModal from '../components/poll/PollLiveChartModal';
 
-const countTotalComments = (commentsList: Comment[]): number => {
-    return commentsList.reduce((acc, comment) => {
-        return acc + 1 + countTotalComments(comment.replies || []);
-    }, 0);
-};
-
+const COMMENT_PAGE_SIZE = 20;
 
 const PollDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +37,9 @@ const PollDetail = () => {
   const [barAnimated, setBarAnimated] = useState(false);
   const [liveVoteReceived, setLiveVoteReceived] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [commentPage, setCommentPage] = useState(0);
+  const [hasMoreComments, setHasMoreComments] = useState(false);
+  const [totalAllComments, setTotalAllComments] = useState(0);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
@@ -61,14 +59,34 @@ const PollDetail = () => {
   const fetchComments = useCallback(async (pollId: number) => {
     setLoadingComments(true);
     try {
-      const data = await commentService.getCommentsByPollId(pollId);
-      setComments(data);
+      const data = await commentService.getCommentsByPollId(pollId, 0, COMMENT_PAGE_SIZE);
+      setComments(data.page.content);
+      setCommentPage(0);
+      setTotalAllComments(data.totalAllComments);
+      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
     } catch (err) {
       console.error('Failed to fetch comments', err);
     } finally {
       setLoadingComments(false);
     }
   }, []);
+
+  const loadMoreComments = async () => {
+    if (!id || !hasMoreComments || loadingComments) return;
+    setLoadingComments(true);
+    try {
+      const next = commentPage + 1;
+      const data = await commentService.getCommentsByPollId(Number(id), next, COMMENT_PAGE_SIZE);
+      setComments((prev) => [...prev, ...data.page.content]);
+      setCommentPage(next);
+      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
+      setTotalAllComments(data.totalAllComments);
+    } catch (err) {
+      console.error('Failed to load more comments', err);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
 
   const fetchIdentityStatus = useCallback(async (pollId: number) => {
     try {
@@ -99,23 +117,26 @@ const PollDetail = () => {
   }, []);
 
   const handleWsNewComment = useCallback((newComment: Comment) => {
-    setComments(prev => {
-      // If it's a reply (has parentId), nest it under the parent
+    let inserted = false;
+    setComments((prev) => {
       if (newComment.parentId) {
-        return prev.map(root => {
+        return prev.map((root) => {
           if (root.id === newComment.parentId) {
-            // Avoid duplicate
-            const alreadyExists = root.replies?.some(r => r.id === newComment.id);
+            const alreadyExists = root.replies?.some((r) => r.id === newComment.id);
             if (alreadyExists) return root;
+            inserted = true;
             return { ...root, replies: [...(root.replies || []), newComment] };
           }
           return root;
         });
       }
-      // Top-level comment: add to top, avoid duplicate
-      if (prev.some(c => c.id === newComment.id)) return prev;
+      if (prev.some((c) => c.id === newComment.id)) return prev;
+      inserted = true;
       return [{ ...newComment, replies: newComment.replies || [] }, ...prev];
     });
+    if (inserted) {
+      setTotalAllComments((t) => t + 1);
+    }
   }, []);
 
   usePollWebSocket({
@@ -129,7 +150,11 @@ const PollDetail = () => {
     setCommentError('');
     try {
       await commentService.createComment({ pollId: poll.id, content, isAnonymous });
-      // Comment will appear via WebSocket broadcast (handleWsNewComment)
+      const data = await commentService.getCommentsByPollId(poll.id, 0, COMMENT_PAGE_SIZE);
+      setComments(data.page.content);
+      setCommentPage(0);
+      setTotalAllComments(data.totalAllComments);
+      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post comment');
     }
@@ -139,7 +164,11 @@ const PollDetail = () => {
     if (!poll) return;
     try {
       await commentService.createComment({ pollId: poll.id, parentId, content, isAnonymous });
-      // Reply will appear via WebSocket broadcast (handleWsNewComment)
+      const data = await commentService.getCommentsByPollId(poll.id, 0, COMMENT_PAGE_SIZE);
+      setComments(data.page.content);
+      setCommentPage(0);
+      setTotalAllComments(data.totalAllComments);
+      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post reply');
       console.error('Failed to post reply:', err);
@@ -363,7 +392,10 @@ const PollDetail = () => {
               </span>
               <span className="flex items-center gap-1.5">
                 <MessageCircle className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
-                <span className="text-slate-800 dark:text-white font-semibold">{countTotalComments(comments)}</span> {t('pollDetail.comments')}
+                <span className="text-slate-800 dark:text-white font-semibold">
+                  {totalAllComments || poll?.commentCount || 0}
+                </span>{' '}
+                {t('pollDetail.comments')}
               </span>
               <span className="flex items-center gap-1.5">
                 <BarChart3 className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
@@ -458,7 +490,7 @@ const PollDetail = () => {
 
           {/* Post Actions */}
           <PostActions
-            commentsCount={countTotalComments(comments)}
+            commentsCount={totalAllComments || poll?.commentCount || 0}
             onCommentClick={() => setShowComments(!showComments)}
             onShareClick={handleShare}
             hasCopied={copied}
@@ -475,13 +507,27 @@ const PollDetail = () => {
                 ) : comments.length === 0 ? (
                   <p className="text-center text-slate-500 dark:text-white/50 py-8">{t('pollDetail.noComments')}</p>
                 ) : (
-                  <CommentList 
-                    comments={comments} 
-                    onReplySubmit={handleReplySubmit} 
-                    identityLocked={identityLocked}
-                    lockedIsAnonymous={lockedIsAnonymous}
-                    highlightCommentId={highlightCommentId}
-                  />
+                  <>
+                    <CommentList
+                      comments={comments}
+                      onReplySubmit={handleReplySubmit}
+                      identityLocked={identityLocked}
+                      lockedIsAnonymous={lockedIsAnonymous}
+                      highlightCommentId={highlightCommentId}
+                    />
+                    {hasMoreComments && (
+                      <div className="flex justify-center pt-4">
+                        <button
+                          type="button"
+                          onClick={() => void loadMoreComments()}
+                          disabled={loadingComments}
+                          className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-800 dark:text-white text-sm disabled:opacity-50"
+                        >
+                          {loadingComments ? '…' : t('pollDetail.loadMoreComments')}
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="shrink-0 p-4 sm:p-6 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-transparent">

@@ -57,7 +57,7 @@ const PLANS = [
     priceDisplay: null as string | null,
     icon: <Shield className="w-5 h-5" />,
     votes: '100',
-    features: ['100 lượt vote / phòng', 'Không giới hạn phòng', 'Kết quả thời gian thực'],
+    features: ['100 lượt vote / poll', 'Tối đa 5 poll', 'Kết quả thời gian thực'],
     colorFrom: '#64748b', colorTo: '#475569',
     glowColor: 'rgba(100,116,139,0)',
     badgeText: null as string | null,
@@ -71,7 +71,7 @@ const PLANS = [
     priceDisplay: '50.000',
     icon: <Zap className="w-5 h-5" />,
     votes: '300',
-    features: ['300 lượt vote / phòng', 'Không giới hạn phòng', 'Kết quả thời gian thực', 'Ưu tiên hỗ trợ'],
+    features: ['300 lượt vote / poll', 'Tối đa 20 poll', 'Kết quả thời gian thực', 'Ưu tiên hỗ trợ'],
     colorFrom: '#6366f1', colorTo: '#7c3aed',
     glowColor: 'rgba(99,102,241,0.35)',
     badgeText: 'Phổ biến',
@@ -85,7 +85,7 @@ const PLANS = [
     priceDisplay: '200.000',
     icon: <Crown className="w-5 h-5" />,
     votes: '1,000',
-    features: ['1,000 lượt vote / phòng', 'Không giới hạn phòng', 'Kết quả thời gian thực', 'Hỗ trợ ưu tiên cao', 'Thống kê nâng cao'],
+    features: ['1,000 lượt vote / poll', 'Tối đa 50 poll', 'Kết quả thời gian thực', 'Hỗ trợ ưu tiên cao', 'Thống kê nâng cao'],
     colorFrom: '#f59e0b', colorTo: '#f97316',
     glowColor: 'rgba(245,158,11,0.4)',
     badgeText: '⭐ Nổi bật',
@@ -99,7 +99,7 @@ const PLANS = [
     priceDisplay: '500.000',
     icon: <Rocket className="w-5 h-5" />,
     votes: '2,000',
-    features: ['2,000 lượt vote / phòng', 'Không giới hạn phòng', 'Kết quả thời gian thực', 'Hỗ trợ 24/7', 'Thống kê nâng cao', 'API access'],
+    features: ['2,000 lượt vote / poll', 'Không giới hạn poll', 'Kết quả thời gian thực', 'Hỗ trợ 24/7', 'Thống kê nâng cao', 'API access'],
     colorFrom: '#d946ef', colorTo: '#4f46e5',
     glowColor: 'rgba(217,70,239,0.35)',
     badgeText: 'Cao cấp',
@@ -476,7 +476,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
                           <span className="text-sm font-black" style={{ background: gradientBg, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             {plan.votes}
                           </span>
-                          <span className="text-xs text-slate-400 dark:text-white/40">vote/phòng</span>
+                          <span className="text-xs text-slate-400 dark:text-white/40">vote/poll</span>
                         </div>
 
                         {/* Features */}
