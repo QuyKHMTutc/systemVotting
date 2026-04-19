@@ -1,17 +1,23 @@
 package com.xxxx.systemvotting.modules.vote.dto.request;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import jakarta.validation.constraints.Positive;
 
-@Data
-public class VoteRequestDTO {
-
-    private Long userId;
+/**
+ * Request DTO for vote submission.
+ *
+ * userId is intentionally ABSENT — it is extracted from the JWT token
+ * by VoteController and passed directly to VoteService.
+ * Including userId here would create an IDOR vulnerability.
+ */
+public record VoteRequestDTO(
 
     @NotNull(message = "Poll ID is required")
-    private Long pollId;
+    @Positive(message = "Poll ID must be a positive number")
+    Long pollId,
 
     @NotNull(message = "Option ID is required")
-    private Long optionId;
+    @Positive(message = "Option ID must be a positive number")
+    Long optionId
 
-}
+) {}

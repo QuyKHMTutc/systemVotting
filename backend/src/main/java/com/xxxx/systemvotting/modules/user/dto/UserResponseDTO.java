@@ -1,47 +1,43 @@
 package com.xxxx.systemvotting.modules.user.dto;
 
+import com.xxxx.systemvotting.modules.user.enums.PlanType;
+import com.xxxx.systemvotting.modules.user.enums.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 @Schema(description = "Thông tin phản hồi của User")
-public class UserResponseDTO implements Serializable {
+public record UserResponseDTO(
+
     @Schema(description = "ID của người dùng", example = "1")
-    private Long id;
+    Long id,
 
     @Schema(description = "Tên hiển thị", example = "tranquy")
-    private String username;
+    String username,
 
     @Schema(description = "Địa chỉ email", example = "user@gmail.com")
-    private String email;
+    String email,
 
     @Schema(description = "Đường dẫn ảnh đại diện", example = "https://example.com/avatars/1.jpg")
-    private String avatarUrl;
+    String avatarUrl,
 
     @Schema(description = "Thời gian tạo tài khoản", example = "2024-03-10T15:00:00")
-    private LocalDateTime createdAt;
+    LocalDateTime createdAt,
 
     @Schema(description = "Thời gian cập nhật", example = "2024-03-10T15:00:00")
-    private LocalDateTime updatedAt;
+    LocalDateTime updatedAt,
 
     @Schema(description = "Trạng thái khóa tài khoản", example = "false")
-    private boolean locked;
+    boolean locked,
 
     @Schema(description = "Vai trò", example = "USER")
-    private String role;
+    String role,
 
     @Schema(description = "Gói hội viên", example = "FREE")
-    private String plan;
+    String plan,
 
     @Schema(description = "Ngày hết hạn gói (null nếu FREE hoặc chưa có)", example = "2026-04-17T10:15:30")
-    private LocalDateTime planExpirationDate;
-}
+    LocalDateTime planExpirationDate
+
+) implements Serializable {}

@@ -50,12 +50,16 @@ public class GlobalExceptionHandler {
 
         List<String> errors = fieldErrors.stream().map(FieldError::getDefaultMessage).toList();
 
+        String message = errors.isEmpty()
+                ? HttpStatus.BAD_REQUEST.getReasonPhrase()
+                : (errors.size() > 1 ? String.valueOf(errors) : errors.getFirst());
+
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(new Date().getTime())
                 .code(HttpStatus.BAD_REQUEST.value())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message(errors.size() > 1 ? String.valueOf(errors) : errors.getFirst())
+                .message(message)
                 .path(request.getDescription(false).replace("uri=", ""))
                 .build();
 

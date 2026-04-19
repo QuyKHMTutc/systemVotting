@@ -9,10 +9,12 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.auth.dto.response.TokenDetails;
 import com.xxxx.systemvotting.modules.auth.enums.TokenType;
+import com.xxxx.systemvotting.modules.auth.service.JwtService;
+import com.xxxx.systemvotting.modules.user.entity.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +24,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
-import com.xxxx.systemvotting.modules.user.entity.User;
 
 @Service
-public class JwtService {
+public class JwtServiceImpl implements JwtService {
 
     @Value("${JWT_SECRET_KEY}")
     private String secretKey;
@@ -34,8 +35,8 @@ public class JwtService {
     private static final String ROLES = "roles";
     private static final String TOKEN_TYPE = "token_type";
 
+    @Override
     public String generateAccessToken(User user, Set<String> roles) {
-        // Header
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         Date issueTime = new Date();
@@ -55,19 +56,18 @@ public class JwtService {
                 .claim(TOKEN_TYPE, TokenType.ACCESS_TOKEN)
                 .build();
 
-        // Payload
         Payload payload = new Payload(claimsSet.toJSONObject());
 
-        // Signature
         JWSObject jwsObject = new JWSObject(header, payload);
         try {
             jwsObject.sign(new MACSigner(secretKey));
         } catch (JOSEException e) {
-            throw new AppException(ErrorCode.INTERNAL_ERROR); // Replaced UserServiceException with AppException
+            throw new AppException(ErrorCode.INTERNAL_ERROR);
         }
         return jwsObject.serialize();
     }
 
+    @Override
     public TokenDetails generateRefreshToken(String userId) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
@@ -86,15 +86,13 @@ public class JwtService {
                 .jwtID(jwtId)
                 .build();
 
-        // Payload
         Payload payload = new Payload(claimsSet.toJSONObject());
 
-        // Signature
         JWSObject jwsObject = new JWSObject(header, payload);
         try {
             jwsObject.sign(new MACSigner(secretKey));
         } catch (JOSEException e) {
-            throw new AppException(ErrorCode.INTERNAL_ERROR); // Replaced UserServiceException with AppException
+            throw new AppException(ErrorCode.INTERNAL_ERROR);
         }
         String token = jwsObject.serialize();
 
@@ -105,16 +103,19 @@ public class JwtService {
                 .build();
     }
 
+    @Override
     public SignedJWT validateToken(String token) throws ParseException, JOSEException {
         SignedJWT signedJWT = SignedJWT.parse(token);
         Date expiration = signedJWT.getJWTClaimsSet().getExpirationTime();
 
-        if (expiration.before(new Date()))
+        if (expiration.before(new Date())) {
             throw new AppException(ErrorCode.TOKEN_EXPIRED);
+        }
 
         boolean verify = signedJWT.verify(new MACVerifier(secretKey));
-        if (!verify)
+        if (!verify) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
 
         return signedJWT;
     }

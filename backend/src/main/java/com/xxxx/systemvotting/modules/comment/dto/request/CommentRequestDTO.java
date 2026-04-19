@@ -4,26 +4,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CommentRequestDTO {
+public record CommentRequestDTO(
+
     @NotNull(message = "Poll ID is required")
-    private Long pollId;
+    Long pollId,
 
-    // Optional: if this comment is a reply to another comment
-    private Long parentId;
+    /** null if this is a top-level comment, non-null if it is a reply */
+    Long parentId,
 
     @NotBlank(message = "Content must not be blank")
     @Size(max = 2000, message = "Content must not exceed 2000 characters")
-    private String content;
+    String content,
 
     @JsonProperty("isAnonymous")
-    private boolean isAnonymous;
-}
+    boolean isAnonymous
+
+) {}

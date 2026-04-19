@@ -8,12 +8,13 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.JoinTable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,15 +26,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.Set;
 
 @Entity
-@Table(name = "polls")
+@Table(name = "polls", indexes = {
+    @Index(name = "idx_poll_creator_id", columnList = "creator_id"),
+    @Index(name = "idx_poll_end_time",   columnList = "end_time"),
+    @Index(name = "idx_poll_created_at", columnList = "created_at")
+})
 @Getter
 @Setter
 @Builder

@@ -30,7 +30,8 @@ public enum ErrorCode {
     RATE_LIMIT_EXCEEDED(429, "Rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS),
     TOXIC_CONTENT(400, "Nội dung của bạn vi phạm tiêu chuẩn cộng đồng", HttpStatus.BAD_REQUEST),
     IDENTITY_CONFLICT(400, "Bạn đã chọn danh tính để bình luận trong bài viết này, không thể thay đổi.", HttpStatus.BAD_REQUEST),
-    POLL_LIMIT_EXCEEDED(403, "Vote limit exceeded for this poll according to the creator's plan", HttpStatus.FORBIDDEN);
+    POLL_LIMIT_EXCEEDED(403, "Vote limit exceeded for this poll according to the creator's plan", HttpStatus.FORBIDDEN),
+    POLL_ROOM_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số phòng khảo sát theo gói của bạn. Nâng cấp gói hoặc xóa phòng cũ để tạo thêm.", HttpStatus.FORBIDDEN);
 
     private final int code;
     private final String message;

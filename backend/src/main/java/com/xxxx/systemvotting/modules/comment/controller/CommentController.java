@@ -3,6 +3,7 @@ package com.xxxx.systemvotting.modules.comment.controller;
 import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
+import com.xxxx.systemvotting.modules.comment.dto.response.CommentThreadResponse;
 import com.xxxx.systemvotting.modules.comment.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 import org.springframework.security.oauth2.jwt.Jwt;
+import io.swagger.v3.oas.annotations.Parameter;
 
 @Tag(name = "Comments", description = "Bình luận theo bình chọn")
 @RestController
@@ -47,12 +49,15 @@ public class CommentController {
                 .build();
     }
 
-    @Operation(summary = "Bình luận theo poll", description = "Lấy danh sách bình luận của một bình chọn theo pollId")
+    @Operation(summary = "Bình luận theo poll (phân trang)", description = "Lấy các comment gốc theo trang; replies nằm trong từng comment. totalAllComments = tổng thread.")
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công") })
     @GetMapping("/poll/{pollId}")
-    public ApiResponse<List<CommentResponseDTO>> getCommentsByPollId(@PathVariable Long pollId) {
-        List<CommentResponseDTO> response = commentService.getCommentsByPollId(pollId);
-        return ApiResponse.<List<CommentResponseDTO>>builder()
+    public ApiResponse<CommentThreadResponse> getCommentsByPollId(
+            @PathVariable Long pollId,
+            @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Kích thước trang, tối đa 50") @RequestParam(defaultValue = "20") int size) {
+        CommentThreadResponse response = commentService.getCommentsByPollId(pollId, page, size);
+        return ApiResponse.<CommentThreadResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Comments retrieved successfully")
                 .data(response)

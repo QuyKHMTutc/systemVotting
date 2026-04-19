@@ -1,5 +1,9 @@
 package com.xxxx.systemvotting.modules.payment.service;
 
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
+import com.xxxx.systemvotting.modules.payment.dto.PaymentDTO;
+
 import com.xxxx.systemvotting.modules.payment.config.VnPayConfig;
 import com.xxxx.systemvotting.modules.payment.entity.PaymentTransaction;
 import com.xxxx.systemvotting.modules.payment.enums.TransactionStatus;
@@ -8,6 +12,7 @@ import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.enums.PlanType;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.stream.Collectors;
 import org.springframework.cache.CacheManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +28,11 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
+
+    private static final long GO_PRICE_VND = 50_000L;
+    private static final long PLUS_PRICE_VND = 200_000L;
+    private static final long PRO_PRICE_VND = 500_000L;
+    private static final int PLAN_DURATION_DAYS = 30;
 
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final UserRepository userRepository;
@@ -40,21 +50,17 @@ public class PaymentService {
     @Value("${vnpay.returnUrl}")
     private String vnpReturnUrl;
 
-    public String createPaymentUrl(User user, PlanType planType, HttpServletRequest request) {
+    public String createPaymentUrl(Long userId, PlanType planType, HttpServletRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return createPaymentUrlForUser(user, planType, request);
+    }
+
+    public String createPaymentUrlForUser(User user, PlanType planType, HttpServletRequest request) {
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
         String orderType = "other";
-        long amount = 0;
-        
-        if (planType == PlanType.GO) {
-            amount = 50000;
-        } else if (planType == PlanType.PLUS) {
-            amount = 200000;
-        } else if (planType == PlanType.PRO) {
-            amount = 500000;
-        } else {
-            throw new IllegalArgumentException("Cannot purchase FREE plan");
-        }
+        long amount = resolvePlanPrice(planType);
 
         long amountVND = amount * 100; // VNPay format
         
@@ -136,18 +142,19 @@ public class PaymentService {
 
     @Transactional
     public int processIPN(Map<String, String> params) {
-        
-        // Remove secure hash to rebuild hash
-        String vnp_SecureHash = params.remove("vnp_SecureHash");
-        params.remove("vnp_SecureHashType");
+        Map<String, String> callbackParams = new HashMap<>(params);
 
-        List<String> fieldNames = new ArrayList<>(params.keySet());
+        // Remove secure hash to rebuild hash
+        String vnp_SecureHash = callbackParams.remove("vnp_SecureHash");
+        callbackParams.remove("vnp_SecureHashType");
+
+        List<String> fieldNames = new ArrayList<>(callbackParams.keySet());
         Collections.sort(fieldNames);
         StringBuilder hashData = new StringBuilder();
         Iterator<String> itr = fieldNames.iterator();
         while (itr.hasNext()) {
             String fieldName = itr.next();
-            String fieldValue = params.get(fieldName);
+            String fieldValue = callbackParams.get(fieldName);
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
                 try {
                     hashData.append(fieldName);
@@ -163,12 +170,14 @@ public class PaymentService {
         }
 
         String signValue = VnPayConfig.hmacSHA512(vnpHashSecret, hashData.toString());
-        if (!signValue.equals(vnp_SecureHash)) {
+        if (vnp_SecureHash == null || !signValue.equals(vnp_SecureHash)) {
             return -1; // Invalid signature
         }
 
-        String vnp_TxnRef = params.get("vnp_TxnRef");
-        String vnp_ResponseCode = params.get("vnp_ResponseCode");
+        String vnp_TxnRef = callbackParams.get("vnp_TxnRef");
+        String vnp_ResponseCode = callbackParams.get("vnp_ResponseCode");
+        String vnp_TransactionStatus = callbackParams.get("vnp_TransactionStatus");
+        String vnp_Amount = callbackParams.get("vnp_Amount");
 
         Optional<PaymentTransaction> txnOpt = paymentTransactionRepository.findByTxnRef(vnp_TxnRef);
         if (txnOpt.isEmpty()) {
@@ -180,23 +189,19 @@ public class PaymentService {
             return 2; // Order already confirmed
         }
 
-        if ("00".equals(vnp_ResponseCode)) {
+        long expectedAmount = txn.getAmount() * 100;
+        if (vnp_Amount == null || !String.valueOf(expectedAmount).equals(vnp_Amount)) {
+            txn.setStatus(TransactionStatus.FAILED);
+            paymentTransactionRepository.save(txn);
+            return -1;
+        }
+
+        if ("00".equals(vnp_ResponseCode) && ("00".equals(vnp_TransactionStatus) || vnp_TransactionStatus == null)) {
             // Success
             txn.setStatus(TransactionStatus.SUCCESS);
             User user = txn.getUser();
             user.setPlan(txn.getTargetPlan());
-            
-            // Set expiration date logic
-            if (txn.getTargetPlan() == PlanType.GO) {
-               // user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
-                user.setPlanExpirationDate(LocalDateTime.now().plusMinutes(2));
-            } else if (txn.getTargetPlan() == PlanType.PLUS) {
-               // user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
-                user.setPlanExpirationDate(LocalDateTime.now().plusMinutes(2));
-            } else if (txn.getTargetPlan() == PlanType.PRO) {
-               // user.setPlanExpirationDate(LocalDateTime.now().plusDays(30));
-                user.setPlanExpirationDate(LocalDateTime.now().plusMinutes(2));
-            }
+            user.setPlanExpirationDate(resolvePlanExpiration(LocalDateTime.now(), txn.getTargetPlan(), user.getPlanExpirationDate()));
 
             userRepository.save(user);
             
@@ -214,20 +219,36 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public List<com.xxxx.systemvotting.modules.payment.dto.PaymentDTO.PaymentHistory> getPaymentHistory(Long userId) {
+    public List<PaymentDTO.PaymentHistory> getPaymentHistory(Long userId) {
         return paymentTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
             .stream()
-            .map(txn -> {
-                com.xxxx.systemvotting.modules.payment.dto.PaymentDTO.PaymentHistory dto = new com.xxxx.systemvotting.modules.payment.dto.PaymentDTO.PaymentHistory();
-                dto.setId(txn.getId());
-                dto.setTxnRef(txn.getTxnRef());
-                dto.setAmount(txn.getAmount());
-                dto.setTargetPlan(txn.getTargetPlan());
-                dto.setStatus(txn.getStatus());
-                dto.setCreatedAt(txn.getCreatedAt());
-                dto.setExpiresAt(txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(30) : null);
-                return dto;
-            })
-            .collect(java.util.stream.Collectors.toList());
+            .map(txn -> new PaymentDTO.PaymentHistory(
+                    txn.getId(),
+                    txn.getTxnRef(),
+                    txn.getAmount(),
+                    txn.getTargetPlan(),
+                    txn.getStatus(),
+                    txn.getCreatedAt(),
+                    txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(PLAN_DURATION_DAYS) : null
+            ))
+            .collect(Collectors.toList());
+    }
+
+    private long resolvePlanPrice(PlanType planType) {
+        return switch (planType) {
+            case GO -> GO_PRICE_VND;
+            case PLUS -> PLUS_PRICE_VND;
+            case PRO -> PRO_PRICE_VND;
+            case FREE -> throw new IllegalArgumentException("Cannot purchase FREE plan");
+        };
+    }
+
+    private LocalDateTime resolvePlanExpiration(LocalDateTime now, PlanType targetPlan, LocalDateTime currentExpiration) {
+        if (targetPlan == PlanType.FREE) {
+            return currentExpiration;
+        }
+
+        LocalDateTime base = currentExpiration != null && currentExpiration.isAfter(now) ? currentExpiration : now;
+        return base.plusDays(PLAN_DURATION_DAYS);
     }
 }

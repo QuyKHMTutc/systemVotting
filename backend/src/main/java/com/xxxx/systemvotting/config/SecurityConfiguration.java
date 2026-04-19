@@ -6,6 +6,7 @@ import com.xxxx.systemvotting.security.CustomUserDetailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -18,12 +19,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -34,7 +36,6 @@ public class SecurityConfiguration {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
-            "/api/v1/users",
             "/api/v1/payments/vnpay-return",
             "/api/v1/payments/vnpay-ipn",
             "/ws/**",
@@ -42,8 +43,7 @@ public class SecurityConfiguration {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/uploads/**",
-            "/avatars/**",
-            "/api/test/**"
+            "/avatars/**"
     };
 
     private final CustomUserDetailService userDetailService;
@@ -52,18 +52,24 @@ public class SecurityConfiguration {
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
-     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment) throws Exception {
+        boolean allowTestEndpoints = Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(p -> "dev".equalsIgnoreCase(p) || "test".equalsIgnoreCase(p));
+
         return http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/auth/me").authenticated()
-                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/polls", "/api/v1/polls/**", "/api/v1/comments/poll/**").permitAll()
-                        .requestMatchers("/api/v1/users/me").authenticated()
-                        .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
-                        .requestMatchers("/actuator/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(authorize -> {
+                    authorize.requestMatchers("/api/v1/auth/me").authenticated();
+                    if (allowTestEndpoints) {
+                        authorize.requestMatchers("/api/test/**").permitAll();
+                    }
+                    authorize.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/polls", "/api/v1/polls/**", "/api/v1/comments/poll/**").permitAll()
+                            .requestMatchers("/api/v1/users/me").authenticated()
+                            .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
+                            .requestMatchers("/actuator/**").hasRole("ADMIN")
+                            .anyRequest().authenticated();
+                })
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
                         .decoder(jwtDecoder)
                         .jwtAuthenticationConverter(jwtAuthenticationConverter())
@@ -89,7 +95,9 @@ public class SecurityConfiguration {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // strength=10 (~100-300ms) causes thread pool exhaustion under high concurrency.
+        // strength=8 (~25-50ms) is still secure and handles concurrent load correctly.
+        return new BCryptPasswordEncoder(8);
     }
 
     @Bean

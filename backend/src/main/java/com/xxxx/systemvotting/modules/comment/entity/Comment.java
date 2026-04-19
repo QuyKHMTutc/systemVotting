@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Index;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -24,7 +25,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "comments")
+@Table(name = "comments", indexes = {
+    @Index(name = "idx_comment_poll_id",         columnList = "poll_id"),
+    @Index(name = "idx_comment_user_id",         columnList = "user_id"),
+    @Index(name = "idx_comment_poll_created_at", columnList = "poll_id, created_at"),
+    @Index(name = "idx_comment_poll_parent_created", columnList = "poll_id, parent_id, created_at")
+})
 @Getter
 @Setter
 @Builder

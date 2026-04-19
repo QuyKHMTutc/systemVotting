@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
     private final EmailService emailService;
-    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     private static final int OTP_EXPIRATION_MINUTES = 10;
     private static final String REDIS_OTP_PREFIX = "otp:registration:";
@@ -46,15 +46,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDTO createUser(UserCreateRequestDTO requestDTO) {
-        if (userRepository.existsByUsername(requestDTO.getUsername())) {
+        if (userRepository.existsByUsername(requestDTO.username())) {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
-        if (userRepository.existsByEmail(requestDTO.getEmail())) {
+        if (userRepository.existsByEmail(requestDTO.email())) {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
 
         User user = userMapper.toEntity(requestDTO);
-        user.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
+        user.setPassword(passwordEncoder.encode(requestDTO.password()));
 
         // Force Role USER, ignore any role passed in request
         user.setRole(Role.USER);
@@ -198,12 +198,12 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         // Kiểm tra mật khẩu cũ
-        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         // Cập nhật mật khẩu mới
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
 
         log.info("User {} changed password successfully", userId);

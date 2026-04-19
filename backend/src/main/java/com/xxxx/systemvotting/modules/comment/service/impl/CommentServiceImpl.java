@@ -1,60 +1,80 @@
 package com.xxxx.systemvotting.modules.comment.service.impl;
 
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
+import com.xxxx.systemvotting.modules.comment.cache.CommentCacheInvalidator;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
+import com.xxxx.systemvotting.modules.comment.dto.response.CommentThreadResponse;
 import com.xxxx.systemvotting.modules.comment.entity.Comment;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.modules.comment.service.CommentService;
+import com.xxxx.systemvotting.modules.notification.service.NotificationService;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
-import com.xxxx.systemvotting.modules.notification.service.NotificationService;
 import com.xxxx.systemvotting.common.service.RealTimeService;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
 
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final CommentRepository commentRepository;
     private final PollRepository pollRepository;
+    private final UserRepository userRepository;
     private final VoteRepository voteRepository;
     private final RealTimeService realTimeService;
     private final AiModerationService aiModerationService;
     private final NotificationService notificationService;
+    private final CommentCacheInvalidator commentCacheInvalidator;
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
-    @CacheEvict(value = "pollDetails", key = "#request.pollId")
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "pollDetails", key = "#request.pollId")
+    })
     public CommentResponseDTO createComment(CommentRequestDTO request, Long userId) {
-        Poll poll = pollRepository.findById(request.getPollId())
+        Poll poll = pollRepository.findById(request.pollId())
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        User currentUser = com.xxxx.systemvotting.modules.user.repository.UserRepository.class.cast(org.springframework.beans.factory.BeanFactory.class.cast(org.springframework.web.context.support.WebApplicationContextUtils.getRequiredWebApplicationContext(((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext())).getBean(com.xxxx.systemvotting.modules.user.repository.UserRepository.class)).findById(userId)
+        User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        // Enforce Identity Consistency
         if (poll.getCreator().getId().equals(userId)) {
             if (poll.isAnonymous() != request.isAnonymous()) {
                 throw new AppException(ErrorCode.IDENTITY_CONFLICT);
             }
         } else {
-            java.util.Optional<Comment> prevCommentOpt = commentRepository.findFirstByUserIdAndPollIdOrderByCreatedAtAsc(userId, poll.getId());
+            Optional<Comment> prevCommentOpt = commentRepository.findFirstByUserIdAndPollIdOrderByCreatedAtAsc(userId, poll.getId());
             if (prevCommentOpt.isPresent()) {
                 boolean previousAnonymous = prevCommentOpt.get().isAnonymous();
                 if (previousAnonymous != request.isAnonymous()) {
@@ -63,25 +83,28 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
-        if (aiModerationService.isToxicContent(request.getContent())) {
+        if (aiModerationService.isToxicContent(request.content())) {
             throw new AppException(ErrorCode.TOXIC_CONTENT);
         }
 
         Comment.CommentBuilder commentBuilder = Comment.builder()
                 .poll(poll)
                 .user(currentUser)
-                .content(request.getContent())
+                .content(request.content())
                 .isAnonymous(request.isAnonymous());
 
         Comment originalParent = null;
 
-        if (request.getParentId() != null) {
-            Comment parent = commentRepository.findById(request.getParentId())
+        if (request.parentId() != null) {
+            Comment parent = commentRepository.findById(request.parentId())
                     .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
-            
+
+            if (!parent.getPoll().getId().equals(poll.getId())) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+
             originalParent = parent;
-            
-            // Business rule: To prevent deep nesting, if the parent itself is a reply, we link to the root parent.
+
             if (parent.getParent() != null) {
                 commentBuilder.parent(parent.getParent());
             } else {
@@ -92,30 +115,24 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = commentBuilder.build();
         comment = commentRepository.save(comment);
 
-        // ---------------- Notification Logic ----------------
         String actorName = comment.isAnonymous() ? null : currentUser.getUsername();
         String actorAvatar = comment.isAnonymous() ? null : currentUser.getAvatarUrl();
-        String shortMessage = request.getContent().length() > 50 ? request.getContent().substring(0, 47) + "..." : request.getContent();
+        String shortMessage = request.content().length() > 50 ? request.content().substring(0, 47) + "..." : request.content();
 
         if (originalParent != null) {
-            // It's a reply. Notify the direct parent comment author (the person actually being replied to)
             User directTarget = originalParent.getUser();
             if (!directTarget.getId().equals(currentUser.getId())) {
                 notificationService.createNotification(
                         directTarget.getId(),
-                        actorName, 
-                        actorAvatar, 
-                        "NEW_REPLY", 
-                        shortMessage, 
-                        poll.getId(), 
+                        actorName,
+                        actorAvatar,
+                        "NEW_REPLY",
+                        shortMessage,
+                        poll.getId(),
                         comment.getId()
                 );
             }
-            
-            // Optionally, if the originalParent is already a nested reply, its author is different from root parent.
-            // We could also notify the root parent, but keeping it to direct target reduces spam like Facebook does.
         } else {
-            // It's a top level comment. Notify the poll author (if it's not themselves)
             User pollCreator = poll.getCreator();
             if (!pollCreator.getId().equals(currentUser.getId())) {
                 notificationService.createNotification(
@@ -129,7 +146,6 @@ public class CommentServiceImpl implements CommentService {
                 );
             }
         }
-        // ----------------------------------------------------
 
         String voteStatus = "Chưa vote";
         Optional<Vote> voteOpt = voteRepository.findByUserIdAndPollId(currentUser.getId(), poll.getId());
@@ -137,80 +153,82 @@ public class CommentServiceImpl implements CommentService {
             voteStatus = "Đã vote: " + voteOpt.get().getOption().getText();
         }
 
-        // Optimization: For single comment creation, we don't need to build the map for ALL poll comments.
-        // We just need the anonymous label for this specific user.
-        Map<Long, String> anonymousDisplayNames = Map.of();
-        if (comment.isAnonymous()) {
-            List<Comment> anonymousComments = commentRepository.findByPollIdOrderByCreatedAtDesc(poll.getId())
-                    .stream().filter(Comment::isAnonymous).toList();
-            anonymousDisplayNames = buildAnonymousDisplayNameMap(anonymousComments);
-        }
+        Map<Long, String> anonymousDisplayNames = comment.isAnonymous()
+                ? buildGlobalAnonymousLabelMap(poll.getId())
+                : Map.of();
 
         CommentResponseDTO responseDTO = mapToDTO(comment, voteStatus, anonymousDisplayNames);
 
-        // Broadcast the new comment to all connected clients watching this poll
         realTimeService.broadcast("/topic/polls/" + poll.getId() + "/comments", responseDTO);
 
-        java.util.Map<String, Object> eventPayload = new java.util.HashMap<>();
+        Map<String, Object> eventPayload = new HashMap<>();
         eventPayload.put("type", "COMMENT_ADDED");
         eventPayload.put("pollId", poll.getId());
         realTimeService.broadcast("/topic/polls/events", eventPayload);
+
+        commentCacheInvalidator.evictAllPagesForPoll(poll.getId());
 
         return responseDTO;
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<CommentResponseDTO> getCommentsByPollId(Long pollId) {
-        List<Comment> comments = commentRepository.findByPollIdOrderByCreatedAtDesc(pollId);
-        
+    @Transactional(readOnly = true)
+    @Cacheable(value = "comments", key = "#pollId + ':' + #page + ':' + #size")
+    public CommentThreadResponse getCommentsByPollId(Long pollId, int page, int size) {
+        pollRepository.findById(pollId).orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        int safePage = Math.max(0, page);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        long totalAll = commentRepository.countByPollId(pollId);
+        Page<Comment> rootPage = commentRepository.findRootCommentsByPollId(pollId, pageable);
+
+        if (rootPage.isEmpty()) {
+            Page<CommentResponseDTO> empty = new PageImpl<>(List.of(), pageable, rootPage.getTotalElements());
+            return new CommentThreadResponse(PageResponse.from(empty), totalAll);
+        }
+
+        List<Long> rootIds = rootPage.getContent().stream().map(Comment::getId).toList();
+        List<Comment> replies = commentRepository.findRepliesForRoots(pollId, rootIds);
+
+        List<Comment> combined = new ArrayList<>(rootPage.getContent().size() + replies.size());
+        combined.addAll(rootPage.getContent());
+        combined.addAll(replies);
+
+        Map<Long, String> userVoteMap = buildUserVoteLabelMap(pollId);
+        Map<Long, String> anonymousLabels = buildGlobalAnonymousLabelMap(pollId);
+
+        List<CommentResponseDTO> flat = combined.stream()
+                .map(c -> mapToDTO(c, userVoteMap.getOrDefault(c.getUser().getId(), "Chưa vote"), anonymousLabels))
+                .collect(Collectors.toList());
+
+        Map<Long, CommentResponseDTO> byId = flat.stream()
+                .collect(Collectors.toMap(CommentResponseDTO::getId, dto -> dto, (a, b) -> a));
+
+        List<CommentResponseDTO> rootDtos = rootPage.getContent().stream()
+                .map(c -> byId.get(c.getId()))
+                .collect(Collectors.toList());
+
+        Map<Long, List<CommentResponseDTO>> repliesByParent = flat.stream()
+                .filter(c -> c.getParentId() != null)
+                .sorted(Comparator.comparing(CommentResponseDTO::getCreatedAt))
+                .collect(Collectors.groupingBy(CommentResponseDTO::getParentId));
+
+        rootDtos.forEach(root -> root.setReplies(repliesByParent.getOrDefault(root.getId(), List.of())));
+
+        Page<CommentResponseDTO> dtoPage = new PageImpl<>(rootDtos, pageable, rootPage.getTotalElements());
+        return new CommentThreadResponse(PageResponse.from(dtoPage), totalAll);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CommentResponseDTO> getMyComments(Long userId) {
+        List<Comment> comments = commentRepository.findByUserIdOrderByCreatedAtDesc(userId);
         if (comments.isEmpty()) {
             return List.of();
         }
 
-        List<Vote> votes = voteRepository.findByPollId(pollId);
-        Map<Long, String> userVoteMap = votes.stream()
-                .collect(Collectors.toMap(
-                        v -> v.getUser().getId(),
-                        v -> "Đã vote: " + v.getOption().getText(),
-                        (existing, replacement) -> existing
-                ));
-
-        Map<Long, String> anonymousDisplayNames = buildAnonymousDisplayNameMap(comments);
-
-        // Get all comments and map them to DTOs
-        List<CommentResponseDTO> allCommentDTOs = comments.stream()
-                .map(comment -> {
-                    String voteStatus = userVoteMap.getOrDefault(comment.getUser().getId(), "Chưa vote");
-                    return mapToDTO(comment, voteStatus, anonymousDisplayNames);
-                })
-                .collect(Collectors.toList());
-
-        // Group into hierarchical structure (Parent -> Replies)
-        List<CommentResponseDTO> rootComments = allCommentDTOs.stream()
-                .filter(c -> c.getParentId() == null)
-                .collect(Collectors.toList());
-
-        Map<Long, List<CommentResponseDTO>> repliesByParentId = allCommentDTOs.stream()
-                .filter(c -> c.getParentId() != null)
-                .sorted(Comparator.comparing(CommentResponseDTO::getCreatedAt)) // Sort replies ascending
-                .collect(Collectors.groupingBy(CommentResponseDTO::getParentId));
-
-        rootComments.forEach(root -> {
-            root.setReplies(repliesByParentId.getOrDefault(root.getId(), List.of()));
-        });
-
-        // We only return the root comments (because replies are nested inside them)
-        return rootComments;
-    }
-
-    @Override
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<CommentResponseDTO> getMyComments(Long userId) {
-        List<Comment> comments = commentRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        if (comments.isEmpty()) return List.of();
-
-        // Get all votes for this user across these polls
         List<Long> pollIds = comments.stream().map(c -> c.getPoll().getId()).distinct().toList();
         List<Vote> votes = voteRepository.findByUserIdAndPollIdIn(userId, pollIds);
         Map<Long, String> pollVoteMap = votes.stream()
@@ -229,19 +247,18 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public com.xxxx.systemvotting.modules.comment.dto.response.IdentityStatusDTO getIdentityStatus(Long pollId, Long userId) {
         Poll poll = pollRepository.findById(pollId).orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
-        
-        // Creator identity is permanently locked to poll identity
+
         if (poll.getCreator().getId().equals(userId)) {
             return com.xxxx.systemvotting.modules.comment.dto.response.IdentityStatusDTO.builder()
-                    .hasCommented(true) // Threat it as locked
+                    .hasCommented(true)
                     .isAnonymous(poll.isAnonymous())
                     .build();
         }
 
-        java.util.Optional<Comment> prevComment = commentRepository.findFirstByUserIdAndPollIdOrderByCreatedAtAsc(userId, pollId);
+        Optional<Comment> prevComment = commentRepository.findFirstByUserIdAndPollIdOrderByCreatedAtAsc(userId, pollId);
         if (prevComment.isPresent()) {
             return com.xxxx.systemvotting.modules.comment.dto.response.IdentityStatusDTO.builder()
                     .hasCommented(true)
@@ -254,38 +271,26 @@ public class CommentServiceImpl implements CommentService {
                 .build();
     }
 
-    /**
-     * Builds a stable map: userId -> "Anonymous 1", "Anonymous 2", etc. for anonymous commenters.
-     * Same user on same poll gets the same label; different users get different numbers.
-     */
-    private Map<Long, String> buildAnonymousDisplayNameMap(List<Comment> comments) {
-        List<Comment> anonymousComments = comments.stream()
-                .filter(Comment::isAnonymous)
-                .toList();
-
-        if (anonymousComments.isEmpty()) {
-            return Map.of();
+    private Map<Long, String> buildUserVoteLabelMap(Long pollId) {
+        Map<Long, String> userVoteMap = new HashMap<>();
+        for (Object[] row : voteRepository.findUserIdAndOptionTextByPollId(pollId)) {
+            Long uid = ((Number) row[0]).longValue();
+            String optionText = row[1] != null ? Objects.toString(row[1], "") : "";
+            userVoteMap.put(uid, "Đã vote: " + optionText);
         }
+        return userVoteMap;
+    }
 
-        // Order by first appearance: userId -> min(createdAt)
-        Map<Long, java.time.LocalDateTime> firstSeen = anonymousComments.stream()
-                .collect(Collectors.groupingBy(
-                        c -> c.getUser().getId(),
-                        Collectors.collectingAndThen(
-                                Collectors.mapping(Comment::getCreatedAt, Collectors.minBy(Comparator.naturalOrder())),
-                                opt -> opt.orElseThrow()
-                        )
-                ));
-
-        // Sort userIds by first appearance time
-        List<Long> orderedUserIds = firstSeen.entrySet().stream()
-                .sorted(Comparator.comparing(Map.Entry::getValue))
-                .map(Map.Entry::getKey)
-                .toList();
-
+    /**
+     * Stable Anonymous N labels across the whole poll (matches pre-pagination behaviour).
+     */
+    private Map<Long, String> buildGlobalAnonymousLabelMap(Long pollId) {
+        List<Object[]> rows = commentRepository.findAnonymousParticipantOrder(pollId);
         Map<Long, String> result = new LinkedHashMap<>();
-        for (int i = 0; i < orderedUserIds.size(); i++) {
-            result.put(orderedUserIds.get(i), "Anonymous " + (i + 1));
+        int i = 0;
+        for (Object[] row : rows) {
+            Long userId = ((Number) row[0]).longValue();
+            result.put(userId, "Anonymous " + (++i));
         }
         return result;
     }
@@ -313,7 +318,7 @@ public class CommentServiceImpl implements CommentService {
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .pollId(comment.getPoll() != null ? comment.getPoll().getId() : null)
                 .pollTitle(comment.getPoll() != null ? comment.getPoll().getTitle() : null)
-                .replies(java.util.List.of()) // Initialize empty mutable list for later modification if needed, or keeping it empty here since we will set it during tree building
+                .replies(List.of())
                 .build();
     }
 }

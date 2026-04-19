@@ -5,10 +5,12 @@ import com.nimbusds.jwt.SignedJWT;
 import com.xxxx.systemvotting.modules.auth.dto.request.AuthRequestDTO;
 import com.xxxx.systemvotting.modules.auth.dto.response.AuthResponseDTO;
 import com.xxxx.systemvotting.modules.auth.service.AuthService;
+import com.xxxx.systemvotting.modules.auth.service.JwtService;
 import com.xxxx.systemvotting.modules.auth.service.RedisTokenService;
 import com.xxxx.systemvotting.modules.auth.entity.RedisToken;
 import com.xxxx.systemvotting.modules.auth.dto.response.TokenDetails;
 import com.xxxx.systemvotting.modules.auth.dto.request.TokenRefreshRequestDTO;
+import com.xxxx.systemvotting.modules.auth.enums.TokenType;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.exception.AppException;
@@ -19,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
@@ -27,8 +28,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "AUTHENTICATION-SERVICE")
@@ -38,7 +37,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final RedisTokenService redisTokenService;
-    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     @Override
     public AuthResponseDTO login(AuthRequestDTO requestDTO) {
@@ -71,15 +70,19 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponseDTO refreshToken(TokenRefreshRequestDTO request) {
         try {
             SignedJWT signedJWT = jwtService.validateToken(request.refreshToken());
+            Object tokenTypeClaim = signedJWT.getJWTClaimsSet().getClaim("token_type");
+            if (tokenTypeClaim == null || !TokenType.REFRESH_TOKEN.name().equals(tokenTypeClaim.toString())) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+
             String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
-            
             if (redisTokenService.existsByJwtId(jwtId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
-            
+
             String userId = signedJWT.getJWTClaimsSet().getSubject();
             java.util.Date iat = signedJWT.getJWTClaimsSet().getIssueTime();
-            
+
             if (userId != null && iat != null) {
                 String invalidBeforeStr = redisTemplate.opsForValue().get("user:jwt:invalid_before:" + userId);
                 if (invalidBeforeStr != null) {
@@ -103,10 +106,24 @@ public class AuthServiceImpl implements AuthService {
             Set<String> roles = Set.of(user.getRole().name());
 
             String newAccessToken = jwtService.generateAccessToken(user, roles);
+            TokenDetails newRefreshToken = jwtService.generateRefreshToken(user.getId().toString());
+            Date refreshExpiration = signedJWT.getJWTClaimsSet().getExpirationTime();
+            long refreshTtl = ChronoUnit.SECONDS.between(
+                    Instant.now(),
+                    refreshExpiration.toInstant());
+
+            if (refreshTtl > 0) {
+                redisTokenService.saveToken(
+                        RedisToken.builder()
+                                .jwtId(jwtId)
+                                .userId(Long.valueOf(userId))
+                                .expiration(refreshTtl)
+                                .build());
+            }
 
             return AuthResponseDTO.builder()
                     .accessToken(newAccessToken)
-                    .refreshToken(request.refreshToken())
+                    .refreshToken(newRefreshToken.value())
                     .build();
 
         } catch (ParseException | JOSEException e) {

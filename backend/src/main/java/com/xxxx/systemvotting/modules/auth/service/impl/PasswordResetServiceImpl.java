@@ -22,7 +22,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
-    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     // Token valid for 10 minutes
     private static final int EXPIRATION_MINUTES = 10;

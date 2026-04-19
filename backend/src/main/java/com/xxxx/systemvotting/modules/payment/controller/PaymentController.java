@@ -1,10 +1,9 @@
 package com.xxxx.systemvotting.modules.payment.controller;
 
-import com.xxxx.systemvotting.modules.payment.config.VnPayConfig;
+import com.xxxx.systemvotting.exception.AppException;
+import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.payment.dto.PaymentDTO;
 import com.xxxx.systemvotting.modules.payment.service.PaymentService;
-import com.xxxx.systemvotting.modules.user.entity.User;
-import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,54 +26,44 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final UserRepository userRepository;
 
     @PostMapping("/create-url")
-    public ResponseEntity<?> createPayment(
+    public ResponseEntity<Map<String, Object>> createPayment(
             @RequestBody PaymentDTO.PaymentRequest requestDto,
             HttpServletRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        try {
-            if (jwt == null) {
-                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
-            }
-            Long userId = Long.valueOf(jwt.getSubject());
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            String paymentUrl = paymentService.createPaymentUrl(user, requestDto.getPlanType(), request);
-            
-            PaymentDTO.PaymentResponse response = new PaymentDTO.PaymentResponse();
-            response.setPaymentUrl(paymentUrl);
-            return ResponseEntity.ok(Map.of("data", response, "message", "Success"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        if (jwt == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
+        Long userId = Long.valueOf(jwt.getSubject());
+        String paymentUrl = paymentService.createPaymentUrl(userId, requestDto.planType(), request);
+        return ResponseEntity.ok(Map.of(
+                "data", new PaymentDTO.PaymentResponse(paymentUrl),
+                "message", "Success"
+        ));
     }
 
     @GetMapping("/vnpay-return")
-    public ResponseEntity<?> paymentReturn(@RequestParam Map<String, String> params) {
-        try {
-            int result = paymentService.processIPN(params);
-            if (result == 1 || result == 2) {
-                return ResponseEntity.ok(Map.of("success", true, "message", "Thanh toán thành công"));
-            } else if (result == -1) {
-                return ResponseEntity.ok(Map.of("success", false, "message", "Sai chữ ký bảo mật"));
-            } else if (result == 0) {
-                return ResponseEntity.ok(Map.of("success", false, "message", "Không tìm thấy hóa đơn"));
-            }
-            return ResponseEntity.ok(Map.of("success", false, "message", "Lỗi không xác định"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+    public ResponseEntity<Map<String, Object>> paymentReturn(@RequestParam Map<String, String> params) {
+        int result = paymentService.processIPN(params);
+        if (result == 1 || result == 2) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "Thanh toán thành công"));
         }
+        if (result == -1) {
+            return ResponseEntity.ok(Map.of("success", false, "message", "Sai chữ ký bảo mật"));
+        }
+        if (result == 0) {
+            return ResponseEntity.ok(Map.of("success", false, "message", "Không tìm thấy hóa đơn"));
+        }
+        return ResponseEntity.ok(Map.of("success", false, "message", "Lỗi không xác định"));
     }
 
     @GetMapping("/vnpay-ipn")
-    public ResponseEntity<?> paymentIpn(@RequestParam Map<String, String> params) {
+    public ResponseEntity<Map<String, String>> paymentIpn(@RequestParam Map<String, String> params) {
         int result = paymentService.processIPN(params);
-        
-        Map<String, String> response = new HashMap<>(); // Do not use Map.of since it's immutable
-        
+
+        Map<String, String> response = new HashMap<>();
+
         if (result == 1) {
             response.put("RspCode", "00");
             response.put("Message", "Confirm Success");
@@ -94,12 +84,12 @@ public class PaymentController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<?> getPaymentHistory(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Map<String, Object>> getPaymentHistory(@AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) {
-            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         Long userId = Long.valueOf(jwt.getSubject());
-        java.util.List<PaymentDTO.PaymentHistory> history = paymentService.getPaymentHistory(userId);
+        List<PaymentDTO.PaymentHistory> history = paymentService.getPaymentHistory(userId);
         return ResponseEntity.ok(Map.of("success", true, "data", history));
     }
 }

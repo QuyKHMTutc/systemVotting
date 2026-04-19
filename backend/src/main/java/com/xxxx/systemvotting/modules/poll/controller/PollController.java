@@ -41,8 +41,18 @@ public class PollController {
     public ApiResponse<PollResponseDTO> createPoll(
             @Valid @RequestBody PollCreateRequestDTO requestDTO,
             @AuthenticationPrincipal Jwt jwt) {
-        requestDTO.setCreatorId(Long.valueOf(jwt.getSubject()));
-        PollResponseDTO createdPoll = pollService.createPoll(requestDTO);
+        // Inject creatorId from JWT — records are immutable, so we rebuild with the additional field
+        PollCreateRequestDTO withCreator = new PollCreateRequestDTO(
+                requestDTO.title(),
+                requestDTO.description(),
+                requestDTO.tags(),
+                requestDTO.isAnonymous(),
+                requestDTO.startTime(),
+                requestDTO.endTime(),
+                requestDTO.options(),
+                Long.valueOf(jwt.getSubject())
+        );
+        PollResponseDTO createdPoll = pollService.createPoll(withCreator);
         return ApiResponse.<PollResponseDTO>builder()
                 .code(HttpStatus.CREATED.value())
                 .message("Poll created successfully")

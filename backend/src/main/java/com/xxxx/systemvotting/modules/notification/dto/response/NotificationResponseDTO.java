@@ -1,29 +1,22 @@
 package com.xxxx.systemvotting.modules.notification.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+public record NotificationResponseDTO(
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class NotificationResponseDTO {
-    private Long id;
-    private String actorName;
-    private String actorAvatar;
-    private String type;
-    private String message;
-    private Long relatedPollId;
-    private Long relatedCommentId;
-    
+    Long id,
+    String actorName,
+    String actorAvatar,
+    String type,
+    String message,
+    Long relatedPollId,
+    Long relatedCommentId,
+
     @JsonProperty("isRead")
-    private boolean isRead;
-    
-    private LocalDateTime createdAt;
-}
+    boolean isRead,
+
+    LocalDateTime createdAt
+
+) {}

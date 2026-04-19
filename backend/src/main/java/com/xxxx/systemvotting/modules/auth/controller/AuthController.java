@@ -178,7 +178,7 @@ public class AuthController {
         @PostMapping("/resend-registration-otp")
         public ApiResponse<Void> resendRegistrationOtp(
                         @Valid @RequestBody ResendRegistrationOtpRequestDTO request) {
-                userService.resendRegistrationOtp(request.getEmail());
+                userService.resendRegistrationOtp(request.email());
                 return ApiResponse.<Void>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("A new OTP has been sent to your email")

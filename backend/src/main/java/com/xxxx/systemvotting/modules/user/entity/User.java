@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +27,10 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_user_email",    columnList = "email",    unique = true),
+    @Index(name = "idx_user_username", columnList = "username", unique = true)
+})
 @Getter
 @Setter
 @Builder

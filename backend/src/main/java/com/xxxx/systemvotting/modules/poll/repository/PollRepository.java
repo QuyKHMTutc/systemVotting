@@ -31,7 +31,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
                                @Param("currentTime") java.time.LocalDateTime currentTime,
                                Pageable pageable);
 
-    @EntityGraph(attributePaths = { "options", "creator" })
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
     Optional<Poll> findById(Long id);
 
     void deleteByCreator(com.xxxx.systemvotting.modules.user.entity.User creator);
@@ -42,4 +42,6 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @EntityGraph(attributePaths = { "options", "creator" })
     @Query("SELECT p FROM Poll p JOIN Vote v ON p.id = v.poll.id WHERE v.user.id = :userId ORDER BY v.createdAt DESC")
     List<Poll> findPollsVotedByUser(@Param("userId") Long userId);
+
+    long countByCreator_Id(Long creatorId);
 }

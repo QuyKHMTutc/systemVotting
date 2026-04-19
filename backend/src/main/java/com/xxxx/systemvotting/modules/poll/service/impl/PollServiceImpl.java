@@ -1,9 +1,12 @@
 package com.xxxx.systemvotting.modules.poll.service.impl;
 
 import com.xxxx.systemvotting.common.dto.PageResponse;
+import com.xxxx.systemvotting.common.utils.PlanRoomLimits;
+import com.xxxx.systemvotting.common.utils.RedisKeyUtils;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.poll.dto.OptionRequestDTO;
+import com.xxxx.systemvotting.modules.poll.dto.OptionResponseDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.poll.entity.Option;
@@ -12,24 +15,36 @@ import com.xxxx.systemvotting.modules.poll.entity.Tag;
 import com.xxxx.systemvotting.modules.poll.mapper.PollMapper;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.poll.repository.TagRepository;
+import com.xxxx.systemvotting.modules.poll.service.PollDetailsCacheLoader;
 import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
+import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PollServiceImpl implements PollService {
 
     private final PollRepository pollRepository;
@@ -39,37 +54,131 @@ public class PollServiceImpl implements PollService {
     private final PollMapper pollMapper;
     private final CommentRepository commentRepository;
     private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
+    // StringRedisTemplate for pipeline operations — uses StringRedisSerializer so raw connection
+    // byte[] results are correctly returned without JSON deserialization interference
+    private final org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
     private final com.xxxx.systemvotting.common.service.RealTimeService realTimeService;
     private final AiModerationService aiModerationService;
+    private final PollDetailsCacheLoader pollDetailsCacheLoader;
 
     private int getCommentCountForPoll(Long pollId) {
         return (int) commentRepository.countByPollId(pollId);
     }
 
-    private java.util.Map<Long, Integer> getCommentCountsForPolls(java.util.List<Long> pollIds) {
-        java.util.Map<Long, Integer> commentCountMap = new java.util.HashMap<>();
+    private Map<Long, Integer> getCommentCountsForPolls(List<Long> pollIds) {
+        Map<Long, Integer> commentCountMap = new HashMap<>();
         if (pollIds == null || pollIds.isEmpty()) return commentCountMap;
-        
-        java.util.List<Object[]> results = commentRepository.countCommentsByPollIds(pollIds);
+
+        List<Object[]> results = commentRepository.countCommentsByPollIds(pollIds);
         for (Object[] result : results) {
             commentCountMap.put(((Number) result[0]).longValue(), ((Number) result[1]).intValue());
         }
         return commentCountMap;
     }
 
+    /**
+     * Removes live vote hashes for a poll. Required when DB ids are reused (e.g. dev reset,
+     * {@code ddl-auto}, manual truncate) while Redis keeps old counters — otherwise a brand-new
+     * poll inherits stale totals. Also call on delete so Redis cannot resurrect ghost counts.
+     */
+    private void clearPollVoteStateInRedis(Long pollId) {
+        stringRedisTemplate.delete(List.of(
+                RedisKeyUtils.getPollVotesKey(pollId),
+                RedisKeyUtils.getPollUserVotesKey(pollId)));
+    }
+
+    /**
+     * Enriches a SINGLE poll DTO with live vote counts from Redis.
+     * Used only for getPollById (single item — no pipeline needed).
+     */
     private void enrichPollWithRedisData(PollResponseDTO dto) {
-        if (dto.getOptions() == null) return;
-        String redisCountKey = com.xxxx.systemvotting.common.utils.RedisKeyUtils.getPollVotesKey(dto.getId());
-        java.util.Map<Object, Object> redisMap = redisTemplate.opsForHash().entries(redisCountKey);
-        if (redisMap != null && !redisMap.isEmpty()) {
-            for (com.xxxx.systemvotting.modules.poll.dto.OptionResponseDTO option : dto.getOptions()) {
-                Object val = redisMap.get(option.getId().toString());
-                if (val != null) {
+        if (dto.getOptions() == null || dto.getOptions().isEmpty()) return;
+        String redisCountKey = RedisKeyUtils.getPollVotesKey(dto.getId());
+        Map<Object, Object> redisMap = redisTemplate.opsForHash().entries(redisCountKey);
+        if (redisMap.isEmpty()) return;
+
+        // Records are immutable — rebuild each option with the updated vote count
+        List<OptionResponseDTO> enriched = dto.getOptions().stream()
+                .map(option -> {
+                    Object val = redisMap.get(option.id().toString());
+                    if (val == null) return option;
                     try {
-                        option.setVoteCount(Integer.parseInt(val.toString()));
-                    } catch (NumberFormatException ignored) {}
+                        return new OptionResponseDTO(option.id(), option.text(), Integer.parseInt(val.toString()));
+                    } catch (NumberFormatException ignored) {
+                        return option;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        // PollResponseDTO is also a record — cannot set fields, so we need to work around:
+        // the mapper will rebuild with enriched options (handled at call site in getPollById)
+        dto.getOptions().clear();
+        dto.getOptions().addAll(enriched);
+    }
+
+    /**
+     * Enriches a LIST of poll DTOs with live Redis vote counts using a SINGLE pipeline call.
+     *
+     * Performance: Replaces N individual HGETALL calls (one per poll) with 1 pipelined
+     * request — reduces Redis latency from O(N * RTT) to O(1 * RTT).
+     *
+     * @param dtos list of poll response DTOs to enrich
+     */
+    private void enrichPollListWithRedisData(List<PollResponseDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) return;
+
+        // Use StringRedisTemplate for pipeline — its StringRedisSerializer means:
+        // - Keys sent as raw UTF-8 bytes (matching how VoteEventConsumer stores them)
+        // - executePipelined returns Map<byte[], byte[]> from raw connection commands
+        List<Object> pipelineResults = stringRedisTemplate.executePipelined(
+            (RedisCallback<Object>) connection -> {
+                for (PollResponseDTO dto : dtos) {
+                    String key = com.xxxx.systemvotting.common.utils.RedisKeyUtils.getPollVotesKey(dto.getId());
+                    connection.hashCommands().hGetAll(key.getBytes(StandardCharsets.UTF_8));
+                }
+                return null;
+            }
+        );
+
+        for (int i = 0; i < dtos.size(); i++) {
+            PollResponseDTO dto = dtos.get(i);
+            if (dto.getOptions() == null) continue;
+
+            Object raw = pipelineResults.get(i);
+            if (raw == null) continue;
+
+            // StringRedisTemplate pipeline returns Map<byte[], byte[]> from raw hGetAll
+            Map<String, String> redisMap = new HashMap<>();
+            if (raw instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<Object, Object> rawMap = (Map<Object, Object>) raw;
+                for (Map.Entry<Object, Object> entry : rawMap.entrySet()) {
+                    if (entry.getKey() == null || entry.getValue() == null) continue;
+                    String k = entry.getKey() instanceof byte[]
+                            ? new String((byte[]) entry.getKey(), StandardCharsets.UTF_8)
+                            : entry.getKey().toString();
+                    String v = entry.getValue() instanceof byte[]
+                            ? new String((byte[]) entry.getValue(), StandardCharsets.UTF_8)
+                            : entry.getValue().toString();
+                    redisMap.put(k, v);
                 }
             }
+            if (redisMap.isEmpty()) continue;
+
+            // Records are immutable — rebuild each option with updated count
+            List<OptionResponseDTO> enriched = dto.getOptions().stream()
+                    .map(option -> {
+                        String val = redisMap.get(option.id().toString());
+                        if (val == null) return option;
+                        try {
+                            return new OptionResponseDTO(option.id(), option.text(), Integer.parseInt(val));
+                        } catch (NumberFormatException ignored) {
+                            return option;
+                        }
+                    })
+                    .collect(Collectors.toList());
+            dto.getOptions().clear();
+            dto.getOptions().addAll(enriched);
         }
     }
 
@@ -77,21 +186,31 @@ public class PollServiceImpl implements PollService {
     @Transactional
     public PollResponseDTO createPoll(PollCreateRequestDTO requestDTO) {
         // AI Toxicity Check for Poll Title
-        if (aiModerationService.isToxicContent(requestDTO.getTitle())) {
+        if (aiModerationService.isToxicContent(requestDTO.title())) {
             throw new AppException(ErrorCode.TOXIC_CONTENT);
         }
 
         // Validate creator
-        User creator = userRepository.findById(requestDTO.getCreatorId())
+        User creator = userRepository.findById(requestDTO.creatorId())
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
+        if (creator.getRole() != Role.ADMIN) {
+            Integer maxRooms = PlanRoomLimits.maxRooms(creator.getPlan());
+            if (maxRooms != null) {
+                long existing = pollRepository.countByCreator_Id(creator.getId());
+                if (existing >= maxRooms) {
+                    throw new AppException(ErrorCode.POLL_ROOM_LIMIT_EXCEEDED);
+                }
+            }
+        }
+
         Poll poll = pollMapper.toEntity(requestDTO);
         poll.setCreator(creator);
-        java.time.LocalDateTime startTime = poll.getStartTime();
-        java.time.LocalDateTime endTime = poll.getEndTime();
+        LocalDateTime startTime = poll.getStartTime();
+        LocalDateTime endTime = poll.getEndTime();
         if (startTime == null) {
-            startTime = java.time.LocalDateTime.now();
+            startTime = LocalDateTime.now();
             poll.setStartTime(startTime);
         }
         if (endTime != null && !endTime.isAfter(startTime)) {
@@ -99,8 +218,8 @@ public class PollServiceImpl implements PollService {
         }
 
         // Handle tags dynamic creation/mapping
-        if (requestDTO.getTags() != null) {
-            for (String tagName : requestDTO.getTags()) {
+        if (requestDTO.tags() != null) {
+            for (String tagName : requestDTO.tags()) {
                 String trimmedName = tagName.trim();
                 if (!trimmedName.isEmpty()) {
                     Tag tag = tagRepository.findByName(trimmedName)
@@ -111,9 +230,9 @@ public class PollServiceImpl implements PollService {
         }
 
         // Map and add options while preserving bidirectional relationship
-        for (OptionRequestDTO optionRequest : requestDTO.getOptions()) {
+        for (OptionRequestDTO optionRequest : requestDTO.options()) {
             // AI Toxicity Check for each Option
-            if (aiModerationService.isToxicContent(optionRequest.getText())) {
+            if (aiModerationService.isToxicContent(optionRequest.text())) {
                 throw new AppException(ErrorCode.TOXIC_CONTENT);
             }
 
@@ -123,11 +242,13 @@ public class PollServiceImpl implements PollService {
         }
 
         Poll savedPoll = pollRepository.save(poll);
+        clearPollVoteStateInRedis(savedPoll.getId());
+
         PollResponseDTO dto = pollMapper.toDto(savedPoll);
         dto.setCommentCount(0); // Brand new poll has 0 comments
         
         // Broadcast new poll to dashboard
-        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        Map<String, Object> payload = new HashMap<>();
         payload.put("type", "CREATED");
         payload.put("poll", dto);
         realTimeService.broadcast("/topic/polls/events", payload);
@@ -136,13 +257,8 @@ public class PollServiceImpl implements PollService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    @Cacheable(value = "pollDetails", key = "#id")
     public PollResponseDTO getPollById(Long id) {
-        Poll poll = pollRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
-        PollResponseDTO dto = pollMapper.toDto(poll);
-        dto.setCommentCount(getCommentCountForPoll(id));
+        PollResponseDTO dto = pollDetailsCacheLoader.loadDbSnapshot(id);
         enrichPollWithRedisData(dto);
         return dto;
     }
@@ -156,25 +272,27 @@ public class PollServiceImpl implements PollService {
         
         int pageNumber = Math.max(0, page);
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
-        Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, java.time.LocalDateTime.now(), pageable);
+        Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, LocalDateTime.now(), pageable);
         
-        java.util.List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
-        java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
-        
-        Page<PollResponseDTO> mappedPage = pollPage.map(poll -> {
-            PollResponseDTO dto = pollMapper.toDto(poll);
-            dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
-            enrichPollWithRedisData(dto);
-            return dto;
-        });
+        List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toList());
+        Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
 
-        return PageResponse.<PollResponseDTO>builder()
-                .currentPage(mappedPage.getNumber())
-                .pageSize(mappedPage.getSize())
-                .totalPages(mappedPage.getTotalPages())
-                .totalElements(mappedPage.getTotalElements())
-                .content(mappedPage.getContent())
-                .build();
+        // Map polls to DTOs first, then batch-enrich with Redis in a single pipeline call
+        List<PollResponseDTO> pollDtos = pollPage.getContent().stream()
+                .map(poll -> {
+                    PollResponseDTO dto = pollMapper.toDto(poll);
+                    dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        // Single pipeline call for all vote counts (replaces N individual HGETALL calls)
+        enrichPollListWithRedisData(pollDtos);
+
+        org.springframework.data.domain.Page<PollResponseDTO> resultPage =
+                new PageImpl<>(pollDtos, pageable, pollPage.getTotalElements());
+
+        return PageResponse.from(resultPage);
     }
 
     @Override
@@ -197,9 +315,10 @@ public class PollServiceImpl implements PollService {
         commentRepository.deleteByPoll_Id(poll.getId());
 
         pollRepository.delete(poll);
-        
+        clearPollVoteStateInRedis(pollId);
+
         // Broadcast deletion event to dashboard
-        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        Map<String, Object> payload = new HashMap<>();
         payload.put("type", "DELETED");
         payload.put("pollId", pollId);
         realTimeService.broadcast("/topic/polls/events", payload);
@@ -207,37 +326,39 @@ public class PollServiceImpl implements PollService {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<PollResponseDTO> getMyPolls(Long userId) {
-        java.util.List<Poll> polls = pollRepository.findByCreatorIdOrderByIdDesc(userId);
+    public List<PollResponseDTO> getMyPolls(Long userId) {
+        List<Poll> polls = pollRepository.findByCreatorIdOrderByIdDesc(userId);
         
-        java.util.List<Long> pollIds = polls.stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
-        java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
+        List<Long> pollIds = polls.stream().map(Poll::getId).collect(Collectors.toList());
+        Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
 
-        return polls.stream()
+        List<PollResponseDTO> myPollDtos = polls.stream()
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
-                    enrichPollWithRedisData(dto);
                     return dto;
                 })
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
+        enrichPollListWithRedisData(myPollDtos);
+        return myPollDtos;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<PollResponseDTO> getVotedPolls(Long userId) {
-        java.util.List<Poll> polls = pollRepository.findPollsVotedByUser(userId);
+    public List<PollResponseDTO> getVotedPolls(Long userId) {
+        List<Poll> polls = pollRepository.findPollsVotedByUser(userId);
 
-        java.util.List<Long> pollIds = polls.stream().map(Poll::getId).collect(java.util.stream.Collectors.toList());
-        java.util.Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
+        List<Long> pollIds = polls.stream().map(Poll::getId).collect(Collectors.toList());
+        Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
 
-        return polls.stream()
+        List<PollResponseDTO> votedPollDtos = polls.stream()
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
-                    enrichPollWithRedisData(dto);
                     return dto;
                 })
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
+        enrichPollListWithRedisData(votedPollDtos);
+        return votedPollDtos;
     }
 }

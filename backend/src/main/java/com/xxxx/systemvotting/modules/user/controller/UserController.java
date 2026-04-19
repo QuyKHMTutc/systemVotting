@@ -98,7 +98,7 @@ public class UserController {
     @PutMapping("/{id}/toggle-lock")
     public ApiResponse<UserResponseDTO> toggleLock(@PathVariable Long id) {
         UserResponseDTO updatedUser = userService.toggleLock(id);
-        String action = updatedUser.isLocked() ? "locked" : "unlocked";
+        String action = updatedUser.locked() ? "locked" : "unlocked";
         return ApiResponse.<UserResponseDTO>builder()
                 .code(HttpStatus.OK.value())
                 .message("User " + action + " successfully")

@@ -9,6 +9,9 @@ import com.xxxx.systemvotting.modules.notification.service.NotificationService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
@@ -26,9 +30,13 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "notifUnreadCount", key = "#recipientId")
     public void createNotification(Long recipientId, String actorName, String actorAvatar, String type, String message, Long relatedPollId, Long relatedCommentId) {
         User recipient = userRepository.findById(recipientId).orElse(null);
-        if (recipient == null) return;
+        if (recipient == null) {
+            log.debug("Skip notification for missing recipientId={}", recipientId);
+            return;
+        }
 
         Notification notification = Notification.builder()
                 .recipient(recipient)
@@ -63,6 +71,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "notifUnreadCount", key = "#userId")
     public void markAsRead(Long notificationId, Long userId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
@@ -77,27 +86,29 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "notifUnreadCount", key = "#userId")
     public void markAllAsRead(Long userId) {
         notificationRepository.markAllAsReadByRecipientId(userId);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "notifUnreadCount", key = "#userId")
     public long getUnreadCount(Long userId) {
         return notificationRepository.countByRecipientIdAndIsReadFalse(userId);
     }
 
     private NotificationResponseDTO mapToDTO(Notification notification) {
-        return NotificationResponseDTO.builder()
-                .id(notification.getId())
-                .actorName(notification.getActorName())
-                .actorAvatar(notification.getActorAvatar())
-                .type(notification.getType())
-                .message(notification.getMessage())
-                .relatedPollId(notification.getRelatedPollId())
-                .relatedCommentId(notification.getRelatedCommentId())
-                .isRead(notification.isRead())
-                .createdAt(notification.getCreatedAt())
-                .build();
+        return new NotificationResponseDTO(
+                notification.getId(),
+                notification.getActorName(),
+                notification.getActorAvatar(),
+                notification.getType(),
+                notification.getMessage(),
+                notification.getRelatedPollId(),
+                notification.getRelatedCommentId(),
+                notification.isRead(),
+                notification.getCreatedAt()
+        );
     }
 }

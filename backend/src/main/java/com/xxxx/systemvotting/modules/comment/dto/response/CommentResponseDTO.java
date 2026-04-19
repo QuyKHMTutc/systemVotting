@@ -8,13 +8,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+/**
+ * Comment response DTO.
+ * Kept as a class (not a record) because the {@code replies} field is a mutable recursive list
+ * that gets populated after construction by the CommentServiceImpl.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Thông tin phản hồi của bình luận")
 public class CommentResponseDTO {
+
     @Schema(description = "ID của bình luận", example = "1")
     private Long id;
 
@@ -36,7 +43,7 @@ public class CommentResponseDTO {
 
     @Schema(description = "Thời gian tạo", example = "2024-03-15T10:00:00")
     private LocalDateTime createdAt;
-    
+
     @Schema(description = "Trạng thái vote của người này trong poll", example = "Đã vote: Java")
     private String voteStatus;
 
@@ -50,5 +57,5 @@ public class CommentResponseDTO {
     private String pollTitle;
 
     @Schema(description = "Danh sách các phản hồi con")
-    private java.util.List<CommentResponseDTO> replies;
+    private List<CommentResponseDTO> replies;
 }
