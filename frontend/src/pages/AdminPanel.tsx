@@ -27,8 +27,8 @@ const AdminPanel = () => {
 
     const fetchUsers = async () => {
         try {
-            const data = await userService.getAllUsers();
-            setUsers(data);
+            const data = await userService.getAllUsers(0, 100);
+            setUsers(data.content);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch users.');
         } finally {

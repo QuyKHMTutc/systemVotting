@@ -1,4 +1,5 @@
 import api from './api';
+import type { PageResponse } from '../types/page';
 
 export interface PaymentHistory {
   id: number;
@@ -11,8 +12,8 @@ export interface PaymentHistory {
 }
 
 export const paymentService = {
-  getPaymentHistory: async (): Promise<PaymentHistory[]> => {
-    const response = await api.get('/payments/history');
+  getPaymentHistory: async (page = 0, size = 10): Promise<PageResponse<PaymentHistory>> => {
+    const response = await api.get('/payments/history', { params: { page, size } });
     return response.data.data;
   }
 };

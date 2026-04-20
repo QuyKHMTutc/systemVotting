@@ -1,4 +1,5 @@
 import api from './api';
+import type { PageResponse } from '../types/page';
 
 export interface UserDTO {
     id: number;
@@ -8,12 +9,12 @@ export interface UserDTO {
     locked: boolean;
 }
 
+export type UserPageResponse = PageResponse<UserDTO>;
+
 export const userService = {
-    getAllUsers: async (): Promise<UserDTO[]> => {
-        // Assuming backend returns a list of users, if the endpoint exists
-        // Fallback: If no dedicated endpoint, we might mock it or assume '/users' 
-        const response = await api.get('/users');
-        return response.data.data; // Assuming BaseResponse wrapper
+    getAllUsers: async (page = 0, size = 100): Promise<UserPageResponse> => {
+        const response = await api.get('/users', { params: { page, size } });
+        return response.data.data;
     },
 
     toggleLock: async (id: number): Promise<void> => {

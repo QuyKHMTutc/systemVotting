@@ -21,9 +21,12 @@ export default function NotificationBell() {
 
     const fetchNotifications = async () => {
         try {
-            const data = await notificationService.getMyNotifications();
-            setNotifications(data);
-            setUnreadCount(data.filter(n => !n.isRead).length);
+            const [unread, page] = await Promise.all([
+                notificationService.getUnreadCount(),
+                notificationService.getMyNotifications(0, 100),
+            ]);
+            setUnreadCount(unread);
+            setNotifications(page.content);
         } catch (error) {
             console.error('Failed to load notifications', error);
         }

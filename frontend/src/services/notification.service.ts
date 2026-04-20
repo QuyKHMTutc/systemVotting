@@ -1,4 +1,5 @@
 import api from './api';
+import type { PageResponse } from '../types/page';
 
 export interface Notification {
     id: number;
@@ -12,10 +13,12 @@ export interface Notification {
     createdAt: string;
 }
 
+export type NotificationPageResponse = PageResponse<Notification>;
+
 export const notificationService = {
-    getMyNotifications: async (): Promise<Notification[]> => {
+    getMyNotifications: async (page = 0, size = 100): Promise<NotificationPageResponse> => {
         try {
-            const response = await api.get('/notifications');
+            const response = await api.get('/notifications', { params: { page, size } });
             return response.data.data;
         } catch (error) {
             console.error('Error fetching notifications:', error);

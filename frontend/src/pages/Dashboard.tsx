@@ -40,8 +40,8 @@ const Dashboard = () => {
     const stored = JSON.parse(localStorage.getItem('votedPolls') || '[]');
     setVotedPollIds(stored);
     if (user) {
-      pollService.getMyVotedPolls().then((votedPolls) => {
-        const votedIds = votedPolls.map((p) => p.id);
+      pollService.getMyVotedPolls(0, 500).then((votedPage) => {
+        const votedIds = votedPage.content.map((p) => p.id);
         setVotedPollIds(votedIds);
         localStorage.setItem('votedPolls', JSON.stringify(votedIds));
       }).catch(() => {});
@@ -60,15 +60,37 @@ const Dashboard = () => {
     setPollPage(prev => {
       if (!prev) return prev;
       let newContent = [...prev.content];
+      let nextTotalElements = prev.totalElements;
+
+      const matchesCurrentFilters = (poll: Poll) => {
+        if (filterStatus !== 'ALL') {
+          const isActive = new Date(poll.endTime) > new Date();
+          if (filterStatus === 'ACTIVE' && !isActive) return false;
+          if (filterStatus === 'ENDED' && isActive) return false;
+        }
+        if (filterTag !== 'ALL' && !poll.tags.some(tag => tag.toLowerCase().includes(filterTag.toLowerCase()))) {
+          return false;
+        }
+        if (searchQuery.trim() && !poll.title.toLowerCase().includes(searchQuery.trim().toLowerCase())) {
+          return false;
+        }
+        return true;
+      };
 
       if (payload.type === 'CREATED') {
-        // Check current filter criteria simply: if not ALL, just let the standard polling/refresh pull it in naturally
-        // To be safe, we just gently insert at the top if there's no duplicate
-        if (!newContent.some(p => p.id === payload.poll.id)) {
+        // Respect server pagination on dashboard:
+        // only page 0 receives optimistic inserted polls and keeps fixed page size.
+        if (prev.currentPage === 0 && matchesCurrentFilters(payload.poll) && !newContent.some(p => p.id === payload.poll.id)) {
           newContent.unshift(payload.poll);
+          newContent = newContent.slice(0, prev.pageSize);
+          nextTotalElements += 1;
         }
       } else if (payload.type === 'DELETED') {
+        const before = newContent.length;
         newContent = newContent.filter(p => p.id !== payload.pollId);
+        if (newContent.length < before) {
+          nextTotalElements = Math.max(0, nextTotalElements - 1);
+        }
       } else if (payload.type === 'VOTED') {
         newContent = newContent.map(p => {
           if (p.id === payload.pollId) {
@@ -91,9 +113,14 @@ const Dashboard = () => {
         });
       }
 
-      return { ...prev, content: newContent };
+      return {
+        ...prev,
+        content: newContent,
+        totalElements: nextTotalElements,
+        totalPages: Math.max(1, Math.ceil(nextTotalElements / prev.pageSize)),
+      };
     });
-  }, []);
+  }, [filterStatus, filterTag, searchQuery]);
 
   usePollEventsWebSocket({ onEvent: handlePollEvent });
 

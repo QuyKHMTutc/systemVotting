@@ -76,7 +76,7 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, value, onChange, disabl
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
                     disabled={disabled}
-                    className="w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-white/5 border border-white/20 text-white placeholder-white/30 text-center text-xl font-bold focus:outline-none focus:border-pink-500/80 focus:bg-white/10 focus:ring-2 focus:ring-pink-500/50 focus:shadow-[0_0_15px_rgba(236,72,153,0.5)] transition-all disabled:opacity-50"
+                    className="w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-slate-100/50 dark:bg-white/5 border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 text-center text-xl font-bold focus:outline-none focus:border-pink-500/80 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-pink-500/50 focus:shadow-[0_0_15px_rgba(236,72,153,0.5)] transition-all disabled:opacity-50"
                     maxLength={1} // Handled by standard ChangeEvent length manually but this helps mobile
                 />
             ))}

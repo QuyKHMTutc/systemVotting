@@ -1,12 +1,7 @@
 import api from './api';
+import type { PageResponse } from '../types/page';
 
-export interface PollPageResponse {
-    content: Poll[];
-    totalElements: number;
-    totalPages: number;
-    pageSize: number;
-    currentPage: number;
-}
+export type PollPageResponse = PageResponse<Poll>;
 
 export interface Poll {
     id: number;
@@ -60,13 +55,13 @@ export const pollService = {
         await api.delete(`/polls/${id}`);
     },
 
-    getMyPolls: async (): Promise<Poll[]> => {
-        const response = await api.get('/polls/my-polls');
+    getMyPolls: async (page = 0, size = 100): Promise<PollPageResponse> => {
+        const response = await api.get('/polls/my-polls', { params: { page, size } });
         return response.data.data;
     },
 
-    getMyVotedPolls: async (): Promise<Poll[]> => {
-        const response = await api.get('/polls/my-voted');
+    getMyVotedPolls: async (page = 0, size = 100): Promise<PollPageResponse> => {
+        const response = await api.get('/polls/my-voted', { params: { page, size } });
         return response.data.data;
     }
 };

@@ -363,13 +363,13 @@ const Register = () => {
                             </div>
 
                             <div className={`transition-all duration-300 overflow-hidden ${error ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
-                                <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded-xl text-sm text-center font-medium">
+                                <div className="bg-red-500/10 border border-red-500/50 text-red-600 dark:text-red-200 p-3 rounded-xl text-sm text-center font-medium">
                                     {error}
                                 </div>
                             </div>
 
                             <div className={`transition-all duration-300 overflow-hidden ${success ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
-                                <div className="bg-emerald-500/10 border border-emerald-500/50 text-emerald-200 p-3 rounded-xl text-sm text-center font-medium">
+                                <div className="bg-emerald-500/10 border border-emerald-500/50 text-emerald-600 dark:text-emerald-200 p-3 rounded-xl text-sm text-center font-medium">
                                     {success}
                                 </div>
                             </div>
@@ -397,7 +397,7 @@ const Register = () => {
                                     <button
                                         onClick={handleResend}
                                         disabled={resendCooldown > 0}
-                                        className="text-indigo-600 dark:text-pink-300 hover:text-indigo-800 dark:hover:text-pink-200 dark:hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ml-1"
+                                        className="text-pink-600 dark:text-pink-300 hover:text-pink-800 dark:hover:text-pink-200 dark:hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ml-1"
                                     >
                                         {resendCooldown > 0 ? `${t('auth.resendIn')} ${resendCooldown}s` : t('auth.resendOtp')}
                                     </button>

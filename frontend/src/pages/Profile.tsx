@@ -29,7 +29,25 @@ export const Profile = () => {
   const [createdPolls, setCreatedPolls] = useState<Poll[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [myComments, setMyComments] = useState<Comment[]>([]);
+  const [createdTotal, setCreatedTotal] = useState(0);
+  const [votedTotal, setVotedTotal] = useState(0);
+  const [commentsTotal, setCommentsTotal] = useState(0);
   const [payments, setPayments] = useState<PaymentHistory[]>([]);
+  const [paymentsTotal, setPaymentsTotal] = useState(0);
+
+  const [createdPage, setCreatedPage] = useState(0);
+  const [votedPage, setVotedPage] = useState(0);
+  const [commentsPage, setCommentsPage] = useState(0);
+  const [paymentsPage, setPaymentsPage] = useState(0);
+  const [loadingMore, setLoadingMore] = useState<'created' | 'voted' | 'comments' | 'payments' | null>(null);
+
+  const PAGE_SIZE = {
+    created: 12,
+    voted: 12,
+    comments: 20,
+    payments: 10,
+  } as const;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -40,26 +58,39 @@ export const Profile = () => {
     try {
       await pollService.deletePoll(pollId);
       setCreatedPolls((prev) => prev.filter((p) => p.id !== pollId));
+      setCreatedTotal((n) => Math.max(0, n - 1));
     } catch (err: any) {
       alert(err.response?.data?.message || t('profile.deleteFail'));
     }
   };
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchInitial = async () => {
       try {
         // Chỉ hiện loading spinner lần đầu — các lần sau bảo toàn UI (tránh unmount Navbar)
         if (!initialLoaded.current) setLoading(true);
+
+        // Reset pages + current lists when switching user
+        setCreatedPage(0);
+        setVotedPage(0);
+        setCommentsPage(0);
+        setPaymentsPage(0);
+
         const [created, voted, comments, ph] = await Promise.all([
-          pollService.getMyPolls(),
-          pollService.getMyVotedPolls(),
-          commentService.getMyComments(),
-          paymentService.getPaymentHistory().catch(() => [])
+          pollService.getMyPolls(0, PAGE_SIZE.created),
+          pollService.getMyVotedPolls(0, PAGE_SIZE.voted),
+          commentService.getMyComments(0, PAGE_SIZE.comments),
+          paymentService.getPaymentHistory(0, PAGE_SIZE.payments).catch(() => null)
         ]);
-        setCreatedPolls(created);
-        setVotedPolls(voted);
-        setMyComments(comments);
-        setPayments(ph || []);
+
+        setCreatedPolls(created.content);
+        setCreatedTotal(created.totalElements);
+        setVotedPolls(voted.content);
+        setVotedTotal(voted.totalElements);
+        setMyComments(comments.content);
+        setCommentsTotal(comments.totalElements);
+        setPayments(ph?.content || []);
+        setPaymentsTotal(ph?.totalElements || 0);
       } catch {
         setError(t('profile.loadFail'));
       } finally {
@@ -67,9 +98,45 @@ export const Profile = () => {
         setLoading(false);
       }
     };
-    if (user) fetch();
-  // Dùng user?.id thay vì user — chỉ re-fetch khi đổi user, không phải khi plan/avatar update
+    if (user) fetchInitial();
+    // Dùng user?.id thay vì user — chỉ re-fetch khi đổi user, không phải khi plan/avatar update
   }, [user?.id]);
+
+  const loadMore = useCallback(async (tab: 'created' | 'voted' | 'comments' | 'payments') => {
+    if (loadingMore) return;
+    setLoadingMore(tab);
+    try {
+      if (tab === 'created') {
+        const next = createdPage + 1;
+        const res = await pollService.getMyPolls(next, PAGE_SIZE.created);
+        setCreatedPage(next);
+        setCreatedTotal(res.totalElements);
+        setCreatedPolls((prev) => [...prev, ...res.content.filter(x => !prev.some(p => p.id === x.id))]);
+      } else if (tab === 'voted') {
+        const next = votedPage + 1;
+        const res = await pollService.getMyVotedPolls(next, PAGE_SIZE.voted);
+        setVotedPage(next);
+        setVotedTotal(res.totalElements);
+        setVotedPolls((prev) => [...prev, ...res.content.filter(x => !prev.some(p => p.id === x.id))]);
+      } else if (tab === 'comments') {
+        const next = commentsPage + 1;
+        const res = await commentService.getMyComments(next, PAGE_SIZE.comments);
+        setCommentsPage(next);
+        setCommentsTotal(res.totalElements);
+        setMyComments((prev) => [...prev, ...res.content.filter(x => !prev.some(c => c.id === x.id))]);
+      } else {
+        const next = paymentsPage + 1;
+        const res = await paymentService.getPaymentHistory(next, PAGE_SIZE.payments);
+        setPaymentsPage(next);
+        setPaymentsTotal(res.totalElements);
+        setPayments((prev) => [...prev, ...res.content.filter(x => !prev.some(p => p.id === x.id))]);
+      }
+    } catch {
+      // keep silent; user can retry
+    } finally {
+      setLoadingMore(null);
+    }
+  }, [commentsPage, createdPage, loadingMore, paymentsPage, votedPage]);
 
   const handlePollEvent = useCallback((payload: PollEventPayload) => {
     const up = (prev: Poll[]) => {
@@ -117,10 +184,10 @@ export const Profile = () => {
         : { text: `Còn ${daysLeft} ngày`, color: 'text-slate-500 dark:text-white/40', dot: 'bg-emerald-400' };
 
   const tabs = [
-    { key: 'created', icon: <ListPlus className="w-4 h-4" />, label: t('profile.createdPolls'), count: createdPolls.length },
-    { key: 'voted', icon: <CheckSquare className="w-4 h-4" />, label: t('profile.votedPolls'), count: votedPolls.length },
-    { key: 'comments', icon: <MessageSquare className="w-4 h-4" />, label: t('profile.myComments'), count: myComments.length },
-    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: 'Lịch sử thanh toán', count: null },
+    { key: 'created', icon: <ListPlus className="w-4 h-4" />, label: t('profile.createdPolls'), count: createdTotal },
+    { key: 'voted', icon: <CheckSquare className="w-4 h-4" />, label: t('profile.votedPolls'), count: votedTotal },
+    { key: 'comments', icon: <MessageSquare className="w-4 h-4" />, label: t('profile.myComments'), count: commentsTotal },
+    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: 'Lịch sử thanh toán', count: paymentsTotal },
   ];
 
   if (loading) return <LoadingSpinner />;
@@ -220,9 +287,9 @@ export const Profile = () => {
               {/* Stats inline — kiểu GitHub/Twitter */}
               <div className="flex items-center gap-5 flex-wrap">
                 {[
-                  { val: createdPolls.length, label: 'bài đăng' },
-                  { val: votedPolls.length, label: 'lượt vote' },
-                  { val: myComments.length, label: 'bình luận' },
+                  { val: createdTotal, label: 'bài đăng' },
+                  { val: votedTotal, label: 'lượt vote' },
+                  { val: commentsTotal, label: 'bình luận' },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <span className="text-xl font-black text-slate-900 dark:text-white">{s.val}</span>
@@ -284,120 +351,164 @@ export const Profile = () => {
           {/* Created */}
           {activeTab === 'created' && (
             createdPolls.length > 0
-              ? <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {createdPolls.map((poll, i) => (
-                  <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
-                    <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
-                      <PollCard poll={poll} onDelete={handleDeletePoll} showDeleteButton />
+              ? <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {createdPolls.map((poll, i) => (
+                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
+                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
+                        <PollCard poll={poll} onDelete={handleDeletePoll} showDeleteButton />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                {createdPolls.length < createdTotal && (
+                  <button
+                    onClick={() => loadMore('created')}
+                    disabled={loadingMore === 'created'}
+                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMore === 'created' ? 'Đang tải...' : 'Xem thêm'}
+                  </button>
+                )}
+              </>
               : <ProfileEmpty icon={<ListPlus className="w-8 h-8" />} title={t('profile.noPollsYet')} desc={t('profile.noPollsDesc')} action={{ label: t('profile.createPollBtn'), onClick: () => navigate('/create-poll') }} />
           )}
 
           {/* Voted */}
           {activeTab === 'voted' && (
             votedPolls.length > 0
-              ? <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {votedPolls.map((poll, i) => (
-                  <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
-                    <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
-                      <PollCard poll={poll} />
+              ? <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {votedPolls.map((poll, i) => (
+                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
+                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
+                        <PollCard poll={poll} />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                {votedPolls.length < votedTotal && (
+                  <button
+                    onClick={() => loadMore('voted')}
+                    disabled={loadingMore === 'voted'}
+                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMore === 'voted' ? 'Đang tải...' : 'Xem thêm'}
+                  </button>
+                )}
+              </>
               : <ProfileEmpty icon={<CheckSquare className="w-8 h-8" />} title={t('profile.noVotesYet')} desc={t('profile.noVotesDesc')} action={{ label: t('profile.browsePollsBtn'), onClick: () => navigate('/') }} />
           )}
 
           {/* Comments */}
           {activeTab === 'comments' && (
             myComments.length > 0
-              ? <div className="space-y-3">
-                {myComments.map((c, i) => (
-                  <div key={c.id} className="animate-fade-in-up bg-white dark:bg-[#0e0b1f] rounded-2xl border border-slate-100 dark:border-white/[0.05] p-5 hover:shadow-md hover:border-slate-200 dark:hover:border-white/[0.1] transition-all" style={{ animationDelay: `${i * 30}ms` }}>
-                    <div className="flex gap-4">
-                      <div className="shrink-0 w-9 h-9 rounded-xl overflow-hidden bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 font-bold text-sm">
-                        {c.isAnonymous ? 'A' : (
-                          c.avatarUrl && c.avatarUrl !== 'null' && c.avatarUrl.trim() !== '' ? (
-                            <img src={c.avatarUrl.startsWith('http') || c.avatarUrl.startsWith('blob') ? c.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${c.avatarUrl}`} alt={c.username} className="w-full h-full object-cover" />
-                          ) : c.username.charAt(0).toUpperCase()
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                          <span className="font-semibold text-slate-900 dark:text-white text-sm">{c.isAnonymous ? 'Anonymous' : c.username}</span>
-                          <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
-                          <span className="text-slate-400 dark:text-white/30 text-xs">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</span>
-                          {c.pollTitle && (
-                            <>
-                              <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
-                              <button onClick={() => navigate(`/poll/${c.pollId}`)} className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 truncate max-w-[200px]">{c.pollTitle}</button>
-                            </>
+              ? <>
+                <div className="space-y-3">
+                  {myComments.map((c, i) => (
+                    <div key={c.id} className="animate-fade-in-up bg-white dark:bg-[#0e0b1f] rounded-2xl border border-slate-100 dark:border-white/[0.05] p-5 hover:shadow-md hover:border-slate-200 dark:hover:border-white/[0.1] transition-all" style={{ animationDelay: `${i * 30}ms` }}>
+                      <div className="flex gap-4">
+                        <div className="shrink-0 w-9 h-9 rounded-xl overflow-hidden bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 font-bold text-sm">
+                          {c.isAnonymous ? 'A' : (
+                            c.avatarUrl && c.avatarUrl !== 'null' && c.avatarUrl.trim() !== '' ? (
+                              <img src={c.avatarUrl.startsWith('http') || c.avatarUrl.startsWith('blob') ? c.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${c.avatarUrl}`} alt={c.username} className="w-full h-full object-cover" />
+                            ) : c.username.charAt(0).toUpperCase()
                           )}
                         </div>
-                        <p className="text-slate-600 dark:text-white/60 text-sm leading-relaxed">{c.content}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className="font-semibold text-slate-900 dark:text-white text-sm">{c.isAnonymous ? 'Anonymous' : c.username}</span>
+                            <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
+                            <span className="text-slate-400 dark:text-white/30 text-xs">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</span>
+                            {c.pollTitle && (
+                              <>
+                                <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
+                                <button onClick={() => navigate(`/poll/${c.pollId}`)} className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 truncate max-w-[200px]">{c.pollTitle}</button>
+                              </>
+                            )}
+                          </div>
+                          <p className="text-slate-600 dark:text-white/60 text-sm leading-relaxed">{c.content}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                {myComments.length < commentsTotal && (
+                  <button
+                    onClick={() => loadMore('comments')}
+                    disabled={loadingMore === 'comments'}
+                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMore === 'comments' ? 'Đang tải...' : 'Xem thêm'}
+                  </button>
+                )}
+              </>
               : <ProfileEmpty icon={<MessageSquare className="w-8 h-8" />} title={t('profile.noCommentsYet')} desc={t('profile.noCommentsDesc')} action={{ label: t('profile.browsePollsBtn'), onClick: () => navigate('/') }} />
           )}
 
           {/* Payments */}
           {activeTab === 'payments' && (
             payments.length > 0
-              ? <div className="bg-white dark:bg-[#0e0b1f] rounded-2xl border border-slate-100 dark:border-white/[0.05] overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 dark:border-white/[0.06]">
-                      {['Mã giao dịch', 'Thời gian', 'Gói', 'Số tiền', 'Trạng thái'].map((h, i) => (
-                        <th key={i} className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/30">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payments.map((txn, i) => (
-                      <tr key={txn.id} className={`border-b border-slate-50 dark:border-white/[0.03] last:border-0 hover:bg-slate-50/80 dark:hover:bg-white/[0.025] transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40 dark:bg-white/[0.015]'}`}>
-                        <td className="px-6 py-4 font-mono text-[11px] text-slate-400 dark:text-white/25">{txn.txnRef}</td>
-                        <td className="px-6 py-4">
-                          <span className="text-xs font-medium text-slate-700 dark:text-white/60">{new Date(txn.createdAt).toLocaleDateString('vi-VN')}</span>
-                          <br />
-                          <span className="text-[10px] text-slate-400 dark:text-white/25">{new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${txn.targetPlan === 'PLUS' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'}`}>
-                            {txn.targetPlan}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-black text-emerald-600 dark:text-emerald-400 text-sm">{txn.amount.toLocaleString('vi-VN')}đ</td>
-                        <td className="px-6 py-4">
-                          {txn.status === 'SUCCESS' && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-200 dark:border-emerald-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Thành công
-                            </span>
-                          )}
-                          {txn.status === 'PENDING' && (
-                            <div className="flex flex-col gap-1">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/[0.08]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30" />Chờ thanh toán
-                              </span>
-                              <span className="text-[10px] text-slate-400 dark:text-white/25 px-1">Chưa quét mã QR</span>
-                            </div>
-                          )}
-                          {txn.status === 'FAILED' && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg text-xs font-semibold border border-red-100 dark:border-red-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />Thất bại
-                            </span>
-                          )}
-                        </td>
+              ? <>
+                <div className="bg-white dark:bg-[#0e0b1f] rounded-2xl border border-slate-100 dark:border-white/[0.05] overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-white/[0.06]">
+                        {['Mã giao dịch', 'Thời gian', 'Gói', 'Số tiền', 'Trạng thái'].map((h, i) => (
+                          <th key={i} className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/30">{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {payments.map((txn, i) => (
+                        <tr key={txn.id} className={`border-b border-slate-50 dark:border-white/[0.03] last:border-0 hover:bg-slate-50/80 dark:hover:bg-white/[0.025] transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40 dark:bg-white/[0.015]'}`}>
+                          <td className="px-6 py-4 font-mono text-[11px] text-slate-400 dark:text-white/25">{txn.txnRef}</td>
+                          <td className="px-6 py-4">
+                            <span className="text-xs font-medium text-slate-700 dark:text-white/60">{new Date(txn.createdAt).toLocaleDateString('vi-VN')}</span>
+                            <br />
+                            <span className="text-[10px] text-slate-400 dark:text-white/25">{new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${txn.targetPlan === 'PLUS' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'}`}>
+                              {txn.targetPlan}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-black text-emerald-600 dark:text-emerald-400 text-sm">{txn.amount.toLocaleString('vi-VN')}đ</td>
+                          <td className="px-6 py-4">
+                            {txn.status === 'SUCCESS' && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-200 dark:border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Thành công
+                              </span>
+                            )}
+                            {txn.status === 'PENDING' && (
+                              <div className="flex flex-col gap-1">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/[0.08]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30" />Chờ thanh toán
+                                </span>
+                                <span className="text-[10px] text-slate-400 dark:text-white/25 px-1">Chưa quét mã QR</span>
+                              </div>
+                            )}
+                            {txn.status === 'FAILED' && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg text-xs font-semibold border border-red-100 dark:border-red-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />Thất bại
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {payments.length < paymentsTotal && (
+                  <button
+                    onClick={() => loadMore('payments')}
+                    disabled={loadingMore === 'payments'}
+                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMore === 'payments' ? 'Đang tải...' : 'Xem thêm'}
+                  </button>
+                )}
+              </>
               : <ProfileEmpty icon={<CreditCard className="w-8 h-8" />} title="Chưa có giao dịch" desc="Bạn chưa thực hiện giao dịch thanh toán gói nào." />
           )}
         </div>
@@ -431,3 +542,5 @@ function ProfileEmpty({ icon, title, desc, action }: {
     </div>
   );
 }
+
+// Pagination UI uses "Load more" buttons per tab (modern feed style).

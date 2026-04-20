@@ -17,11 +17,12 @@ export interface PollCardProps {
 export const PollCard = ({
   poll,
   hasVoted = false,
-  commentCount = 0,
+  commentCount,
   onDelete,
   showDeleteButton = false,
 }: PollCardProps) => {
   const { t } = useTranslation();
+  const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
   const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
   const [copied, setCopied] = useState(false);
@@ -130,7 +131,7 @@ export const PollCard = ({
             </span>
             <span className="flex items-center gap-1.5">
               <MessageCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400/80" />
-              <span className="text-slate-900 dark:text-white font-semibold">{commentCount}</span> {t('pollDetail.comments')}
+              <span className="text-slate-900 dark:text-white font-semibold">{resolvedCommentCount}</span> {t('pollDetail.comments')}
             </span>
             <span className="flex items-center gap-1.5">
               <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400/80" />

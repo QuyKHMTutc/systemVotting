@@ -1,4 +1,5 @@
 import api from './api';
+import type { PageResponse } from '../types/page';
 
 export interface Comment {
     id: number;
@@ -15,13 +16,7 @@ export interface Comment {
     replies?: Comment[];
 }
 
-export interface CommentPage {
-    content: Comment[];
-    currentPage: number;
-    pageSize: number;
-    totalPages: number;
-    totalElements: number;
-}
+export type CommentPage = PageResponse<Comment>;
 
 export interface CommentThreadResponse {
     page: CommentPage;
@@ -52,8 +47,8 @@ export const commentService = {
         return response.data.data;
     },
 
-    getMyComments: async (): Promise<Comment[]> => {
-        const response = await api.get('/comments/me');
+    getMyComments: async (page = 0, size = 100): Promise<CommentPage> => {
+        const response = await api.get('/comments/me', { params: { page, size } });
         return response.data.data;
     },
 

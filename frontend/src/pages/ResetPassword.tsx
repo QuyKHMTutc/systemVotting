@@ -112,13 +112,13 @@ const ResetPassword = () => {
                         </div>
 
                         <div className={`transition-all duration-300 overflow-hidden ${error ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
-                            <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded-xl text-sm text-center font-medium">
+                            <div className="bg-red-500/10 border border-red-500/50 text-red-600 dark:text-red-200 p-3 rounded-xl text-sm text-center font-medium">
                                 {error}
                             </div>
                         </div>
 
                         <div className={`transition-all duration-300 overflow-hidden ${success ? 'max-h-24 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
-                            <div className="bg-emerald-500/10 border border-emerald-500/50 text-emerald-200 p-3 rounded-xl text-sm text-center font-medium">
+                            <div className="bg-emerald-500/10 border border-emerald-500/50 text-emerald-600 dark:text-emerald-200 p-3 rounded-xl text-sm text-center font-medium">
                                 {success}
                             </div>
                         </div>
@@ -134,7 +134,7 @@ const ResetPassword = () => {
                                         type="button"
                                         onClick={handleResendOtp}
                                         disabled={countdown > 0 || resendLoading || !email || loading}
-                                        className="text-xs font-bold text-pink-300 hover:text-pink-200 hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase mb-2"
+                                        className="text-xs font-bold text-pink-600 dark:text-pink-300 hover:text-pink-500 dark:hover:text-pink-200 hover:drop-shadow-[0_0_5px_rgba(244,114,182,0.5)] disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase mb-2"
                                     >
                                         {resendLoading ? t('resetPassword.sendingStatus') : countdown > 0 ? t('resetPassword.resendIn', { countdown }) : t('resetPassword.resendOtp')}
                                     </button>

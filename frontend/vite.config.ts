@@ -5,6 +5,10 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Dev: pre-bundle deps một lần, lần sau khởi động nhanh hơn
+  optimizeDeps: {
+    holdUntilCrawlEnd: false,
+  },
   server: {
     host: true,
     port: 5173,
