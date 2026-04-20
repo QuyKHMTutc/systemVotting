@@ -8,14 +8,18 @@ import com.xxxx.systemvotting.modules.poll.service.PollService;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +35,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/polls")
 @RequiredArgsConstructor
+@Validated
 public class PollController {
 
     private final PollService pollService;
@@ -78,8 +83,8 @@ public class PollController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false, defaultValue = "ALL") String tag,
             @RequestParam(required = false, defaultValue = "ALL") String status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
         PageResponse<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, page, size, sortBy, direction);
@@ -107,22 +112,28 @@ public class PollController {
                 .build();
     }
 
-    @Operation(summary = "Bình chọn của tôi", description = "Danh sách bình chọn do user hiện tại tạo", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @Operation(summary = "Bình chọn của tôi", description = "Danh sách bình chọn do user hiện tại tạo (phân trang, page 0-based)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-polls")
-    public ApiResponse<List<PollResponseDTO>> getMyPolls(@AuthenticationPrincipal Jwt jwt) {
-        List<PollResponseDTO> polls = pollService.getMyPolls(Long.valueOf(jwt.getSubject()));
-        return ApiResponse.<List<PollResponseDTO>>builder()
+    public ApiResponse<PageResponse<PollResponseDTO>> getMyPolls(
+            @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @AuthenticationPrincipal Jwt jwt) {
+        PageResponse<PollResponseDTO> polls = pollService.getMyPolls(Long.valueOf(jwt.getSubject()), page, size);
+        return ApiResponse.<PageResponse<PollResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")
                 .data(polls)
                 .build();
     }
 
-    @Operation(summary = "Đã bình chọn", description = "Danh sách bình chọn mà user đã vote", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @Operation(summary = "Đã bình chọn", description = "Danh sách bình chọn mà user đã vote (phân trang, page 0-based)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping("/my-voted")
-    public ApiResponse<List<PollResponseDTO>> getVotedPolls(@AuthenticationPrincipal Jwt jwt) {
-        List<PollResponseDTO> polls = pollService.getVotedPolls(Long.valueOf(jwt.getSubject()));
-        return ApiResponse.<List<PollResponseDTO>>builder()
+    public ApiResponse<PageResponse<PollResponseDTO>> getVotedPolls(
+            @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @AuthenticationPrincipal Jwt jwt) {
+        PageResponse<PollResponseDTO> polls = pollService.getVotedPolls(Long.valueOf(jwt.getSubject()), page, size);
+        return ApiResponse.<PageResponse<PollResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")
                 .data(polls)

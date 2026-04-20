@@ -1,6 +1,7 @@
 package com.xxxx.systemvotting.modules.comment.controller;
 
 import com.xxxx.systemvotting.common.dto.ApiResponse;
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentThreadResponse;
@@ -11,6 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,15 +25,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 import org.springframework.security.oauth2.jwt.Jwt;
 import io.swagger.v3.oas.annotations.Parameter;
+import org.springframework.validation.annotation.Validated;
 
 @Tag(name = "Comments", description = "Bình luận theo bình chọn")
 @RestController
 @RequestMapping("/api/v1/comments")
 @RequiredArgsConstructor
+@Validated
 public class CommentController {
 
     private final CommentService commentService;
@@ -54,8 +57,8 @@ public class CommentController {
     @GetMapping("/poll/{pollId}")
     public ApiResponse<CommentThreadResponse> getCommentsByPollId(
             @PathVariable Long pollId,
-            @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Kích thước trang, tối đa 50") @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Kích thước trang, tối đa 50") @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
         CommentThreadResponse response = commentService.getCommentsByPollId(pollId, page, size);
         return ApiResponse.<CommentThreadResponse>builder()
                 .code(HttpStatus.OK.value())
@@ -64,12 +67,15 @@ public class CommentController {
                 .build();
     }
 
-    @Operation(summary = "Lấy bình luận của tôi", description = "Danh sách bình luận của người dùng hiện tại")
+    @Operation(summary = "Lấy bình luận của tôi", description = "Danh sách bình luận của người dùng hiện tại (phân trang, page 0-based)")
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công") })
     @GetMapping("/me")
-    public ApiResponse<List<CommentResponseDTO>> getMyComments(@AuthenticationPrincipal Jwt jwt) {
-        List<CommentResponseDTO> response = commentService.getMyComments(Long.valueOf(jwt.getSubject()));
-        return ApiResponse.<List<CommentResponseDTO>>builder()
+    public ApiResponse<PageResponse<CommentResponseDTO>> getMyComments(
+            @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @AuthenticationPrincipal Jwt jwt) {
+        PageResponse<CommentResponseDTO> response = commentService.getMyComments(Long.valueOf(jwt.getSubject()), page, size);
+        return ApiResponse.<PageResponse<CommentResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("My comments retrieved successfully")
                 .data(response)

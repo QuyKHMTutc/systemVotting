@@ -6,13 +6,17 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Paginated response wrapper.
+ * Paginated response wrapper aligned with Spring Data {@link Page} getters.
  *
- * Kept as a class (not a record) because it has a static factory method
- * {@link #from(Page)} that performs mapping logic.
- * All fields are final — effectively immutable after construction.
+ * <p>{@code currentPage} is the <strong>0-based</strong> page index (same as {@link Page#getNumber()}),
+ * matching typical API query params {@code page=0} for the first page.</p>
+ *
+ * <p>Kept as a class (not a record) because of the static factory {@link #from(Page)}.
+ * All fields are final — effectively immutable after construction.</p>
  */
 public final class PageResponse<T> implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private final int        currentPage;
     private final int        pageSize;

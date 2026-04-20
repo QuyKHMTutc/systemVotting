@@ -9,6 +9,7 @@ import com.xxxx.systemvotting.modules.user.mapper.UserMapper;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.user.service.UserService;
 import com.xxxx.systemvotting.modules.user.enums.Role;
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.common.service.imp.FileStorageService;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
@@ -19,6 +20,11 @@ import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,10 +89,18 @@ public class UserServiceImpl implements UserService {
         return userMapper.toDto(user);
     }
 
+    private static final int MAX_USER_PAGE_SIZE = 100;
+
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponseDTO> getAllUsers() {
-        return userMapper.toDtoList(userRepository.findAll());
+    public PageResponse<UserResponseDTO> getAllUsers(int page, int size) {
+        int pageNumber = Math.max(0, page);
+        int pageSize = Math.min(Math.max(1, size), MAX_USER_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("id").ascending());
+        Page<User> userPage = userRepository.findAll(pageable);
+        List<UserResponseDTO> dtos = userMapper.toDtoList(userPage.getContent());
+        Page<UserResponseDTO> dtoPage = new PageImpl<>(dtos, pageable, userPage.getTotalElements());
+        return PageResponse.from(dtoPage);
     }
 
     @Override

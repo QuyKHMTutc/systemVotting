@@ -1,7 +1,7 @@
 package com.xxxx.systemvotting.modules.poll.service.impl;
 
 import com.xxxx.systemvotting.common.dto.PageResponse;
-import com.xxxx.systemvotting.common.utils.PlanRoomLimits;
+import com.xxxx.systemvotting.common.utils.PlanPollLimits;
 import com.xxxx.systemvotting.common.utils.RedisKeyUtils;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
@@ -40,12 +40,14 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PollServiceImpl implements PollService {
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("createdAt", "endTime", "title", "id");
 
     private final PollRepository pollRepository;
     private final UserRepository userRepository;
@@ -60,10 +62,6 @@ public class PollServiceImpl implements PollService {
     private final com.xxxx.systemvotting.common.service.RealTimeService realTimeService;
     private final AiModerationService aiModerationService;
     private final PollDetailsCacheLoader pollDetailsCacheLoader;
-
-    private int getCommentCountForPoll(Long pollId) {
-        return (int) commentRepository.countByPollId(pollId);
-    }
 
     private Map<Long, Integer> getCommentCountsForPolls(List<Long> pollIds) {
         Map<Long, Integer> commentCountMap = new HashMap<>();
@@ -196,9 +194,9 @@ public class PollServiceImpl implements PollService {
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         if (creator.getRole() != Role.ADMIN) {
-            Integer maxRooms = PlanRoomLimits.maxRooms(creator.getPlan());
+            Integer maxRooms = PlanPollLimits.maxRooms(creator.getPlan());
             if (maxRooms != null) {
-                long existing = pollRepository.countByCreator_Id(creator.getId());
+                long existing = pollRepository.countActiveByCreator(creator.getId(), LocalDateTime.now());
                 if (existing >= maxRooms) {
                     throw new AppException(ErrorCode.POLL_ROOM_LIMIT_EXCEEDED);
                 }
@@ -266,8 +264,9 @@ public class PollServiceImpl implements PollService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction) {
-        Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
+        Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
         sort = sort.and(Sort.by("id").descending());
         
         int pageNumber = Math.max(0, page);
@@ -324,15 +323,20 @@ public class PollServiceImpl implements PollService {
         realTimeService.broadcast("/topic/polls/events", payload);
     }
 
+    private static final int MAX_PROFILE_POLL_PAGE_SIZE = 100;
+
     @Override
     @Transactional(readOnly = true)
-    public List<PollResponseDTO> getMyPolls(Long userId) {
-        List<Poll> polls = pollRepository.findByCreatorIdOrderByIdDesc(userId);
-        
-        List<Long> pollIds = polls.stream().map(Poll::getId).collect(Collectors.toList());
+    public PageResponse<PollResponseDTO> getMyPolls(Long userId, int page, int size) {
+        int pageNumber = Math.max(0, page);
+        int pageSize = Math.min(Math.max(1, size), MAX_PROFILE_POLL_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("id").descending());
+        Page<Poll> pollPage = pollRepository.findByCreatorId(userId, pageable);
+
+        List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toList());
         Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
 
-        List<PollResponseDTO> myPollDtos = polls.stream()
+        List<PollResponseDTO> myPollDtos = pollPage.getContent().stream()
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
@@ -340,18 +344,22 @@ public class PollServiceImpl implements PollService {
                 })
                 .collect(Collectors.toList());
         enrichPollListWithRedisData(myPollDtos);
-        return myPollDtos;
+        Page<PollResponseDTO> resultPage = new PageImpl<>(myPollDtos, pageable, pollPage.getTotalElements());
+        return PageResponse.from(resultPage);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PollResponseDTO> getVotedPolls(Long userId) {
-        List<Poll> polls = pollRepository.findPollsVotedByUser(userId);
+    public PageResponse<PollResponseDTO> getVotedPolls(Long userId, int page, int size) {
+        int pageNumber = Math.max(0, page);
+        int pageSize = Math.min(Math.max(1, size), MAX_PROFILE_POLL_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Poll> pollPage = pollRepository.findPollsVotedByUser(userId, pageable);
 
-        List<Long> pollIds = polls.stream().map(Poll::getId).collect(Collectors.toList());
+        List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toList());
         Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
 
-        List<PollResponseDTO> votedPollDtos = polls.stream()
+        List<PollResponseDTO> votedPollDtos = pollPage.getContent().stream()
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
@@ -359,6 +367,7 @@ public class PollServiceImpl implements PollService {
                 })
                 .collect(Collectors.toList());
         enrichPollListWithRedisData(votedPollDtos);
-        return votedPollDtos;
+        Page<PollResponseDTO> resultPage = new PageImpl<>(votedPollDtos, pageable, pollPage.getTotalElements());
+        return PageResponse.from(resultPage);
     }
 }

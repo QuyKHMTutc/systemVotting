@@ -34,7 +34,8 @@ import java.util.Set;
 @Table(name = "polls", indexes = {
     @Index(name = "idx_poll_creator_id", columnList = "creator_id"),
     @Index(name = "idx_poll_end_time",   columnList = "end_time"),
-    @Index(name = "idx_poll_created_at", columnList = "created_at")
+    @Index(name = "idx_poll_created_at", columnList = "created_at"),
+    @Index(name = "idx_poll_creator_end_time", columnList = "creator_id, end_time")
 })
 @Getter
 @Setter

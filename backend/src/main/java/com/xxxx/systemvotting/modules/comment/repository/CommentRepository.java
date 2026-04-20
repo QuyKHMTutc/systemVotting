@@ -48,7 +48,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * Fetches a user's comments with related poll info eagerly loaded.
      */
     @EntityGraph(attributePaths = {"user", "poll"})
-    List<Comment> findByUserIdOrderByCreatedAtDesc(Long userId);
+    Page<Comment> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     /**
      * Used for identity-consistency checks (anonymous vs named).

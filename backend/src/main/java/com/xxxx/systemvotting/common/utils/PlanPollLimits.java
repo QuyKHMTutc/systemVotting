@@ -13,9 +13,9 @@ public final class PlanPollLimits {
     public static Integer maxRooms(PlanType plan) {
         PlanType p = plan != null ? plan : PlanType.FREE;
         return switch (p) {
-            case FREE -> 5;
-            case GO -> 20;
-            case PLUS -> 50;
+            case FREE -> 5000;
+            case GO -> 5000;
+            case PLUS -> 5000;
             case PRO -> null;
         };
     }

@@ -1,6 +1,7 @@
 package com.xxxx.systemvotting.modules.user.controller;
 
 import com.xxxx.systemvotting.common.dto.ApiResponse;
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.modules.user.dto.UserCreateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserProfileUpdateRequestDTO;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
@@ -10,6 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,14 +27,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.util.List;
-
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 
 @Tag(name = "Users", description = "Quản lý user: profile, admin (promote, lock), danh sách user")
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Validated
 public class UserController {
 
     private final UserService userService;
@@ -106,11 +109,13 @@ public class UserController {
                 .build();
     }
 
-    @Operation(summary = "Danh sách user", description = "Chỉ ADMIN: lấy tất cả user", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @Operation(summary = "Danh sách user", description = "Chỉ ADMIN: danh sách user có phân trang (page 0-based)", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @GetMapping
-    public ApiResponse<List<UserResponseDTO>> getAllUsers() {
-        List<UserResponseDTO> users = userService.getAllUsers();
-        return ApiResponse.<List<UserResponseDTO>>builder()
+    public ApiResponse<PageResponse<UserResponseDTO>> getAllUsers(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        PageResponse<UserResponseDTO> users = userService.getAllUsers(page, size);
+        return ApiResponse.<PageResponse<UserResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")
                 .data(users)

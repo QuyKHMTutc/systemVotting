@@ -11,11 +11,16 @@ import com.xxxx.systemvotting.modules.payment.repository.PaymentTransactionRepos
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.enums.PlanType;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
 import org.springframework.cache.CacheManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +37,8 @@ public class PaymentService {
     private static final long GO_PRICE_VND = 50_000L;
     private static final long PLUS_PRICE_VND = 200_000L;
     private static final long PRO_PRICE_VND = 500_000L;
-    private static final int PLAN_DURATION_DAYS = 30;
+   // private static final int PLAN_DURATION_DAYS = 30;
+    private static final int PLAN_DURATION_MINUTES = 10;
 
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final UserRepository userRepository;
@@ -219,19 +225,27 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public List<PaymentDTO.PaymentHistory> getPaymentHistory(Long userId) {
-        return paymentTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
-            .stream()
-            .map(txn -> new PaymentDTO.PaymentHistory(
-                    txn.getId(),
-                    txn.getTxnRef(),
-                    txn.getAmount(),
-                    txn.getTargetPlan(),
-                    txn.getStatus(),
-                    txn.getCreatedAt(),
-                    txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(PLAN_DURATION_DAYS) : null
-            ))
-            .collect(Collectors.toList());
+    public PageResponse<PaymentDTO.PaymentHistory> getPaymentHistory(Long userId, int page, int size) {
+        int pageNumber = Math.max(0, page);
+        int pageSize = Math.min(Math.max(1, size), 100);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Page<PaymentTransaction> txnPage = paymentTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        List<PaymentDTO.PaymentHistory> dtos = txnPage.getContent().stream()
+                .map(txn -> new PaymentDTO.PaymentHistory(
+                        txn.getId(),
+                        txn.getTxnRef(),
+                        txn.getAmount(),
+                        txn.getTargetPlan(),
+                        txn.getStatus(),
+                        txn.getCreatedAt(),
+                        //txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(PLAN_DURATION_DAYS) : null
+                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_MINUTES) : null
+                ))
+                .collect(Collectors.toList());
+
+        Page<PaymentDTO.PaymentHistory> dtoPage = new PageImpl<>(dtos, pageable, txnPage.getTotalElements());
+        return PageResponse.from(dtoPage);
     }
 
     private long resolvePlanPrice(PlanType planType) {
@@ -249,6 +263,7 @@ public class PaymentService {
         }
 
         LocalDateTime base = currentExpiration != null && currentExpiration.isAfter(now) ? currentExpiration : now;
-        return base.plusDays(PLAN_DURATION_DAYS);
+        //return base.plusDays(PLAN_DURATION_DAYS);
+        return base.plusMinutes(PLAN_DURATION_MINUTES);
     }
 }

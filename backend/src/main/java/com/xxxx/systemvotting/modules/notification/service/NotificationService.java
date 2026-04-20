@@ -1,12 +1,12 @@
 package com.xxxx.systemvotting.modules.notification.service;
 
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.modules.notification.dto.response.NotificationResponseDTO;
-import java.util.List;
 
 public interface NotificationService {
     void createNotification(Long recipientId, String actorName, String actorAvatar, String type, String message, Long relatedPollId, Long relatedCommentId);
     
-    List<NotificationResponseDTO> getMyNotifications(Long userId);
+    PageResponse<NotificationResponseDTO> getMyNotifications(Long userId, int page, int size);
     
     void markAsRead(Long notificationId, Long userId);
     

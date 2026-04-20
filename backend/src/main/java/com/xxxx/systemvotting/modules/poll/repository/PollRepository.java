@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -36,12 +35,15 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     void deleteByCreator(com.xxxx.systemvotting.modules.user.entity.User creator);
 
-    @EntityGraph(attributePaths = { "options", "creator" })
-    List<Poll> findByCreatorIdOrderByIdDesc(Long creatorId);
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    Page<Poll> findByCreatorId(Long creatorId, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "options", "creator" })
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query("SELECT p FROM Poll p JOIN Vote v ON p.id = v.poll.id WHERE v.user.id = :userId ORDER BY v.createdAt DESC")
-    List<Poll> findPollsVotedByUser(@Param("userId") Long userId);
+    Page<Poll> findPollsVotedByUser(@Param("userId") Long userId, Pageable pageable);
 
     long countByCreator_Id(Long creatorId);
+
+    @Query("SELECT COUNT(p) FROM Poll p WHERE p.creator.id = :creatorId AND (p.endTime IS NULL OR p.endTime > :now)")
+    long countActiveByCreator(@Param("creatorId") Long creatorId, @Param("now") java.time.LocalDateTime now);
 }

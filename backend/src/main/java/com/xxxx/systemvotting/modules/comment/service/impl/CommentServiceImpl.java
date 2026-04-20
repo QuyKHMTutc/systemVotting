@@ -221,15 +221,20 @@ public class CommentServiceImpl implements CommentService {
         return new CommentThreadResponse(PageResponse.from(dtoPage), totalAll);
     }
 
+    private static final int MAX_MY_COMMENTS_PAGE_SIZE = 100;
+
     @Override
     @Transactional(readOnly = true)
-    public List<CommentResponseDTO> getMyComments(Long userId) {
-        List<Comment> comments = commentRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        if (comments.isEmpty()) {
-            return List.of();
+    public PageResponse<CommentResponseDTO> getMyComments(Long userId, int page, int size) {
+        int pageNumber = Math.max(0, page);
+        int pageSize = Math.min(Math.max(1, size), MAX_MY_COMMENTS_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Comment> commentPage = commentRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        if (commentPage.isEmpty()) {
+            return PageResponse.from(new PageImpl<>(List.of(), pageable, 0));
         }
 
-        List<Long> pollIds = comments.stream().map(c -> c.getPoll().getId()).distinct().toList();
+        List<Long> pollIds = commentPage.getContent().stream().map(c -> c.getPoll().getId()).distinct().toList();
         List<Vote> votes = voteRepository.findByUserIdAndPollIdIn(userId, pollIds);
         Map<Long, String> pollVoteMap = votes.stream()
                 .collect(Collectors.toMap(
@@ -238,12 +243,14 @@ public class CommentServiceImpl implements CommentService {
                         (existing, replacement) -> existing
                 ));
 
-        return comments.stream()
+        List<CommentResponseDTO> dtos = commentPage.getContent().stream()
                 .map(comment -> {
                     String voteStatus = pollVoteMap.getOrDefault(comment.getPoll().getId(), "Chưa vote");
                     return mapToDTO(comment, voteStatus, Map.of());
                 })
                 .collect(Collectors.toList());
+        Page<CommentResponseDTO> dtoPage = new PageImpl<>(dtos, pageable, commentPage.getTotalElements());
+        return PageResponse.from(dtoPage);
     }
 
     @Override

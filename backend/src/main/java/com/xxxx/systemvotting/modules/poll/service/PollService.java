@@ -1,7 +1,6 @@
 package com.xxxx.systemvotting.modules.poll.service;
 
-import java.util.List;
-
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.user.entity.User;
@@ -11,11 +10,11 @@ public interface PollService {
 
     PollResponseDTO getPollById(Long id);
 
-    com.xxxx.systemvotting.common.dto.PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction);
+    PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction);
 
     void deletePoll(Long pollId, User authenticatedUser);
 
-    List<PollResponseDTO> getMyPolls(Long userId);
+    PageResponse<PollResponseDTO> getMyPolls(Long userId, int page, int size);
 
-    List<PollResponseDTO> getVotedPolls(Long userId);
+    PageResponse<PollResponseDTO> getVotedPolls(Long userId, int page, int size);
 }

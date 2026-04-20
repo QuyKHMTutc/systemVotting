@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.notification.service.impl;
 
+import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.notification.dto.response.NotificationResponseDTO;
@@ -13,6 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +28,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationServiceImpl implements NotificationService {
+
+    private static final int MAX_NOTIFICATION_PAGE_SIZE = 100;
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -64,9 +71,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<NotificationResponseDTO> getMyNotifications(Long userId) {
-        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId);
-        return notifications.stream().map(this::mapToDTO).collect(Collectors.toList());
+    public PageResponse<NotificationResponseDTO> getMyNotifications(Long userId, int page, int size) {
+        int pageNumber = Math.max(0, page);
+        int pageSize = Math.min(Math.max(1, size), MAX_NOTIFICATION_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Notification> notifPage = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId, pageable);
+        List<NotificationResponseDTO> dtos = notifPage.getContent().stream().map(this::mapToDTO).collect(Collectors.toList());
+        Page<NotificationResponseDTO> dtoPage = new PageImpl<>(dtos, pageable, notifPage.getTotalElements());
+        return PageResponse.from(dtoPage);
     }
 
     @Override
