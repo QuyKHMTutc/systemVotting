@@ -79,32 +79,33 @@ public class VoteServiceImpl implements VoteService {
     // ── Lua Script (compiled once, reused — thread-safe) ────────────────────────
     /**
      * Atomic Lua script that:
-     * 1. Checks for duplicate vote (same option) → returns "-1"
+     * 1. Rejects if user has already voted in this poll (one-vote-per-user) → returns "-1"
      * 2. Enforces plan-based vote limit → returns "-2"
      * 3. Records user's choice in a Hash
-     * 4. Updates option vote counts (HINCRBY)
+     * 4. Updates option vote count (HINCRBY)
      * 5. Pushes a serialized VoteEventDTO to the async queue for DB persistence
-     * 6. Returns the previous optionId if changing vote, "" if first vote
+     * 6. Returns "" on success
      *
      * All operations are atomic — no race condition possible between steps.
+     * Vote changes are NOT allowed: each user may cast exactly one vote per poll.
      */
     private static final String VOTE_LUA = """
-            local userVotesKey   = KEYS[1]
-            local pollVotesKey   = KEYS[2]
-            local queueKey       = KEYS[3]
-            local userId         = ARGV[1]
-            local newOptionId    = ARGV[2]
-            local eventJson      = ARGV[3]
-            local maxLimitStr    = ARGV[4]
+            local userVotesKey     = KEYS[1]
+            local pollVotesKey     = KEYS[2]
+            local queueKey         = KEYS[3]
+            local userId           = ARGV[1]
+            local newOptionId      = ARGV[2]
+            local eventJson        = ARGV[3]
+            local maxLimitStr      = ARGV[4]
             local baselineTotalStr = ARGV[5]
 
-            local oldOptionId = redis.call('HGET', userVotesKey, userId)
+            local existingOptionId = redis.call('HGET', userVotesKey, userId)
 
-            -- Reject duplicate (same option re-selected)
-            if oldOptionId == newOptionId then return '-1' end
+            -- Reject: user already voted in this poll (no changes allowed)
+            if existingOptionId then return '-1' end
 
-            -- Enforce plan-based vote limit (only on first vote)
-            if not oldOptionId and maxLimitStr ~= '0' then
+            -- Enforce plan-based vote limit
+            if maxLimitStr ~= '0' then
                 local currentTotal = tonumber(baselineTotalStr or '0')
                 if redis.call('EXISTS', pollVotesKey) == 1 then
                     local redisDelta = 0
@@ -116,16 +117,15 @@ public class VoteServiceImpl implements VoteService {
                 if currentTotal >= tonumber(maxLimitStr) then return '-2' end
             end
 
-            -- Record new vote
+            -- Record vote (first and only time)
             redis.call('HSET', userVotesKey, userId, newOptionId)
-            if oldOptionId then redis.call('HINCRBY', pollVotesKey, oldOptionId, -1) end
             redis.call('HINCRBY', pollVotesKey, newOptionId, 1)
 
-            -- Inject real oldOptionId into the event JSON, push to async queue
-            local finalJson = string.gsub(eventJson, '"-999"', oldOptionId and ('"' .. oldOptionId .. '"') or 'null')
+            -- Push event to async queue (oldOptionId is always null — no vote change)
+            local finalJson = string.gsub(eventJson, '"-999"', 'null')
             redis.call('LPUSH', queueKey, finalJson)
 
-            return oldOptionId or ''
+            return ''
             """;
 
     private final RedisScript<String> voteScript = new DefaultRedisScript<>(VOTE_LUA, String.class);
@@ -158,17 +158,14 @@ public class VoteServiceImpl implements VoteService {
         // Step 4 — Execute atomic Lua script (single Redis round-trip)
         String luaResult = executeLuaVoteScript(userId, poll, option);
 
-        // Step 5 — Handle result
-        boolean isFirstVote = (luaResult == null || luaResult.isEmpty());
-        if (isFirstVote) {
-            handleFirstVoteSideEffects(userId, poll);
-        }
+        // Step 5 — Handle side effects (every successful vote is always a first vote)
+        handleFirstVoteSideEffects(userId, poll);
 
         // Step 6 — Broadcast live counts (non-blocking Redis read + WebSocket)
         broadcastVoteUpdate(poll, RedisKeyUtils.getPollVotesKey(pollId));
 
-        log.debug("Vote submitted: userId={}, pollId={}, optionId={}, firstVote={}",
-                userId, pollId, optionId, isFirstVote);
+        log.debug("Vote submitted: userId={}, pollId={}, optionId={}",
+                userId, pollId, optionId);
 
         return buildVoteResponse(userId, poll, option);
     }
@@ -274,12 +271,12 @@ public class VoteServiceImpl implements VoteService {
     }
 
     private String buildEventJson(Long userId, Long pollId, Long optionId) {
-        // Use "-999" as a sentinel for oldOptionId; Lua replaces it with the real value atomically.
+        // oldOptionId is always null — vote changes are not allowed (one vote per user per poll).
         VoteEventDTO event = VoteEventDTO.builder()
                 .userId(userId)
                 .pollId(pollId)
                 .optionId(optionId)
-                .oldOptionId(-999L)
+                .oldOptionId(null)
                 .timestamp(LocalDateTime.now())
                 .build();
         try {

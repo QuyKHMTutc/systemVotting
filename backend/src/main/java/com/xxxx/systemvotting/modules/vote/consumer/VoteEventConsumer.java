@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.Optional;
 
 /**
  * Async consumer that drains a Redis list and persists vote events to the database.
@@ -100,22 +99,20 @@ public class VoteEventConsumer {
             return;
         }
 
-        Optional<Vote> existing = voteRepository.findByUserIdAndPollId(event.userId(), event.pollId());
-
-        if (existing.isPresent()) {
-            // Vote change or corrective update
-            Vote vote = existing.get();
-            vote.setOption(newOption);
-            voteRepository.save(vote);
-            log.debug("Updated vote: userId={}, pollId={}, newOptionId={}", user.getId(), poll.getId(), newOption.getId());
-        } else {
-            // Brand-new vote
-            voteRepository.save(Vote.builder()
-                    .user(user)
-                    .poll(poll)
-                    .option(newOption)
-                    .build());
-            log.debug("Inserted vote: userId={}, pollId={}, optionId={}", user.getId(), poll.getId(), newOption.getId());
+        // Each user can only vote once — vote changes are blocked at the Lua script level.
+        // The existing check below is a safety guard against DB/Redis inconsistency (e.g. Redis eviction).
+        boolean alreadyVoted = voteRepository.findByUserIdAndPollId(event.userId(), event.pollId()).isPresent();
+        if (alreadyVoted) {
+            log.warn("Skipping duplicate vote event (already in DB): userId={}, pollId={}", event.userId(), event.pollId());
+            return;
         }
+
+        // Insert brand-new vote
+        voteRepository.save(Vote.builder()
+                .user(user)
+                .poll(poll)
+                .option(newOption)
+                .build());
+        log.debug("Inserted vote: userId={}, pollId={}, optionId={}", user.getId(), poll.getId(), newOption.getId());
     }
 }
