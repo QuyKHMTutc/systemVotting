@@ -26,4 +26,18 @@ public final class PaymentDTO {
         LocalDateTime     createdAt,
         LocalDateTime     expiresAt
     ) {}
+
+    /** Dùng cho admin xem tất cả giao dịch (có thêm thông tin user) */
+    public record AdminPaymentHistory(
+        Long              id,
+        String            txnRef,
+        Long              amount,
+        PlanType          targetPlan,
+        TransactionStatus status,
+        LocalDateTime     createdAt,
+        LocalDateTime     expiresAt,
+        Long              userId,
+        String            username,
+        String            email
+    ) {}
 }

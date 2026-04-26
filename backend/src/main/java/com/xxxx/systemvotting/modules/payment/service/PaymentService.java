@@ -248,6 +248,33 @@ public class PaymentService {
         return PageResponse.from(dtoPage);
     }
 
+    /** Admin: lấy toàn bộ giao dịch thanh toán của tất cả user */
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentDTO.AdminPaymentHistory> getAllPayments(int page, int size) {
+        int pageNumber = Math.max(0, page);
+        int pageSize = Math.min(Math.max(1, size), 200);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Page<PaymentTransaction> txnPage = paymentTransactionRepository.findAllByOrderByCreatedAtDesc(pageable);
+        List<PaymentDTO.AdminPaymentHistory> dtos = txnPage.getContent().stream()
+                .map(txn -> new PaymentDTO.AdminPaymentHistory(
+                        txn.getId(),
+                        txn.getTxnRef(),
+                        txn.getAmount(),
+                        txn.getTargetPlan(),
+                        txn.getStatus(),
+                        txn.getCreatedAt(),
+                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_MINUTES) : null,
+                        txn.getUser().getId(),
+                        txn.getUser().getUsername(),
+                        txn.getUser().getEmail()
+                ))
+                .collect(Collectors.toList());
+
+        Page<PaymentDTO.AdminPaymentHistory> dtoPage = new PageImpl<>(dtos, pageable, txnPage.getTotalElements());
+        return PageResponse.from(dtoPage);
+    }
+
     private long resolvePlanPrice(PlanType planType) {
         return switch (planType) {
             case GO -> GO_PRICE_VND;

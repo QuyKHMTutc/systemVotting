@@ -84,7 +84,7 @@ public class PollController {
             @RequestParam(required = false, defaultValue = "ALL") String tag,
             @RequestParam(required = false, defaultValue = "ALL") String status,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(1000) int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
         PageResponse<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, page, size, sortBy, direction);

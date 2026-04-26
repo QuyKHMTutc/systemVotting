@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, Long> {
     Optional<PaymentTransaction> findByTxnRef(String txnRef);
     Page<PaymentTransaction> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    Page<PaymentTransaction> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

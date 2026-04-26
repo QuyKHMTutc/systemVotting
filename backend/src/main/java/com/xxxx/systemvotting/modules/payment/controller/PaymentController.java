@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
+import jakarta.annotation.security.RolesAllowed;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -104,6 +106,20 @@ public class PaymentController {
                 .code(HttpStatus.OK.value())
                 .message("Success")
                 .data(history)
+                .build();
+    }
+
+    /** Admin: xem toàn bộ giao dịch của hệ thống */
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<PageResponse<PaymentDTO.AdminPaymentHistory>> getAllPayments(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
+        PageResponse<PaymentDTO.AdminPaymentHistory> result = paymentService.getAllPayments(page, size);
+        return ApiResponse.<PageResponse<PaymentDTO.AdminPaymentHistory>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(result)
                 .build();
     }
 }
