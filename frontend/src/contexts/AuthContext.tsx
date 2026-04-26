@@ -28,7 +28,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isInitializing, setIsInitializing] = useState(true);
-    const [token, setToken] = useState<string | null>(null);
+    // Khởi tạo token đồng bộ từ localStorage để tránh race condition:
+    // Nếu dùng useEffect thì token state ban đầu là null → isAuthenticated = false
+    // → ProtectedRoute redirect sai trước khi token được set
+    const [token, setToken] = useState<string | null>(() => {
+        const storedToken = localStorage.getItem('accessToken');
+        if (storedToken) {
+            setMemoryToken(storedToken);
+            return storedToken;
+        }
+        return null;
+    });
     const [user, setUser] = useState<User | null>(() => {
         try {
             const storedUser = localStorage.getItem('user');
@@ -40,14 +50,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     });
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const storedAccessToken = localStorage.getItem('accessToken');
-        if (storedAccessToken) {
-            setMemoryToken(storedAccessToken);
-            setToken(storedAccessToken);
-        }
-    }, []);
 
     const login = (accessToken: string, _refreshToken: string | null, userData: User) => {
         setMemoryToken(accessToken);

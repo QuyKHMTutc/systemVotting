@@ -20,11 +20,16 @@ import ScrollToTop from './components/ScrollToTop';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, requireRole?: string }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isInitializing, user } = useAuth();
+
+  // Chờ AuthContext khởi tạo xong (sync token từ localStorage / gọi /auth/me)
+  // Nếu render quá sớm, token state vẫn là null dù localStorage có token
+  // → isAuthenticated = false → bị redirect sai về /login
+  if (isInitializing) return null;
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // If the route requires a specific role (like USER) but the user has a different role (like ADMIN)
+  // Nếu route yêu cầu role cụ thể nhưng user có role khác → redirect đúng trang
   if (requireRole && user?.role !== requireRole) {
     if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
     if (user?.role === 'USER') return <Navigate to="/" replace />;
@@ -33,9 +38,23 @@ const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, 
   return <>{children}</>;
 };
 
+// Public Route: redirect authenticated users away from login/register
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isInitializing, user } = useAuth();
+
+  if (isInitializing) return null;
+
+  if (isAuthenticated) {
+    if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const ConditionalFooter = () => {
   const location = useLocation();
-  const noFooterRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const noFooterRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/admin'];
   
   if (noFooterRoutes.includes(location.pathname)) {
     return null;
@@ -53,8 +72,8 @@ function App() {
           <div className="min-h-screen flex flex-col">
             <div className="flex-grow flex flex-col relative z-0">
               <Routes>
-              <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/terms" element={<TermsOfService />} />

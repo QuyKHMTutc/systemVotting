@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +24,6 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [needsVerification, setNeedsVerification] = useState(false);
     const { login } = useAuth();
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const { theme } = useTheme();
 
@@ -82,6 +81,13 @@ const Login = () => {
                 let actualPlan = 'FREE';
                 let actualPlanExpirationDate: string | null = null;
 
+                const tokenPayload = decodeJwtPayload(response.data.accessToken);
+                // JWT uses 'roles' array (e.g. ["ADMIN"]), not a 'role' string.
+                // /auth/me is the authoritative source; JWT roles[] is the fallback.
+                let actualRole: string = Array.isArray(tokenPayload.roles) && tokenPayload.roles.length > 0
+                    ? tokenPayload.roles[0]
+                    : 'USER';
+
                 try {
                     const meRes = await authService.me();
                     if (meRes && meRes.code === 200 && meRes.data) {
@@ -90,24 +96,24 @@ const Login = () => {
                         actualId = meRes.data.id || actualId;
                         actualPlan = meRes.data.plan || actualPlan;
                         actualPlanExpirationDate = meRes.data.planExpirationDate ?? actualPlanExpirationDate;
+                        actualRole = meRes.data.role || actualRole; // most reliable source
                     }
                 } catch (e) {
                     console.error("Failed to fetch full profile after login", e);
                 }
 
-                const tokenPayload = decodeJwtPayload(response.data.accessToken);
                 const userData = {
                     id: actualId || tokenPayload.id || 0,
                     username: actualUsername,
                     email: email,
                     avatarUrl: actualAvatarUrl,
-                    role: tokenPayload.role || 'USER',
+                    role: actualRole,
                     plan: actualPlan,
                     planExpirationDate: actualPlanExpirationDate,
                 };
 
+                // AuthContext.login() handles role-based redirect (ADMIN → /admin, USER → /)
                 login(response.data.accessToken, response.data.refreshToken, userData);
-                navigate('/');
             } else {
                 setError(response.message || 'Login failed');
                 triggerShake();
@@ -257,6 +263,10 @@ const Login = () => {
                                                     let actualId = tokenPayload.id || parseInt(tokenPayload.sub) || 0;
                                                     let actualPlan = 'FREE';
                                                     let actualPlanExpirationDate: string | null = null;
+                                                    // JWT uses 'roles' array (e.g. ["ADMIN"]), not 'role'
+                                                    let actualRole: string = Array.isArray(tokenPayload.roles) && tokenPayload.roles.length > 0
+                                                        ? tokenPayload.roles[0]
+                                                        : 'USER';
 
                                                     try {
                                                         const meRes = await authService.me();
@@ -267,6 +277,7 @@ const Login = () => {
                                                             actualId = meRes.data.id || actualId;
                                                             actualPlan = meRes.data.plan || actualPlan;
                                                             actualPlanExpirationDate = meRes.data.planExpirationDate ?? actualPlanExpirationDate;
+                                                            actualRole = meRes.data.role || actualRole;
                                                         }
                                                     } catch (e) {
                                                         console.error("Failed to fetch full profile after google login", e);
@@ -277,12 +288,12 @@ const Login = () => {
                                                         username: actualUsername,
                                                         email: actualEmail,
                                                         avatarUrl: actualAvatarUrl,
-                                                        role: tokenPayload.role || 'USER',
+                                                        role: actualRole,
                                                         plan: actualPlan,
                                                         planExpirationDate: actualPlanExpirationDate,
                                                     };
+                                                    // AuthContext.login() handles role-based redirect
                                                     login(res.data.accessToken, res.data.refreshToken, userData);
-                                                    navigate('/');
                                                 } else {
                                                     setError(res.message || 'Google login failed');
                                                     triggerShake();

@@ -11,9 +11,19 @@ export interface PaymentHistory {
   expiresAt?: string | null;
 }
 
+export interface AdminPaymentHistory extends PaymentHistory {
+  userId: number;
+  username: string;
+  email: string;
+}
+
 export const paymentService = {
   getPaymentHistory: async (page = 0, size = 10): Promise<PageResponse<PaymentHistory>> => {
     const response = await api.get('/payments/history', { params: { page, size } });
     return response.data.data;
-  }
+  },
+  getAllPayments: async (page = 0, size = 100): Promise<PageResponse<AdminPaymentHistory>> => {
+    const response = await api.get('/payments/admin/all', { params: { page, size } });
+    return response.data.data;
+  },
 };
