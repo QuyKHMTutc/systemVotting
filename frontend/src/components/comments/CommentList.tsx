@@ -9,9 +9,10 @@ interface CommentListProps {
   identityLocked?: boolean;
   lockedIsAnonymous?: boolean;
   highlightCommentId?: number | null;
+  judgeIds?: number[];
 }
 
-export default function CommentList({ comments, onReplySubmit, identityLocked, lockedIsAnonymous, highlightCommentId }: CommentListProps) {
+export default function CommentList({ comments, onReplySubmit, identityLocked, lockedIsAnonymous, highlightCommentId, judgeIds }: CommentListProps) {
   const { t } = useTranslation();
   const [expandedReplies, setExpandedReplies] = useState<Record<number, boolean>>({});
 
@@ -52,6 +53,7 @@ export default function CommentList({ comments, onReplySubmit, identityLocked, l
           identityLocked={identityLocked}
           lockedIsAnonymous={lockedIsAnonymous}
           highlightCommentId={highlightCommentId}
+          judgeIds={judgeIds}
         />
       ))}
     </div>

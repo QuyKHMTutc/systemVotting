@@ -14,6 +14,7 @@ interface CommentItemProps {
   identityLocked?: boolean;
   lockedIsAnonymous?: boolean;
   highlightCommentId?: number | null;
+  judgeIds?: number[];
 }
 
 function getRelativeTime(dateString: string, t: TFunction): string {
@@ -39,6 +40,7 @@ export default function CommentItem({
   identityLocked,
   lockedIsAnonymous,
   highlightCommentId,
+  judgeIds = [],
 }: CommentItemProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -113,6 +115,11 @@ export default function CommentItem({
         {/* Username + time */}
         <div className="flex items-center gap-2 mb-1">
           <span className="font-semibold text-slate-900 dark:text-white text-sm">{comment.username}</span>
+          {comment.userId && judgeIds.includes(comment.userId) && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">
+              ⚖️ {t('pollDetail.judge')}
+            </span>
+          )}
           <span className="text-slate-400 dark:text-white/40 text-xs">·</span>
           <span className="text-slate-500 dark:text-white/50 text-xs">{timeAgo}</span>
         </div>
@@ -198,6 +205,7 @@ export default function CommentItem({
                     identityLocked={identityLocked}
                     lockedIsAnonymous={lockedIsAnonymous}
                     highlightCommentId={highlightCommentId}
+                    judgeIds={judgeIds}
                   />
                 ))}
                 <button

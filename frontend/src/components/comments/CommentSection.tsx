@@ -9,11 +9,12 @@ import { useAuth } from '../../contexts/AuthContext';
 interface CommentSectionProps {
     pollId: number;
     voteTrigger?: number;
+    judgeIds?: number[];
 }
 
 const PAGE_SIZE = 20;
 
-const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0 }) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0, judgeIds }) => {
     const { user } = useAuth();
     const [comments, setComments] = useState<Comment[]>([]);
     const [page, setPage] = useState(0);
@@ -139,7 +140,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
                     </div>
                 ) : (
                     <>
-                        <CommentList comments={comments} onReplySubmit={handleReplySubmit} />
+                        <CommentList 
+                            comments={comments} 
+                            onReplySubmit={handleReplySubmit} 
+                            judgeIds={judgeIds}
+                        />
                         {hasMore && (
                             <div className="flex justify-center pt-2">
                                 <button

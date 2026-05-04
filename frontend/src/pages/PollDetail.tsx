@@ -661,6 +661,7 @@ const PollDetail = () => {
                       identityLocked={identityLocked}
                       lockedIsAnonymous={lockedIsAnonymous}
                       highlightCommentId={highlightCommentId}
+                      judgeIds={poll.judgeIds || []}
                     />
                     {hasMoreComments && (
                       <div className="flex justify-center pt-4">

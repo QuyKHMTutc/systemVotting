@@ -20,6 +20,7 @@ export interface Poll {
     commentCount: number;
     createdAt: string;
     judgeWeight?: number; // % of total score assigned to judges (0 = no judges)
+    judgeIds?: number[];
 }
 
 export interface PollOption {

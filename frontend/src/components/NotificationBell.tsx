@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, MessageSquare, Reply, PieChart, MoreHorizontal, Check } from 'lucide-react';
+import { Bell, MessageSquare, Reply, PieChart, MoreHorizontal, Check, Gavel } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationService } from '../services/notification.service';
 import type { Notification } from '../services/notification.service';
@@ -132,6 +132,8 @@ export default function NotificationBell() {
                 return <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1e1b4b] shadow-sm"><Reply className="w-3 h-3 text-white" /></div>;
             case 'NEW_VOTE':
                 return <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1e1b4b] shadow-sm"><PieChart className="w-3 h-3 text-white" /></div>;
+            case 'JUDGE_INVITATION':
+                return <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1e1b4b] shadow-sm"><Gavel className="w-3 h-3 text-white" /></div>;
             default:
                 return null;
         }
@@ -265,9 +267,12 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
                     {notif.type === 'NEW_COMMENT' && t('notification.commentedPoll')}
                     {notif.type === 'NEW_REPLY' && t('notification.repliedComment')}
                     {notif.type === 'NEW_VOTE' && t('notification.votedPoll')}
+                    {notif.type === 'JUDGE_INVITATION' && (notif.message.includes('Giám khảo') ? '' : 'đã mời bạn làm Giám khảo')}
                 </p>
-                {(notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY') && (
-                    <p className="text-[13px] text-slate-600 dark:text-white/60 truncate mt-0.5">"{notif.message}"</p>
+                {(notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY' || notif.type === 'JUDGE_INVITATION') && (
+                    <p className="text-[13px] text-slate-600 dark:text-white/60 line-clamp-2 mt-0.5">
+                        {notif.type === 'JUDGE_INVITATION' ? notif.message : `"${notif.message}"`}
+                    </p>
                 )}
                 <p className={`text-[12px] font-medium mt-1 ${!notif.isRead ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-white/50'}`}>
                     {formatTime(notif.createdAt)}

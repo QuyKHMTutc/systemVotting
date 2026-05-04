@@ -24,7 +24,7 @@ export const PollCard = ({
   const { t } = useTranslation();
   const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
-  const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
+  const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
   const [copied, setCopied] = useState(false);
 
   const handleShare = (e: React.MouseEvent) => {
@@ -64,6 +64,11 @@ export const PollCard = ({
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
                 {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
               </span>
+              {poll.judgeWeight > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                   ⚖️ {t('pollDetail.weighted')}
+                </span>
+              )}
               {poll.tags?.slice(0, 3).map((tag) => (
                 <span
                   key={tag}

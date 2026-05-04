@@ -104,6 +104,8 @@
     "endsInD": "Ends in {{count}}d",
     "viewResults": "View Results",
     "voteNow": "VOTE NOW",
+    "weighted": "Weighted",
+    "judge": "Judge",
     "noCommentsBeFirst": "No comments yet. Be the first to share your thoughts!"
   },
   "forgotPassword": {
