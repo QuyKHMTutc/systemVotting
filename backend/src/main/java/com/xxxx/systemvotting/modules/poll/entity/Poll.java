@@ -70,6 +70,10 @@ public class Poll {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
+    @Column(name = "judge_weight", nullable = false)
+    @Builder.Default
+    private Integer judgeWeight = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
     @ToString.Exclude

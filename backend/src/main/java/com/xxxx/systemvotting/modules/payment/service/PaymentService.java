@@ -38,7 +38,7 @@ public class PaymentService {
     private static final long PLUS_PRICE_VND = 200_000L;
     private static final long PRO_PRICE_VND = 500_000L;
    // private static final int PLAN_DURATION_DAYS = 30;
-    private static final int PLAN_DURATION_MINUTES = 10;
+    private static final int PLAN_DURATION_MINUTES = 500;
 
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final UserRepository userRepository;

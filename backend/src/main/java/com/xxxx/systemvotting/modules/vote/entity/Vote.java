@@ -61,6 +61,9 @@ public class Vote {
     @EqualsAndHashCode.Exclude
     private Option option;
 
+    @Builder.Default
+    private Integer weight = 1;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

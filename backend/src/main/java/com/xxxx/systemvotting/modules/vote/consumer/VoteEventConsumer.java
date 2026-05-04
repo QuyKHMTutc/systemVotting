@@ -107,12 +107,14 @@ public class VoteEventConsumer {
             return;
         }
 
-        // Insert brand-new vote
+        // Insert brand-new vote (with weight from event — 1 for audience, or judge-specific)
+        int weight = event.weight() != null ? event.weight() : 1;
         voteRepository.save(Vote.builder()
                 .user(user)
                 .poll(poll)
                 .option(newOption)
+                .weight(weight)
                 .build());
-        log.debug("Inserted vote: userId={}, pollId={}, optionId={}", user.getId(), poll.getId(), newOption.getId());
+        log.debug("Inserted vote: userId={}, pollId={}, optionId={}, weight={}", user.getId(), poll.getId(), newOption.getId(), weight);
     }
 }

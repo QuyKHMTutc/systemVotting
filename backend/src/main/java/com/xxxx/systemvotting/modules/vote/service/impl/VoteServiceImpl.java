@@ -20,6 +20,7 @@ import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.vote.service.RankingService;
 import com.xxxx.systemvotting.modules.vote.service.RateLimitService;
 import com.xxxx.systemvotting.modules.vote.service.VoteService;
+import com.xxxx.systemvotting.modules.poll.repository.PollMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -71,6 +72,7 @@ public class VoteServiceImpl implements VoteService {
     private final RankingService           rankingService;
     private final AsyncNotificationService asyncNotificationService;
     private final RealTimeService          realTimeService;
+    private final PollMemberRepository     pollMemberRepository;
 
     // ── Infrastructure ──────────────────────────────────────────────────────────
     private final StringRedisTemplate stringRedisTemplate;
@@ -98,6 +100,7 @@ public class VoteServiceImpl implements VoteService {
             local eventJson        = ARGV[3]
             local maxLimitStr      = ARGV[4]
             local baselineTotalStr = ARGV[5]
+            local roleSuffix       = ARGV[6]
 
             local existingOptionId = redis.call('HGET', userVotesKey, userId)
 
@@ -119,7 +122,9 @@ public class VoteServiceImpl implements VoteService {
 
             -- Record vote (first and only time)
             redis.call('HSET', userVotesKey, userId, newOptionId)
-            redis.call('HINCRBY', pollVotesKey, newOptionId, 1)
+            
+            local weightedKey = newOptionId .. ":" .. roleSuffix
+            redis.call('HINCRBY', pollVotesKey, weightedKey, 1)
 
             -- Push event to async queue (oldOptionId is always null — no vote change)
             local finalJson = string.gsub(eventJson, '"-999"', 'null')
@@ -151,6 +156,9 @@ public class VoteServiceImpl implements VoteService {
 
         // Step 2 — Validate poll (DB read, connection released immediately)
         Poll poll = loadAndValidatePoll(pollId);
+
+        // Step 2b — Reject creator self-vote
+        rejectIfCreator(userId, poll);
 
         // Step 3 — Validate option belongs to poll (DB read)
         Option option = loadAndValidateOption(optionId, pollId);
@@ -212,6 +220,13 @@ public class VoteServiceImpl implements VoteService {
         return poll;
     }
 
+    /** Validates that the voter is not the poll creator. */
+    private void rejectIfCreator(Long userId, Poll poll) {
+        if (poll.getCreator() != null && poll.getCreator().getId().equals(userId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
     private Option loadAndValidateOption(Long optionId, Long pollId) {
         Option option = optionRepository.findById(optionId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
@@ -229,7 +244,17 @@ public class VoteServiceImpl implements VoteService {
         String maxLimit      = resolveVoteLimit(poll.getCreator().getPlan());
         int    baselineTotal = computeBaselineTotal(poll, maxLimit);
 
-        String eventJson = buildEventJson(userId, poll.getId(), newOption.getId());
+        // Determine user role and weight for this poll
+        String roleSuffix = "AUDIENCE";
+        int weight = 1;
+        var member = pollMemberRepository.findByPollIdAndUserId(poll.getId(), userId);
+        if (member.isPresent()) {
+            roleSuffix = "JUDGE";
+            // In the ratio system, we count votes normally but in a separate bucket.
+            // Individual weight within the group is 1.
+        }
+
+        String eventJson = buildEventJson(userId, poll.getId(), newOption.getId(), weight);
 
         String result = stringRedisTemplate.execute(
                 voteScript,
@@ -238,7 +263,8 @@ public class VoteServiceImpl implements VoteService {
                 String.valueOf(newOption.getId()),
                 eventJson,
                 maxLimit,
-                String.valueOf(baselineTotal)
+                String.valueOf(baselineTotal),
+                roleSuffix
         );
 
         if ("-1".equals(result)) throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
@@ -270,12 +296,13 @@ public class VoteServiceImpl implements VoteService {
                 .sum();
     }
 
-    private String buildEventJson(Long userId, Long pollId, Long optionId) {
+    private String buildEventJson(Long userId, Long pollId, Long optionId, Integer weight) {
         // oldOptionId is always null — vote changes are not allowed (one vote per user per poll).
         VoteEventDTO event = VoteEventDTO.builder()
                 .userId(userId)
                 .pollId(pollId)
                 .optionId(optionId)
+                .weight(weight)
                 .oldOptionId(null)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -329,12 +356,20 @@ public class VoteServiceImpl implements VoteService {
 
         List<Map<String, Object>> optionUpdates = poll.getOptions().stream()
                 .map(o -> {
-                    Object raw = redisCounts.get(String.valueOf(o.getId()));
-                    int count  = raw != null ? Integer.parseInt(raw.toString()) : o.getVoteCount();
+                    Object audienceRaw = redisCounts.get(o.getId() + ":AUDIENCE");
+                    Object judgeRaw = redisCounts.get(o.getId() + ":JUDGE");
+                    
+                    int audienceCount = audienceRaw != null ? Integer.parseInt(audienceRaw.toString()) : 0;
+                    int judgeCount = judgeRaw != null ? Integer.parseInt(judgeRaw.toString()) : 0;
+                    
+                    // Note: totalVoteCount here is a virtual weighted sum for simple display if needed,
+                    // but the frontend will do the heavy lifting with judgeWeight.
                     return Map.<String, Object>of(
                             "optionId",  o.getId(),
                             "text",      o.getText(),
-                            "voteCount", count
+                            "audienceCount", audienceCount,
+                            "judgeCount", judgeCount,
+                            "judgeWeight", poll.getJudgeWeight()
                     );
                 })
                 .collect(Collectors.toList());

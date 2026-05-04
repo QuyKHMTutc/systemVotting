@@ -13,7 +13,13 @@ public record OptionResponseDTO(
     @Schema(description = "Nội dung lựa chọn", example = "Java")
     String text,
 
-    @Schema(description = "Số lượng bình chọn cho lựa chọn này", example = "10")
-    Integer voteCount
+    @Schema(description = "Tổng số lượng bình chọn cho lựa chọn này (tổng hợp)", example = "10")
+    Integer voteCount,
+
+    @Schema(description = "Số phiếu từ khán giả", example = "8")
+    Integer audienceCount,
+
+    @Schema(description = "Số phiếu từ giám khảo", example = "2")
+    Integer judgeCount
 
 ) implements Serializable {}

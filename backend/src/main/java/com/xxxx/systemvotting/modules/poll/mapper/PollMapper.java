@@ -27,6 +27,7 @@ public interface PollMapper {
     @Mapping(target = "creator",    ignore = true)   // set in service
     @Mapping(target = "options",    ignore = true)   // bidirectional relation, set in service
     @Mapping(target = "tags",       ignore = true)   // set in service
+    @Mapping(target = "judgeWeight",ignore = true)   // set in service based on plan
     @Mapping(target = "isAnonymous", source = "isAnonymous")
     Poll toEntity(PollCreateRequestDTO dto);
 
@@ -38,11 +39,13 @@ public interface PollMapper {
 
     List<PollResponseDTO> toDtoList(List<Poll> entities);
 
-    @Mapping(target = "id",        ignore = true)
-    @Mapping(target = "voteCount", ignore = true)
-    @Mapping(target = "poll",      ignore = true)
+    @Mapping(target = "id",            ignore = true)
+    @Mapping(target = "voteCount",     ignore = true)
+    @Mapping(target = "poll",          ignore = true)
     Option toOptionEntity(OptionRequestDTO dto);
 
+    @Mapping(target = "audienceCount", ignore = true)  // enriched from Redis
+    @Mapping(target = "judgeCount",    ignore = true)  // enriched from Redis
     OptionResponseDTO toOptionDto(Option entity);
 
     List<OptionResponseDTO> toOptionDtoList(Set<Option> entities);

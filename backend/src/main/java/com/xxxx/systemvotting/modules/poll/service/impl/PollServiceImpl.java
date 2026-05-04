@@ -5,6 +5,7 @@ import com.xxxx.systemvotting.common.utils.PlanPollLimits;
 import com.xxxx.systemvotting.common.utils.RedisKeyUtils;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
+import com.xxxx.systemvotting.modules.poll.dto.JudgeCandidateDTO;
 import com.xxxx.systemvotting.modules.poll.dto.OptionRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.OptionResponseDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
@@ -23,6 +24,10 @@ import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
+import com.xxxx.systemvotting.modules.poll.entity.PollMember;
+import com.xxxx.systemvotting.modules.poll.enums.PollRole;
+import com.xxxx.systemvotting.modules.poll.repository.PollMemberRepository;
+import com.xxxx.systemvotting.modules.notification.service.AsyncNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -37,6 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +69,8 @@ public class PollServiceImpl implements PollService {
     private final com.xxxx.systemvotting.common.service.RealTimeService realTimeService;
     private final AiModerationService aiModerationService;
     private final PollDetailsCacheLoader pollDetailsCacheLoader;
+    private final PollMemberRepository pollMemberRepository;
+    private final AsyncNotificationService asyncNotificationService;
 
     private Map<Long, Integer> getCommentCountsForPolls(List<Long> pollIds) {
         Map<Long, Integer> commentCountMap = new HashMap<>();
@@ -98,13 +107,19 @@ public class PollServiceImpl implements PollService {
         // Records are immutable — rebuild each option with the updated vote count
         List<OptionResponseDTO> enriched = dto.getOptions().stream()
                 .map(option -> {
-                    Object val = redisMap.get(option.id().toString());
-                    if (val == null) return option;
-                    try {
-                        return new OptionResponseDTO(option.id(), option.text(), Integer.parseInt(val.toString()));
-                    } catch (NumberFormatException ignored) {
-                        return option;
-                    }
+                    Object audienceVal = redisMap.get(option.id().toString() + ":AUDIENCE");
+                    Object judgeVal = redisMap.get(option.id().toString() + ":JUDGE");
+                    
+                    int audienceCount = audienceVal != null ? Integer.parseInt(audienceVal.toString()) : 0;
+                    int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal.toString()) : 0;
+                    
+                    return new OptionResponseDTO(
+                            option.id(), 
+                            option.text(), 
+                            audienceCount + judgeCount,
+                            audienceCount,
+                            judgeCount
+                    );
                 })
                 .collect(Collectors.toList());
 
@@ -166,13 +181,19 @@ public class PollServiceImpl implements PollService {
             // Records are immutable — rebuild each option with updated count
             List<OptionResponseDTO> enriched = dto.getOptions().stream()
                     .map(option -> {
-                        String val = redisMap.get(option.id().toString());
-                        if (val == null) return option;
-                        try {
-                            return new OptionResponseDTO(option.id(), option.text(), Integer.parseInt(val));
-                        } catch (NumberFormatException ignored) {
-                            return option;
-                        }
+                        String audienceVal = redisMap.get(option.id().toString() + ":AUDIENCE");
+                        String judgeVal = redisMap.get(option.id().toString() + ":JUDGE");
+
+                        int audienceCount = audienceVal != null ? Integer.parseInt(audienceVal) : 0;
+                        int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal) : 0;
+
+                        return new OptionResponseDTO(
+                                option.id(),
+                                option.text(),
+                                audienceCount + judgeCount,
+                                audienceCount,
+                                judgeCount
+                        );
                     })
                     .collect(Collectors.toList());
             dto.getOptions().clear();
@@ -239,7 +260,45 @@ public class PollServiceImpl implements PollService {
             poll.addOption(option);
         }
 
+        // Handle Judges and Weighting
+        if (requestDTO.judgeIds() != null && !requestDTO.judgeIds().isEmpty()) {
+            int maxJudges = PlanPollLimits.maxJudges(creator.getPlan());
+            if (requestDTO.judgeIds().size() > maxJudges) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            poll.setJudgeWeight(PlanPollLimits.judgeWeight(creator.getPlan()));
+        } else {
+            poll.setJudgeWeight(0);
+        }
+
         Poll savedPoll = pollRepository.save(poll);
+
+        // Save PollMembers (Judges) and send notifications
+        if (requestDTO.judgeIds() != null && !requestDTO.judgeIds().isEmpty()) {
+            for (Long judgeId : requestDTO.judgeIds()) {
+                userRepository.findById(judgeId).ifPresent(judge -> {
+                    PollMember member = PollMember.builder()
+                            .poll(savedPoll)
+                            .user(judge)
+                            .role(PollRole.JUDGE)
+                            .weight(1) // Weight here is relative within the judge group, usually 1
+                            .build();
+                    pollMemberRepository.save(member);
+
+                    // Send notification to judge
+                    asyncNotificationService.createNotificationAsync(
+                            judge.getId(),
+                            creator.getUsername(),
+                            creator.getAvatarUrl(),
+                            "JUDGE_INVITATION",
+                            "đã mời bạn làm Giám khảo cho cuộc bình chọn: " + savedPoll.getTitle(),
+                            savedPoll.getId(),
+                            null
+                    );
+                });
+            }
+        }
+
         clearPollVoteStateInRedis(savedPoll.getId());
 
         PollResponseDTO dto = pollMapper.toDto(savedPoll);
@@ -369,5 +428,78 @@ public class PollServiceImpl implements PollService {
         enrichPollListWithRedisData(votedPollDtos);
         Page<PollResponseDTO> resultPage = new PageImpl<>(votedPollDtos, pageable, pollPage.getTotalElements());
         return PageResponse.from(resultPage);
+    }
+
+    /**
+     * Parses a CSV text containing usernames or emails (one per line, or comma-separated).
+     * Returns a list of matched/unmatched candidates so the frontend can show a preview.
+     *
+     * CSV format (flexible):
+     *   - One value per line: username or email
+     *   - Or comma-separated on one line
+     *   - Lines starting with # are ignored (comments)
+     *
+     * Example:
+     *   john_doe
+     *   jane@example.com
+     *   # this is a comment
+     *   alice123, bob456
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<JudgeCandidateDTO> parseJudgesFromCsv(String csvContent) {
+        if (csvContent == null || csvContent.isBlank()) return List.of();
+
+        // Parse all tokens from CSV
+        List<String> tokens = Arrays.stream(csvContent.split("[\n,;]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty() && !s.startsWith("#"))
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (tokens.isEmpty()) return List.of();
+
+        // Separate emails from usernames
+        List<String> emails = tokens.stream().filter(t -> t.contains("@")).collect(Collectors.toList());
+        List<String> usernames = tokens.stream().filter(t -> !t.contains("@")).collect(Collectors.toList());
+
+        // Batch lookup
+        Map<String, User> byEmail = userRepository.findByEmailIn(emails).stream()
+                .collect(Collectors.toMap(User::getEmail, u -> u));
+        Map<String, User> byUsername = userRepository.findByUsernameIn(usernames).stream()
+                .collect(Collectors.toMap(User::getUsername, u -> u));
+
+        // Build result list preserving original order
+        List<JudgeCandidateDTO> result = new ArrayList<>();
+        for (String token : tokens) {
+            User found = token.contains("@") ? byEmail.get(token) : byUsername.get(token);
+            if (found != null) {
+                result.add(new JudgeCandidateDTO(
+                        found.getId(), found.getUsername(), found.getEmail(),
+                        found.getAvatarUrl(), token, true));
+            } else {
+                result.add(new JudgeCandidateDTO(null, null, null, null, token, false));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Live search for users by username prefix — used for the autocomplete judge search box.
+     * Returns at most 10 results for UX performance.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<JudgeCandidateDTO> searchUsers(String keyword) {
+        if (keyword == null || keyword.isBlank() || keyword.length() < 2) return List.of();
+        String kw = keyword.trim().toLowerCase();
+
+        return userRepository.findAll().stream()
+                .filter(u -> u.getUsername().toLowerCase().contains(kw)
+                        || u.getEmail().toLowerCase().contains(kw))
+                .limit(10)
+                .map(u -> new JudgeCandidateDTO(
+                        u.getId(), u.getUsername(), u.getEmail(), u.getAvatarUrl(), keyword, true))
+                .collect(Collectors.toList());
     }
 }

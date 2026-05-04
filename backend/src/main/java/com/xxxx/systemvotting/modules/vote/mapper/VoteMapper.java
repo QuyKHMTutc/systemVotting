@@ -15,6 +15,7 @@ public interface VoteMapper {
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "poll", ignore = true)
     @Mapping(target = "option", ignore = true)
+    @Mapping(target = "weight", ignore = true)
     Vote toEntity(VoteRequestDTO dto);
 
     @Mapping(source = "user.id", target = "userId")

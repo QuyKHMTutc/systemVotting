@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.xxxx.systemvotting.modules.poll.dto.JudgeCandidateDTO;
 import java.util.List;
 
 @Tag(name = "Polls", description = "Tạo, xem, xóa bình chọn; danh sách bình chọn của tôi / đã bình chọn")
@@ -55,6 +56,7 @@ public class PollController {
                 requestDTO.startTime(),
                 requestDTO.endTime(),
                 requestDTO.options(),
+                requestDTO.judgeIds(),
                 Long.valueOf(jwt.getSubject())
         );
         PollResponseDTO createdPoll = pollService.createPoll(withCreator);
@@ -137,6 +139,34 @@ public class PollController {
                 .code(HttpStatus.OK.value())
                 .message("Success")
                 .data(polls)
+                .build();
+    }
+
+    @Operation(summary = "Import danh sách giám khảo từ CSV",
+            description = "Nhận nội dung CSV (username hoặc email, mỗi dòng một người) và trả về danh sách user đã tìm thấy/không tìm thấy",
+            security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @PostMapping("/parse-judges")
+    public ApiResponse<List<JudgeCandidateDTO>> parseJudgesFromCsv(
+            @RequestBody String csvContent) {
+        List<JudgeCandidateDTO> candidates = pollService.parseJudgesFromCsv(csvContent);
+        return ApiResponse.<List<JudgeCandidateDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Parsed " + candidates.size() + " entries")
+                .data(candidates)
+                .build();
+    }
+
+    @Operation(summary = "Tìm kiếm user để mời làm giám khảo (autocomplete)",
+            description = "Tìm kiếm user theo username hoặc email, trả về tối đa 10 kết quả",
+            security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @GetMapping("/search-users")
+    public ApiResponse<List<JudgeCandidateDTO>> searchUsers(
+            @RequestParam String keyword) {
+        List<JudgeCandidateDTO> results = pollService.searchUsers(keyword);
+        return ApiResponse.<List<JudgeCandidateDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(results)
                 .build();
     }
 }

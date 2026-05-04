@@ -19,4 +19,24 @@ public final class PlanPollLimits {
             case PRO -> null;
         };
     }
+
+    public static int maxJudges(PlanType plan) {
+        PlanType p = plan != null ? plan : PlanType.FREE;
+        return switch (p) {
+            case FREE -> 0;
+            case GO -> 10;
+            case PLUS -> 40;
+            case PRO -> 100; // 100 giám khảo
+        };
+    }
+
+    public static int judgeWeight(PlanType plan) {
+        PlanType p = plan != null ? plan : PlanType.FREE;
+        return switch (p) {
+            case FREE -> 0;
+            case GO -> 50;
+            case PLUS -> 60;
+            case PRO -> 70;
+        };
+    }
 }

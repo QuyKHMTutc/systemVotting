@@ -43,6 +43,9 @@ public record PollCreateRequestDTO(
     @Valid
     List<OptionRequestDTO> options,
 
+    @Schema(description = "Danh sách User ID làm giám khảo", example = "[1, 2, 3]")
+    List<Long> judgeIds,
+
     /**
      * Injected by the controller from the JWT — never from the client request body.
      * Hidden from Swagger to avoid confusion.

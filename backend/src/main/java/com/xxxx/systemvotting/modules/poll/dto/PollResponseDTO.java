@@ -42,6 +42,9 @@ public class PollResponseDTO implements Serializable {
     @Schema(description = "Danh sách các lựa chọn và kết quả vote")
     private List<OptionResponseDTO> options;
 
+    @Schema(description = "Trọng số điểm của hội đồng giám khảo (%)", example = "60")
+    private Integer judgeWeight;
+
     @Schema(description = "Số lượng bình luận", example = "5")
     private int commentCount;
 

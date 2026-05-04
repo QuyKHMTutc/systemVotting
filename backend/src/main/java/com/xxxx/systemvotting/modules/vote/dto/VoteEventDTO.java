@@ -24,6 +24,7 @@ public record VoteEventDTO(
     Long pollId,
     Long optionId,
     Long userId,
+    Integer weight,
 
     @JsonProperty("oldOptionId")
     Long oldOptionId,
