@@ -45,6 +45,9 @@ public class PollResponseDTO implements Serializable {
     @Schema(description = "Trọng số điểm của hội đồng giám khảo (%)", example = "60")
     private Integer judgeWeight;
 
+    @Schema(description = "Danh sách ID của hội đồng giám khảo")
+    private List<Long> judgeIds;
+
     @Schema(description = "Số lượng bình luận", example = "5")
     private int commentCount;
 

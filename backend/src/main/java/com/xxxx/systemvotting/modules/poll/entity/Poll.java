@@ -86,6 +86,12 @@ public class Poll {
     @EqualsAndHashCode.Exclude
     private Set<Option> options = new LinkedHashSet<>();
 
+    @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<PollMember> members = new LinkedHashSet<>();
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

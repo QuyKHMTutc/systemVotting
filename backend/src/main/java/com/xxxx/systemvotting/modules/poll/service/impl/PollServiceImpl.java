@@ -286,12 +286,14 @@ public class PollServiceImpl implements PollService {
                     pollMemberRepository.save(member);
 
                     // Send notification to judge
+                    int weightPct = savedPoll.getJudgeWeight();
                     asyncNotificationService.createNotificationAsync(
                             judge.getId(),
                             creator.getUsername(),
                             creator.getAvatarUrl(),
                             "JUDGE_INVITATION",
-                            "đã mời bạn làm Giám khảo cho cuộc bình chọn: " + savedPoll.getTitle(),
+                            String.format("đã mời bạn làm Giám khảo (trọng số %d%%) cho cuộc bình chọn: %s", 
+                                    weightPct, savedPoll.getTitle()),
                             savedPoll.getId(),
                             null
                     );
@@ -302,6 +304,7 @@ public class PollServiceImpl implements PollService {
         clearPollVoteStateInRedis(savedPoll.getId());
 
         PollResponseDTO dto = pollMapper.toDto(savedPoll);
+        dto.setJudgeIds(requestDTO.judgeIds());
         dto.setCommentCount(0); // Brand new poll has 0 comments
         
         // Broadcast new poll to dashboard

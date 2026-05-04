@@ -8,6 +8,8 @@ import com.xxxx.systemvotting.modules.poll.entity.Option;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.entity.Tag;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
+import com.xxxx.systemvotting.modules.poll.entity.PollMember;
+import com.xxxx.systemvotting.modules.poll.enums.PollRole;
 import com.xxxx.systemvotting.modules.user.mapper.UserMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -35,6 +37,7 @@ public interface PollMapper {
      * Maps Poll entity → PollResponseDTO.
      * Anonymous-poll masking and Redis vote enrichment are handled in the service layer.
      */
+    @Mapping(target = "judgeIds", source = "members")
     PollResponseDTO toDto(Poll entity);
 
     List<PollResponseDTO> toDtoList(List<Poll> entities);
@@ -49,6 +52,14 @@ public interface PollMapper {
     OptionResponseDTO toOptionDto(Option entity);
 
     List<OptionResponseDTO> toOptionDtoList(Set<Option> entities);
+
+    default List<Long> mapMembersToJudgeIds(Set<PollMember> members) {
+        if (members == null) return List.of();
+        return members.stream()
+                .filter(m -> m.getRole() == PollRole.JUDGE)
+                .map(m -> m.getUser().getId())
+                .collect(Collectors.toList());
+    }
 
     default List<String> mapTagsToStrings(Set<Tag> tags) {
         if (tags == null) return List.of();
