@@ -19,12 +19,15 @@ export interface Poll {
     options: PollOption[];
     commentCount: number;
     createdAt: string;
+    judgeWeight?: number; // % of total score assigned to judges (0 = no judges)
 }
 
 export interface PollOption {
     id: number;
     text: string;
     voteCount: number;
+    audienceCount?: number; // raw audience votes
+    judgeCount?: number;    // raw judge votes
 }
 
 export const pollService = {

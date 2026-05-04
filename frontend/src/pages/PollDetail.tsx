@@ -101,16 +101,34 @@ const PollDetail = () => {
   }, []);
 
   // --- Real-time WebSocket integration ---
-  const handleWsVoteUpdate = useCallback((payload: { pollId: number; options: { optionId: number; text: string; voteCount: number }[] }) => {
-    // Show live results to everyone when a vote comes in via WebSocket
+  const handleWsVoteUpdate = useCallback((payload: {
+    pollId: number;
+    options: {
+      optionId: number;
+      text: string;
+      voteCount?: number;
+      audienceCount?: number;
+      judgeCount?: number;
+      judgeWeight?: number;
+    }[]
+  }) => {
     setLiveVoteReceived(true);
     setPoll(prev => {
       if (!prev) return prev;
       return {
         ...prev,
+        // Update judgeWeight at poll level if it comes in the WS update
+        judgeWeight: payload.options[0]?.judgeWeight ?? prev.judgeWeight,
         options: prev.options.map(opt => {
           const updated = payload.options.find(o => o.optionId === opt.id);
-          return updated ? { ...opt, voteCount: updated.voteCount } : opt;
+          if (!updated) return opt;
+          const audienceCount = updated.audienceCount ?? opt.audienceCount ?? 0;
+          const judgeCount    = updated.judgeCount    ?? opt.judgeCount    ?? 0;
+          // voteCount: use explicit value or fallback to audience+judge sum
+          const voteCount = updated.voteCount !== undefined
+            ? updated.voteCount
+            : audienceCount + judgeCount;
+          return { ...opt, voteCount, audienceCount, judgeCount };
         }),
       };
     });
@@ -311,9 +329,38 @@ const PollDetail = () => {
   }
 
   const isActive = new Date(poll.endTime) > new Date();
-  const totalVotes = poll.options.reduce((sum, opt) => sum + opt.voteCount, 0);
-  // Show results if: user has voted, poll ended, OR a live vote update arrived via WebSocket
-  const showResults = hasVoted || !isActive || liveVoteReceived;
+  const isCreator = !!user && user.id === poll.creator.id;
+  const judgeWeight = poll.judgeWeight ?? 0;
+  const audienceWeight = 100 - judgeWeight;
+  const hasWeightedVoting = judgeWeight > 0;
+
+  // Raw vote totals — use ?? 0 to prevent NaN when voteCount is undefined (weighted polls)
+  const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
+  const totalJudgeVotes = poll.options.reduce((sum, opt) => sum + (opt.judgeCount ?? 0), 0);
+  const totalAudienceVotes = poll.options.reduce((sum, opt) => sum + (opt.audienceCount ?? 0), 0);
+
+  /**
+   * Weighted score for an option (0-100).
+   * Formula: (judgeCount/totalJudge * judgeWeight%) + (audienceCount/totalAudience * audienceWeight%)
+   * Falls back to raw percentage if not a weighted poll.
+   */
+  const getWeightedScore = (option: (typeof poll.options)[0]): number => {
+    if (!hasWeightedVoting) {
+      return totalVotes > 0 ? (option.voteCount / totalVotes) * 100 : 0;
+    }
+    const judgeScore = totalJudgeVotes > 0
+      ? ((option.judgeCount ?? 0) / totalJudgeVotes) * judgeWeight
+      : 0;
+    const audienceScore = totalAudienceVotes > 0
+      ? ((option.audienceCount ?? 0) / totalAudienceVotes) * audienceWeight
+      : 0;
+    return judgeScore + audienceScore;
+  };
+
+  // Show results only if: user has already voted OR the poll has ended.
+  // liveVoteReceived intentionally excluded — WS updates refresh counts silently
+  // but must NOT reveal results to users who haven't voted yet.
+  const showResults = hasVoted || !isActive || isCreator;
 
   return (
     <div className="min-h-screen pb-12">
@@ -385,7 +432,7 @@ const PollDetail = () => {
             </div>
 
             {/* Stats row */}
-            <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-white/60 mt-5 pt-4 border-t border-slate-200 dark:border-white/5">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-white/60 mt-5 pt-4 border-t border-slate-200 dark:border-white/5">
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
                 <span className="text-slate-800 dark:text-white font-semibold">{totalVotes}</span> {t('pollDetail.voters')}
@@ -401,6 +448,15 @@ const PollDetail = () => {
                 <BarChart3 className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
                 <span className="text-slate-800 dark:text-white font-semibold">{poll.options.length}</span> {t('pollDetail.options')}
               </span>
+              {hasWeightedVoting && (
+                <div className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold"
+                  style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(234,88,12,0.1))', border: '1px solid rgba(245,158,11,0.35)' }}>
+                  <span style={{ fontSize: '13px' }}>⚖️</span>
+                  <span className="text-amber-600 dark:text-amber-400">GK {judgeWeight}%</span>
+                  <span className="text-slate-400 dark:text-white/30 mx-0.5">vs</span>
+                  <span className="text-indigo-600 dark:text-indigo-400">KG {audienceWeight}%</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -414,77 +470,168 @@ const PollDetail = () => {
           {/* Vote Options */}
           <div className="px-6 sm:px-8 py-6 space-y-3">
             {poll.options.map((option) => {
-              const percentage = totalVotes > 0 ? Math.round((option.voteCount / totalVotes) * 100) : 0;
+              const weightedScore = getWeightedScore(option);
+              const rawPercentage = totalVotes > 0 ? Math.round((option.voteCount / totalVotes) * 100) : 0;
+              const displayPct = Math.round(weightedScore);
               const isSelected = selectedOption === option.id;
+              const judgeVotesPct = totalJudgeVotes > 0 ? Math.round(((option.judgeCount ?? 0) / totalJudgeVotes) * 100) : 0;
+              const audienceVotesPct = totalAudienceVotes > 0 ? Math.round(((option.audienceCount ?? 0) / totalAudienceVotes) * 100) : 0;
+              const judgeContrib = Math.round((judgeVotesPct / 100) * judgeWeight);
+              const audienceContrib = Math.round((audienceVotesPct / 100) * audienceWeight);
+
+              const canSelect = isActive && !hasVoted && !isCreator;
 
               return (
                 <div
                   key={option.id}
-                  onClick={() => (isActive && !hasVoted) && setSelectedOption(option.id)}
-                  className={`relative rounded-xl border p-4 transition-all duration-300 shadow-sm dark:shadow-none ${
-                    isActive && !hasVoted
-                      ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-slate-50 dark:hover:bg-white/[0.03]'
+                  onClick={() => canSelect && setSelectedOption(option.id)}
+                  className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${
+                    canSelect
+                      ? 'cursor-pointer hover:shadow-md dark:hover:shadow-black/30'
                       : 'cursor-default'
                   } ${
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/15 ring-1 ring-indigo-500 dark:ring-0 text-indigo-900'
-                      : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02]'
+                      ? 'border-indigo-500 ring-1 ring-indigo-500 dark:ring-0'
+                      : 'border-slate-200 dark:border-white/10'
                   }`}
+                  style={isSelected
+                    ? { background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.05))' }
+                    : undefined
+                  }
                 >
-                  {showResults && (
-                    <div
-                      className="absolute inset-y-0 left-0 rounded-l-lg bg-gradient-to-r from-indigo-500/15 to-purple-500/10 transition-all duration-700 ease-out"
-                      style={{ width: barAnimated ? `${percentage}%` : '0%' }}
-                    />
-                  )}
-                    <div className="relative z-10 flex justify-between items-center gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {isActive && !hasVoted && (
-                        <div
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                            isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-white/30'
-                          }`}
-                        >
-                          {isSelected && (
-                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                      )}
-                      <span className="text-slate-800 dark:text-white font-medium truncate">{option.text}</span>
-                    </div>
+                  {/* Main row */}
+                  <div className="relative flex items-center gap-3 px-4 py-3.5">
+                    {/* Selection radio */}
+                    {canSelect && (
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                        isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-white/30'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Option text */}
+                    <span className="flex-1 text-slate-800 dark:text-white font-medium truncate">{option.text}</span>
+
+                    {/* Score badge */}
                     {showResults && (
-                      <div className="text-right shrink-0">
-                        <span className="text-slate-900 dark:text-white font-bold block">{percentage}%</span>
-                        <span className="text-slate-500 dark:text-white/50 text-xs">{option.voteCount} {t('pollDetail.votes')}</span>
+                      <div className="shrink-0 text-right">
+                        {hasWeightedVoting ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xl font-black leading-none"
+                              style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                              {displayPct}%
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-white/30 mt-0.5">trọng số</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-end">
+                            <span className="text-lg font-bold text-slate-800 dark:text-white">{rawPercentage}%</span>
+                            <span className="text-[10px] text-slate-400 dark:text-white/30">{option.voteCount} phiếu</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
+
+                  {/* Progress bars */}
+                  {showResults && !hasWeightedVoting && (
+                    <div className="h-1 mx-4 mb-3 rounded-full overflow-hidden bg-slate-100 dark:bg-white/5">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-700 ease-out"
+                        style={{ width: barAnimated ? `${rawPercentage}%` : '0%' }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Weighted split bar */}
+                  {showResults && hasWeightedVoting && (
+                    <div className="px-4 pb-4 space-y-2">
+                      {/* Combined stacked bar */}
+                      <div className="relative h-5 rounded-lg overflow-hidden bg-slate-100 dark:bg-white/5 flex">
+                        {/* Judge segment */}
+                        <div
+                          className="h-full transition-all duration-700 ease-out relative group/judge"
+                          style={{
+                            width: barAnimated ? `${judgeContrib}%` : '0%',
+                            background: 'linear-gradient(90deg, #f59e0b, #f97316)',
+                            minWidth: judgeContrib > 0 && barAnimated ? '2px' : '0'
+                          }}
+                        />
+                        {/* Audience segment */}
+                        <div
+                          className="h-full transition-all duration-700 ease-out"
+                          style={{
+                            width: barAnimated ? `${audienceContrib}%` : '0%',
+                            background: 'linear-gradient(90deg, #6366f1, #a855f7)',
+                            transitionDelay: '150ms'
+                          }}
+                        />
+                      </div>
+
+                      {/* Legend row */}
+                      <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#f59e0b,#f97316)' }} />
+                            <span className="text-amber-600 dark:text-amber-400 font-medium">⚖️ GK</span>
+                            <span className="text-slate-500 dark:text-white/40">{judgeVotesPct}% trong nhóm</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)' }} />
+                            <span className="text-indigo-600 dark:text-indigo-400 font-medium">👥 KG</span>
+                            <span className="text-slate-500 dark:text-white/40">{audienceVotesPct}% trong nhóm</span>
+                          </span>
+                        </div>
+                        <span className="text-slate-400 dark:text-white/25">
+                          {option.judgeCount ?? 0} + {option.audienceCount ?? 0} phiếu
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
           {/* Vote Button / Status */}
+          {/* Vote Button / Status */}
           <div className="px-6 sm:px-8 py-6 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-slate-600 dark:text-white/70 text-sm">
               {t('pollDetail.totalVotes')} <span className="text-slate-900 dark:text-white font-semibold">{totalVotes}</span>
             </div>
-            {isActive && !hasVoted && (
-              <button
-                onClick={handleVote}
-                disabled={(user && !selectedOption) || voting}
-                className={`w-full sm:w-auto px-8 py-3.5 font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:!shadow-none ${!user ? 'bg-[#00c853] hover:bg-[#00e676] text-white' : 'btn-primary text-white disabled:!bg-gray-600'}`}
-              >
-                {voting ? t('pollDetail.submitVote') + '...' : !user ? t('pollDetail.loginToVote') : t('pollDetail.submitVote')}
-              </button>
-            )}
-            {hasVoted && (
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/30">
-                <Check className="w-5 h-5" />
-                <span className="font-medium">{t('pollDetail.youVoted')}</span>
+
+            {/* Creator cannot vote in their own poll */}
+            {isCreator ? (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border"
+                style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.3)' }}>
+                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="text-indigo-500 dark:text-indigo-400 font-medium text-sm">Bạn là người tạo poll này</span>
               </div>
+            ) : (
+              <>
+                {isActive && !hasVoted && (
+                  <button
+                    onClick={handleVote}
+                    disabled={(user && !selectedOption) || voting}
+                    className={`w-full sm:w-auto px-8 py-3.5 font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:!shadow-none ${!user ? 'bg-[#00c853] hover:bg-[#00e676] text-white' : 'btn-primary text-white disabled:!bg-gray-600'}`}
+                  >
+                    {voting ? t('pollDetail.submitVote') + '...' : !user ? t('pollDetail.loginToVote') : t('pollDetail.submitVote')}
+                  </button>
+                )}
+                {hasVoted && (
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/30">
+                    <Check className="w-5 h-5" />
+                    <span className="font-medium">{t('pollDetail.youVoted')}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

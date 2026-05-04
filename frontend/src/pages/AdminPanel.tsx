@@ -501,7 +501,7 @@ const AdminPanel = () => {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-white/10 text-white/40 text-xs uppercase tracking-wider">
-                            {['#', 'Txn Ref', 'User', 'Plan', 'Amount', 'Status', 'Date'].map((h, i) => (
+                            {['#', 'Txn Ref', 'User', 'Plan', 'Amount', 'Status', 'Date'].map((h) => (
                               <th key={h} className={`px-5 py-4 font-semibold text-left`}>{h}</th>
                             ))}
                           </tr>

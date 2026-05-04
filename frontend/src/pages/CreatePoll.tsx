@@ -3,9 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import Navbar from '../components/Navbar';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
+import JudgeSelector from '../components/JudgeSelector';
+import type { JudgeCandidate } from '../services/judge.service';
+import { PlanPollLimits } from '../utils/planLimits';
 
 const CreatePoll = () => {
     const { t } = useTranslation();
+    const { user } = useAuth();
+    const plan = (user?.plan ?? 'FREE').toUpperCase();
+    const maxJudges = PlanPollLimits.maxJudges(plan);
+    const judgeWeight = PlanPollLimits.judgeWeight(plan);
+    const canUseJudges = maxJudges > 0;
+
     const [question, setQuestion] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
@@ -14,6 +24,8 @@ const CreatePoll = () => {
     const [endTime, setEndTime] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [enableJudges, setEnableJudges] = useState(false);
+    const [judges, setJudges] = useState<JudgeCandidate[]>([]);
     const navigate = useNavigate();
 
     const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -66,7 +78,10 @@ const CreatePoll = () => {
                 tags: tags.length > 0 ? tags : ['General'],
                 isAnonymous: isAnonymous,
                 options: options.map(opt => ({ text: opt })),
-                endTime: formattedEndTime
+                endTime: formattedEndTime,
+                judgeIds: enableJudges && judges.length > 0
+                    ? judges.filter(j => j.id).map(j => j.id)
+                    : []
             };
 
             await pollService.createPoll(payload);
@@ -212,6 +227,56 @@ const CreatePoll = () => {
                                 </div>
                             </label>
                         </div>
+
+                        {/* Judge Section */}
+                        {canUseJudges ? (
+                            <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-4">
+                                <label className="flex items-center cursor-pointer group">
+                                    <div className="relative">
+                                        <input type="checkbox" className="sr-only"
+                                            checked={enableJudges}
+                                            onChange={() => { setEnableJudges(!enableJudges); if (enableJudges) setJudges([]); }}
+                                        />
+                                        <div className={`block w-12 h-7 rounded-full transition-colors ${enableJudges ? 'bg-amber-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
+                                        <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${enableJudges ? 'transform translate-x-5' : ''}`}></div>
+                                    </div>
+                                    <div className="ml-4">
+                                        <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">
+                                            ⚖️ Bình chọn có Hội đồng Giám khảo
+                                            <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">{plan}</span>
+                                        </span>
+                                        <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">
+                                            Giám khảo chiếm {judgeWeight}% điểm, khán giả chiếm {100 - judgeWeight}%
+                                        </span>
+                                    </div>
+                                </label>
+
+                                {enableJudges && (
+                                    <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">
+                                        <JudgeSelector
+                                            judges={judges}
+                                            onChange={setJudges}
+                                            maxJudges={maxJudges}
+                                            judgeWeight={judgeWeight}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="pt-2 border-t border-slate-200 dark:border-white/10">
+                                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                                    <span className="text-2xl">⚖️</span>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Bình chọn có Hội đồng Giám khảo</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500">Nâng cấp lên gói GO trở lên để sử dụng tính năng này</p>
+                                    </div>
+                                    <button type="button" onClick={() => navigate('/profile')}
+                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all shadow-sm">
+                                        Nâng cấp
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="pt-4 flex justify-end gap-4">
                             <button

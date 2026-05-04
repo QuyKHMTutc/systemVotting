@@ -3,7 +3,14 @@ import { useGlobalWebSocket } from '../contexts/WebSocketContext';
 
 interface VoteUpdatePayload {
   pollId: number;
-  options: { optionId: number; text: string; voteCount: number }[];
+  options: {
+    optionId: number;
+    text: string;
+    voteCount?: number;      // plain poll
+    audienceCount?: number;  // weighted poll
+    judgeCount?: number;     // weighted poll
+    judgeWeight?: number;    // weighted poll
+  }[];
 }
 
 interface PollWebSocketOptions {
