@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { timeAgo, endsIn } from '../utils/date';
 import { getTagPillClass } from '../utils/tagPills';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 
 export interface PollCardProps {
   poll: Poll;
@@ -22,6 +23,8 @@ export const PollCard = ({
   showDeleteButton = false,
 }: PollCardProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isCreator = !!user && Number(user.id) === Number(poll.creator.id);
   const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
   const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
@@ -156,12 +159,20 @@ export const PollCard = ({
               className={`block text-center w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 ${
                 !isActive
                   ? 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/50 border border-slate-200 dark:border-white/10'
-                  : hasVoted
-                    ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
-                    : 'btn-primary text-white border-0 hover:opacity-95 group-hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)]'
+                  : isCreator
+                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30'
+                    : hasVoted
+                      ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
+                      : 'btn-primary text-white border-0 hover:opacity-95 group-hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)]'
               }`}
             >
-              {!isActive ? t('pollDetail.viewResults') : hasVoted ? t('pollDetail.viewResults') : t('pollDetail.voteNow')}
+              {!isActive
+                ? t('pollDetail.viewResults')
+                : isCreator
+                  ? t('pollDetail.viewResults')
+                  : hasVoted
+                    ? t('pollDetail.viewResults')
+                    : t('pollDetail.voteNow')}
             </span>
           </div>
         </div>
