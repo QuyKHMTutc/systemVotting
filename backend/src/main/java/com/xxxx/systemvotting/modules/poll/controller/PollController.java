@@ -118,7 +118,7 @@ public class PollController {
     @GetMapping("/my-polls")
     public ApiResponse<PageResponse<PollResponseDTO>> getMyPolls(
             @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
-            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "20") @Min(1) @Max(1000) int size,
             @AuthenticationPrincipal Jwt jwt) {
         PageResponse<PollResponseDTO> polls = pollService.getMyPolls(Long.valueOf(jwt.getSubject()), page, size);
         return ApiResponse.<PageResponse<PollResponseDTO>>builder()
@@ -132,7 +132,7 @@ public class PollController {
     @GetMapping("/my-voted")
     public ApiResponse<PageResponse<PollResponseDTO>> getVotedPolls(
             @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
-            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "20") @Min(1) @Max(1000) int size,
             @AuthenticationPrincipal Jwt jwt) {
         PageResponse<PollResponseDTO> polls = pollService.getVotedPolls(Long.valueOf(jwt.getSubject()), page, size);
         return ApiResponse.<PageResponse<PollResponseDTO>>builder()

@@ -11,5 +11,4 @@ public class SystemVottingApplication {
     public static void main(String[] args) {
         SpringApplication.run(SystemVottingApplication.class, args);
     }
-
 }
