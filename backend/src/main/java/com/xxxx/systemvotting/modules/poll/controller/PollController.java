@@ -57,6 +57,8 @@ public class PollController {
                 requestDTO.endTime(),
                 requestDTO.options(),
                 requestDTO.judgeIds(),
+                requestDTO.visibility(),
+                requestDTO.invitedEmails(),
                 Long.valueOf(jwt.getSubject())
         );
         PollResponseDTO createdPoll = pollService.createPoll(withCreator);
@@ -67,11 +69,18 @@ public class PollController {
                 .build();
     }
 
-    @Operation(summary = "Chi tiết bình chọn", description = "Lấy thông tin một bình chọn theo ID")
-    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy") })
+    @Operation(summary = "Chi tiết bình chọn", description = "Lấy thông tin một bình chọn theo ID. Với poll PRIVATE, chỉ creator hoặc email được mời mới truy cập được.")
+    @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền truy cập"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy") })
     @GetMapping("/{id}")
     public ApiResponse<PollResponseDTO> getPoll(@PathVariable Long id) {
-        PollResponseDTO poll = pollService.getPollById(id);
+        // Extract caller email from Security context (null if unauthenticated — public poll access still works)
+        String callerEmail = null;
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt) {
+            callerEmail = jwt.getClaimAsString("email");
+        }
+        PollResponseDTO poll = pollService.getPollById(id, callerEmail);
         return ApiResponse.<PollResponseDTO>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")

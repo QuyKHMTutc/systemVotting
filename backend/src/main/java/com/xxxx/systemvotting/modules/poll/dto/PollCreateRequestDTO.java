@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,6 +46,12 @@ public record PollCreateRequestDTO(
 
     @Schema(description = "Danh sách User ID làm giám khảo", example = "[1, 2, 3]")
     List<Long> judgeIds,
+
+    @Schema(description = "Quyền riêng tư của cuộc bình chọn", example = "PUBLIC", allowableValues = {"PUBLIC", "PRIVATE"})
+    PollVisibility visibility,
+
+    @Schema(description = "Danh sách email được mời (chỉ dùng khi visibility = PRIVATE)", example = "[\"a@b.com\", \"c@d.com\"]")
+    List<String> invitedEmails,
 
     /**
      * Injected by the controller from the JWT — never from the client request body.

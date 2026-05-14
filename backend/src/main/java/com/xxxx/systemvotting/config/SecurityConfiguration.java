@@ -70,10 +70,21 @@ public class SecurityConfiguration {
                             .requestMatchers("/actuator/**").hasRole("ADMIN")
                             .anyRequest().authenticated();
                 })
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                        .decoder(jwtDecoder)
-                        .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                ))
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder)
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                        )
+                        // Allow requests without Bearer token to proceed (for public endpoints)
+                        // while still parsing the JWT when it IS present (needed for private poll access)
+                        .bearerTokenResolver(request -> {
+                            String header = request.getHeader("Authorization");
+                            if (header != null && header.startsWith("Bearer ")) {
+                                return header.substring(7);
+                            }
+                            return null; // no token = anonymous, not an error
+                        })
+                )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint)

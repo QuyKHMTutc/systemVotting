@@ -1,6 +1,7 @@
 package com.xxxx.systemvotting.modules.poll.repository;
 
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
+import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,16 +21,28 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE " +
+           "(p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) AND " +
            "(:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
            "(:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) AND " +
            "(:status IS NULL OR :status = 'ALL' OR " +
            "(:status = 'ACTIVE' AND p.endTime > :currentTime) OR " +
            "(:status = 'ENDED' AND p.endTime <= :currentTime))")
-    Page<Poll> findWithFilters(@Param("title") String title, 
-                               @Param("tag") String tag, 
-                               @Param("status") String status, 
-                               @Param("currentTime") java.time.LocalDateTime currentTime,
-                               Pageable pageable);
+    Page<Poll> findWithFilters(
+            @Param("title") String title,
+            @Param("tag") String tag,
+            @Param("status") String status,
+            @Param("currentTime") java.time.LocalDateTime currentTime,
+            Pageable pageable);
+
+    /**
+     * Đếm số poll PUBLIC để kiểm tra limit của creator (chỉ tính poll PUBLIC trong limit).
+     */
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE " +
+           "p.visibility = :visibility AND p.creator.id = :creatorId")
+    List<Poll> findByVisibilityAndCreatorId(
+            @Param("visibility") PollVisibility visibility,
+            @Param("creatorId") Long creatorId);
 
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
     Optional<Poll> findById(Long id);

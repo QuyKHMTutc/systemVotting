@@ -1,9 +1,14 @@
 package com.xxxx.systemvotting.modules.poll.entity;
 
+import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -73,6 +78,21 @@ public class Poll {
     @Column(name = "judge_weight", nullable = false)
     @Builder.Default
     private Integer judgeWeight = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility", nullable = false)
+    @Builder.Default
+    private PollVisibility visibility = PollVisibility.PUBLIC;
+
+    /**
+     * Danh sách email được mời tham gia bình chọn (chỉ áp dụng cho PRIVATE poll).
+     * Lưu trực tiếp email, không yêu cầu email phải có tài khoản trong hệ thống.
+     */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "poll_invited_emails", joinColumns = @JoinColumn(name = "poll_id"))
+    @Column(name = "email")
+    @Builder.Default
+    private java.util.List<String> invitedEmails = new java.util.ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")

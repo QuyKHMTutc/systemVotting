@@ -1,5 +1,6 @@
 package com.xxxx.systemvotting.modules.poll.dto;
 
+import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -44,6 +45,9 @@ public class PollResponseDTO implements Serializable {
 
     @Schema(description = "Trọng số điểm của hội đồng giám khảo (%)", example = "60")
     private Integer judgeWeight;
+
+    @Schema(description = "Quyền riêng tư của cuộc bình chọn", example = "PUBLIC")
+    private PollVisibility visibility;
 
     @Schema(description = "Danh sách ID của hội đồng giám khảo")
     private List<Long> judgeIds;

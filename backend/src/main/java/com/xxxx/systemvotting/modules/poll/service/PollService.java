@@ -13,6 +13,9 @@ public interface PollService {
 
     PollResponseDTO getPollById(Long id);
 
+    /** Ki\u1ec3m tra quy\u1ec1n truy c\u1eadp: n\u1ebfu poll l\u00e0 PRIVATE, ch\u1ec9 creator ho\u1eb7c email \u0111\u01b0\u1ee3c m\u1eddi m\u1edbi \u0111\u01b0\u1ee3c ph\u00e9p. */
+    PollResponseDTO getPollById(Long id, String callerEmail);
+
     PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction);
 
     void deletePoll(Long pollId, User authenticatedUser);

@@ -23,13 +23,16 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { UserMapper.class })
 public interface PollMapper {
 
-    @Mapping(target = "id",         ignore = true)
-    @Mapping(target = "createdAt",  ignore = true)
-    @Mapping(target = "updatedAt",  ignore = true)
-    @Mapping(target = "creator",    ignore = true)   // set in service
-    @Mapping(target = "options",    ignore = true)   // bidirectional relation, set in service
-    @Mapping(target = "tags",       ignore = true)   // set in service
-    @Mapping(target = "judgeWeight",ignore = true)   // set in service based on plan
+    @Mapping(target = "id",            ignore = true)
+    @Mapping(target = "createdAt",     ignore = true)
+    @Mapping(target = "updatedAt",     ignore = true)
+    @Mapping(target = "creator",       ignore = true)   // set in service
+    @Mapping(target = "options",       ignore = true)   // bidirectional relation, set in service
+    @Mapping(target = "tags",          ignore = true)   // set in service
+    @Mapping(target = "judgeWeight",   ignore = true)   // set in service based on plan
+    @Mapping(target = "visibility",    ignore = true)   // set in service
+    @Mapping(target = "invitedEmails", ignore = true)   // set in service
+    @Mapping(target = "members",       ignore = true)   // set in service
     @Mapping(target = "isAnonymous", source = "isAnonymous")
     Poll toEntity(PollCreateRequestDTO dto);
 

@@ -26,6 +26,7 @@ import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
 import com.xxxx.systemvotting.modules.poll.entity.PollMember;
 import com.xxxx.systemvotting.modules.poll.enums.PollRole;
+import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import com.xxxx.systemvotting.modules.poll.repository.PollMemberRepository;
 import com.xxxx.systemvotting.modules.notification.service.AsyncNotificationService;
 import lombok.RequiredArgsConstructor;
@@ -271,6 +272,19 @@ public class PollServiceImpl implements PollService {
             poll.setJudgeWeight(0);
         }
 
+        // Set visibility — default PUBLIC if not specified
+        PollVisibility visibility = requestDTO.visibility() != null
+                ? requestDTO.visibility()
+                : PollVisibility.PUBLIC;
+        poll.setVisibility(visibility);
+
+        // Set invited emails for PRIVATE polls
+        if (visibility == PollVisibility.PRIVATE
+                && requestDTO.invitedEmails() != null
+                && !requestDTO.invitedEmails().isEmpty()) {
+            poll.setInvitedEmails(new java.util.ArrayList<>(requestDTO.invitedEmails()));
+        }
+
         Poll savedPoll = pollRepository.save(poll);
 
         // Save PollMembers (Judges) and send notifications
@@ -306,18 +320,70 @@ public class PollServiceImpl implements PollService {
         PollResponseDTO dto = pollMapper.toDto(savedPoll);
         dto.setJudgeIds(requestDTO.judgeIds());
         dto.setCommentCount(0); // Brand new poll has 0 comments
-        
-        // Broadcast new poll to dashboard
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("type", "CREATED");
-        payload.put("poll", dto);
-        realTimeService.broadcast("/topic/polls/events", payload);
-        
+
+        // Broadcast new poll to dashboard — ONLY for PUBLIC polls
+        // Private polls must NOT appear in the public feed
+        if (visibility == PollVisibility.PUBLIC) {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("type", "CREATED");
+            payload.put("poll", dto);
+            realTimeService.broadcast("/topic/polls/events", payload);
+        }
+
+        // Send PRIVATE_POLL_INVITATION notifications to invited users who have accounts
+        if (visibility == PollVisibility.PRIVATE
+                && savedPoll.getInvitedEmails() != null
+                && !savedPoll.getInvitedEmails().isEmpty()) {
+            List<String> emails = savedPoll.getInvitedEmails();
+            List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers =
+                    userRepository.findByEmailIn(emails);
+
+            for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
+                asyncNotificationService.createNotificationAsync(
+                        invitedUser.getId(),
+                        creator.getUsername(),
+                        creator.getAvatarUrl(),
+                        "PRIVATE_POLL_INVITATION",
+                        String.format("đã mời bạn tham gia cuộc bình chọn riêng tư: \"%s\"", savedPoll.getTitle()),
+                        savedPoll.getId(),
+                        null
+                );
+            }
+        }
+
         return dto;
     }
 
     @Override
     public PollResponseDTO getPollById(Long id) {
+        return getPollById(id, null);
+    }
+
+    /**
+     * Lấy chi tiết poll. Nếu poll là PRIVATE, chỉ creator hoặc người trong danh sách email mời mới truy cập được.
+     *
+     * @param id          ID của poll
+     * @param callerEmail Email người gọi (null = chưa đăng nhập)
+     */
+    @Override
+    public PollResponseDTO getPollById(Long id, String callerEmail) {
+        // Load entity (from cache or DB) to check visibility before mapping
+        Poll poll = pollRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        if (poll.getVisibility() == PollVisibility.PRIVATE) {
+            boolean isCreator = callerEmail != null
+                    && poll.getCreator().getEmail() != null
+                    && poll.getCreator().getEmail().equalsIgnoreCase(callerEmail);
+            boolean isInvited = callerEmail != null
+                    && poll.getInvitedEmails().stream()
+                         .anyMatch(e -> e.equalsIgnoreCase(callerEmail));
+
+            if (!isCreator && !isInvited) {
+                throw new AppException(ErrorCode.POLL_ACCESS_DENIED);
+            }
+        }
+
         PollResponseDTO dto = pollDetailsCacheLoader.loadDbSnapshot(id);
         enrichPollWithRedisData(dto);
         return dto;
