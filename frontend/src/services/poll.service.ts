@@ -21,6 +21,7 @@ export interface Poll {
     createdAt: string;
     judgeWeight?: number; // % of total score assigned to judges (0 = no judges)
     judgeIds?: number[];
+    visibility?: 'PUBLIC' | 'PRIVATE'; // Poll visibility type
 }
 
 export interface PollOption {

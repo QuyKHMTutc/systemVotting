@@ -382,7 +382,7 @@ export const Profile = () => {
                   {votedPolls.map((poll, i) => (
                     <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
                       <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
-                        <PollCard poll={poll} />
+                        <PollCard poll={poll} hasVoted={true} />
                       </div>
                     </div>
                   ))}

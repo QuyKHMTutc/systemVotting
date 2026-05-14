@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Poll } from '../services/poll.service';
-import { Share2, Check, Users, MessageCircle, BarChart3, Clock } from 'lucide-react';
+import { Share2, Check, Users, MessageCircle, BarChart3, Clock, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { timeAgo, endsIn } from '../utils/date';
 import { getTagPillClass } from '../utils/tagPills';
@@ -70,6 +70,11 @@ export const PollCard = ({
               {poll.judgeWeight > 0 && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
                    ⚖️ {t('pollDetail.weighted')}
+                </span>
+              )}
+              {poll.visibility === 'PRIVATE' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full border bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30">
+                  <Lock className="w-3 h-3" /> Riêng tư
                 </span>
               )}
               {poll.tags?.slice(0, 3).map((tag) => (

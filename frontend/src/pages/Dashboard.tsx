@@ -78,6 +78,8 @@ const Dashboard = () => {
       };
 
       if (payload.type === 'CREATED') {
+        // Guard: never show PRIVATE polls in the public dashboard
+        if (payload.poll.visibility === 'PRIVATE') return prev;
         // Respect server pagination on dashboard:
         // only page 0 receives optimistic inserted polls and keeps fixed page size.
         if (prev.currentPage === 0 && matchesCurrentFilters(payload.poll) && !newContent.some(p => p.id === payload.poll.id)) {

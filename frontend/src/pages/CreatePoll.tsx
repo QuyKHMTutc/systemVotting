@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import JudgeSelector from '../components/JudgeSelector';
+import InviteUserSelector from '../components/InviteUserSelector';
 import type { JudgeCandidate } from '../services/judge.service';
 import { PlanPollLimits } from '../utils/planLimits';
 
@@ -26,6 +27,8 @@ const CreatePoll = () => {
     const [loading, setLoading] = useState(false);
     const [enableJudges, setEnableJudges] = useState(false);
     const [judges, setJudges] = useState<JudgeCandidate[]>([]);
+    const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
+    const [invitedUsers, setInvitedUsers] = useState<JudgeCandidate[]>([]);
     const navigate = useNavigate();
 
     const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -60,6 +63,7 @@ const CreatePoll = () => {
         }
     };
 
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (options.some(opt => opt.trim() === '')) {
@@ -81,7 +85,11 @@ const CreatePoll = () => {
                 endTime: formattedEndTime,
                 judgeIds: enableJudges && judges.length > 0
                     ? judges.filter(j => j.id).map(j => j.id)
-                    : []
+                    : [],
+                visibility,
+                invitedEmails: visibility === 'PRIVATE'
+                    ? invitedUsers.map(u => u.email ?? '').filter(Boolean)
+                    : [],
             };
 
             await pollService.createPoll(payload);
@@ -206,6 +214,49 @@ const CreatePoll = () => {
                             />
                         </div>
 
+                        {/* Privacy / Visibility Toggle */}
+                        <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-4">
+                            <label className="flex items-center cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={visibility === 'PRIVATE'}
+                                        onChange={() => {
+                                            const next = visibility === 'PUBLIC' ? 'PRIVATE' : 'PUBLIC';
+                                            setVisibility(next);
+                                            setInvitedUsers([]);
+                                            // Reset judges when switching to PRIVATE
+                                            if (next === 'PRIVATE') {
+                                                setEnableJudges(false);
+                                                setJudges([]);
+                                            }
+                                        }}
+                                    />
+                                    <div className={`block w-12 h-7 rounded-full transition-colors ${visibility === 'PRIVATE' ? 'bg-violet-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${visibility === 'PRIVATE' ? 'transform translate-x-5' : ''}`}></div>
+                                </div>
+                                <div className="ml-4">
+                                    <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">
+                                        🔒 Riêng tư (Private)
+                                    </span>
+                                    <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">
+                                        Chỉ những người được mời qua email mới có thể xem và bình chọn
+                                    </span>
+                                </div>
+                            </label>
+
+                            {visibility === 'PRIVATE' && (
+                                <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                                    <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 mb-3">Danh sách người được mời</p>
+                                    <InviteUserSelector
+                                        invitedUsers={invitedUsers}
+                                        onChange={setInvitedUsers}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
                         {/* Anonymous Toggle */}
                         <div className="pt-2 border-t border-slate-200 dark:border-white/10">
                             <label className="flex items-center cursor-pointer group">
@@ -228,8 +279,8 @@ const CreatePoll = () => {
                             </label>
                         </div>
 
-                        {/* Judge Section */}
-                        {canUseJudges ? (
+                        {/* Judge Section — only available for PUBLIC polls */}
+                        {visibility !== 'PRIVATE' && (canUseJudges ? (
                             <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-4">
                                 <label className="flex items-center cursor-pointer group">
                                     <div className="relative">
@@ -276,7 +327,7 @@ const CreatePoll = () => {
                                     </button>
                                 </div>
                             </div>
-                        )}
+                        ))}
 
                         <div className="pt-4 flex justify-end gap-4">
                             <button
