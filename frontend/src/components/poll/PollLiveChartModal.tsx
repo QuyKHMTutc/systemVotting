@@ -13,11 +13,20 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
+interface LiveChartOption {
+  id: number;
+  text: string;
+  voteCount: number;
+  audienceCount?: number;
+  judgeCount?: number;
+}
+
 interface PollLiveChartModalProps {
   isOpen: boolean;
   onClose: () => void;
-  options: { id: number; text: string; voteCount: number }[];
+  options: LiveChartOption[];
   pollTitle: string;
+  judgeWeight?: number; // 0 = no weighted voting
 }
 
 const PREMIUM_COLORS = ['#38bdf8', '#818cf8', '#c084fc', '#e879f9', '#f472b6', '#fb7185', '#2dd4bf'];
@@ -25,31 +34,59 @@ const PREMIUM_COLORS = ['#38bdf8', '#818cf8', '#c084fc', '#e879f9', '#f472b6', '
 const CustomTooltip = ({ active, payload }: any) => {
   const { t } = useTranslation();
   if (active && payload && payload.length) {
-    const tooltipData = payload[0].payload;
+    const d = payload[0].payload;
     return (
-      <div className="bg-white/95 dark:bg-[#0f1117]/95 border border-slate-200 dark:border-white/10 p-5 rounded-2xl shadow-xl dark:shadow-2xl backdrop-blur-xl">
+      <div className="bg-white/95 dark:bg-[#0f1117]/95 border border-slate-200 dark:border-white/10 p-5 rounded-2xl shadow-xl dark:shadow-2xl backdrop-blur-xl min-w-[220px]">
         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-white/5">
-          <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: tooltipData.color }} />
+          <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: d.color }} />
           <span className="text-slate-500 dark:text-white/60 text-xs font-bold uppercase tracking-wider">{t('liveChart.option')}</span>
         </div>
         <p className="text-base font-semibold text-slate-800 dark:text-white mb-3 max-w-[250px] leading-snug">
-          {tooltipData.fullText}
+          {d.fullText}
         </p>
-        <div className="flex items-end gap-2">
-          <span className="text-3xl font-black text-indigo-600 dark:text-white leading-none">
-            {tooltipData.votes}
-          </span>
-          <span className="text-sm font-medium text-slate-500 dark:text-white/50 mb-1">
-            {t('liveChart.votes')} ({tooltipData.percentage})
-          </span>
-        </div>
+        {d.isWeighted ? (
+          <>
+            <div className="flex items-end gap-2 mb-3">
+              <span className="text-3xl font-black leading-none"
+                style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                {d.percentage}
+              </span>
+              <span className="text-sm font-medium text-slate-500 dark:text-white/50 mb-1">điểm trọng số</span>
+            </div>
+            <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-white/5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm" style={{ background: 'linear-gradient(90deg,#f59e0b,#f97316)' }} />
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">⚖️ Giám khảo</span>
+                </span>
+                <span className="text-slate-600 dark:text-white/60 font-semibold">{d.judgeCount} phiếu ({d.judgeVotesPct}%)</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm" style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)' }} />
+                  <span className="text-indigo-600 dark:text-indigo-400 font-medium">👥 Khán giả</span>
+                </span>
+                <span className="text-slate-600 dark:text-white/60 font-semibold">{d.audienceCount} phiếu ({d.audienceVotesPct}%)</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-end gap-2">
+            <span className="text-3xl font-black text-indigo-600 dark:text-white leading-none">
+              {d.votes}
+            </span>
+            <span className="text-sm font-medium text-slate-500 dark:text-white/50 mb-1">
+              {t('liveChart.votes')} ({d.percentage})
+            </span>
+          </div>
+        )}
       </div>
     );
   }
   return null;
 };
 
-export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle }: PollLiveChartModalProps) {
+export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle, judgeWeight = 0 }: PollLiveChartModalProps) {
   const [enableChartAnim, setEnableChartAnim] = useState(false);
   const { t } = useTranslation();
 
@@ -68,19 +105,49 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
     }
   }, [isOpen]);
 
-  const totalVotes = options.reduce((sum, opt) => sum + opt.voteCount, 0);
+  const hasWeightedVoting = judgeWeight > 0;
+  const audienceWeight = 100 - judgeWeight;
+
+  const totalVotes      = options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
+  const totalJudgeVotes = options.reduce((sum, opt) => sum + (opt.judgeCount ?? 0), 0);
+  const totalAudienceVotes = options.reduce((sum, opt) => sum + (opt.audienceCount ?? 0), 0);
 
   const data = useMemo(() => options.map((opt, index) => {
-    const pct = totalVotes > 0 ? Math.round((opt.voteCount / totalVotes) * 100) : 0;
+    let weightedScore: number;
+    let visualValue: number;
+
+    if (hasWeightedVoting) {
+      const judgeScore = totalJudgeVotes > 0
+        ? ((opt.judgeCount ?? 0) / totalJudgeVotes) * judgeWeight
+        : 0;
+      const audienceScore = totalAudienceVotes > 0
+        ? ((opt.audienceCount ?? 0) / totalAudienceVotes) * audienceWeight
+        : 0;
+      weightedScore = judgeScore + audienceScore;
+      visualValue = Math.max(weightedScore, 0.05);
+    } else {
+      weightedScore = totalVotes > 0 ? (opt.voteCount / totalVotes) * 100 : 0;
+      visualValue = Math.max(opt.voteCount, 0.05);
+    }
+
+    const judgeVotesPct    = totalJudgeVotes > 0    ? Math.round(((opt.judgeCount ?? 0)    / totalJudgeVotes)    * 100) : 0;
+    const audienceVotesPct = totalAudienceVotes > 0 ? Math.round(((opt.audienceCount ?? 0) / totalAudienceVotes) * 100) : 0;
+
     return {
       name: opt.text.length > 20 ? opt.text.substring(0, 20) + '...' : opt.text,
       fullText: opt.text,
       votes: opt.voteCount,
-      percentage: `${pct}%`,
-      visualVotes: Math.max(opt.voteCount, 0.05),
-      color: PREMIUM_COLORS[index % PREMIUM_COLORS.length]
+      percentage: hasWeightedVoting ? `${Math.round(weightedScore)}%` : `${Math.round(weightedScore)}%`,
+      visualVotes: visualValue,
+      color: PREMIUM_COLORS[index % PREMIUM_COLORS.length],
+      isWeighted: hasWeightedVoting,
+      judgeCount: opt.judgeCount ?? 0,
+      audienceCount: opt.audienceCount ?? 0,
+      judgeVotesPct,
+      audienceVotesPct,
     };
-  }), [options, totalVotes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [options, totalVotes, totalJudgeVotes, totalAudienceVotes, hasWeightedVoting, judgeWeight, audienceWeight]);
 
   if (!isOpen) return null;
 
@@ -130,7 +197,7 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className={`grid gap-4 mb-8 ${hasWeightedVoting ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
             <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex flex-col justify-center overflow-hidden transition-colors">
               <div className="flex items-center gap-2 text-slate-500 dark:text-white/50 mb-1 text-sm font-semibold">
                 <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
@@ -145,6 +212,26 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
               </div>
               <div className="text-3xl font-black text-slate-800 dark:text-white">{options.length}</div>
             </div>
+            {hasWeightedVoting && (
+              <>
+                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-4 flex flex-col justify-center overflow-hidden transition-colors">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1 text-sm font-semibold">
+                    <span>⚖️</span>
+                    Giám khảo
+                  </div>
+                  <div className="text-3xl font-black text-amber-700 dark:text-amber-300">{totalJudgeVotes}</div>
+                  <div className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-0.5">trọng số {judgeWeight}%</div>
+                </div>
+                <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-center overflow-hidden transition-colors">
+                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1 text-sm font-semibold">
+                    <span>👥</span>
+                    Khán giả
+                  </div>
+                  <div className="text-3xl font-black text-indigo-700 dark:text-indigo-300">{totalAudienceVotes}</div>
+                  <div className="text-xs text-indigo-600/70 dark:text-indigo-400/60 mt-0.5">trọng số {audienceWeight}%</div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Chart Container - using absolute positioning technique to guarantee it renders */}
@@ -165,7 +252,8 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fill: 'currentColor', fontSize: 13, fontWeight: 600, opacity: 0.5 }}
-                    domain={[0, totalVotes === 0 ? 5 : 'auto']}
+                    domain={hasWeightedVoting ? [0, 100] : [0, totalVotes === 0 ? 5 : 'auto']}
+                    tickFormatter={hasWeightedVoting ? (v) => `${v}%` : undefined}
                   />
                   
                   <XAxis 

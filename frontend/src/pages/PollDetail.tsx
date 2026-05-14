@@ -708,6 +708,7 @@ const PollDetail = () => {
           onClose={() => setIsLiveChartOpen(false)}
           options={poll.options}
           pollTitle={poll.title}
+          judgeWeight={poll.judgeWeight ?? 0}
         />
       )}
     </div>
