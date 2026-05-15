@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Hash, Trophy, PenSquare } from 'lucide-react';
+import { Hash, Trophy, PenSquare, BarChart3, Users, MessageCircle, Flame, TrendingUp } from 'lucide-react';
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -29,21 +29,66 @@ interface PopularTag {
   count: number;
 }
 
+interface CommunityStats {
+  totalPolls: number;
+  votes: number;
+  comments: number;
+  active: number;
+}
+
 interface ExploreRightSidebarProps {
   topCreators: TopCreator[];
   popularTags: PopularTag[];
   onTagClick: (tag: string) => void;
+  communityStats: CommunityStats;
 }
 
 const RANK_COLORS = ['text-amber-400', 'text-slate-400', 'text-orange-700', 'text-white/40', 'text-white/40'];
 const RANK_ICONS = ['🥇', '🥈', '🥉', '4', '5'];
 
-export function ExploreRightSidebar({ topCreators, popularTags, onTagClick }: ExploreRightSidebarProps) {
+export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, communityStats }: ExploreRightSidebarProps) {
   const { t } = useTranslation();
+
+  const statItems = [
+    { icon: BarChart3,     value: communityStats.totalPolls, label: t('dashboard.statsPolls'),    color: 'text-violet-400',  bg: 'bg-violet-500/10' },
+    { icon: Users,         value: communityStats.votes,      label: t('dashboard.statsVotes'),    color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' },
+    { icon: MessageCircle, value: communityStats.comments,   label: t('dashboard.statsComments'), color: 'text-cyan-400',    bg: 'bg-cyan-500/10' },
+    { icon: Flame,         value: communityStats.active,     label: t('dashboard.statsActive'),   color: 'text-orange-400',  bg: 'bg-orange-500/10' },
+  ];
 
   return (
     <div className="space-y-5">
-      {/* Top Creators */}
+
+      {/* ── Thống kê cộng đồng ── */}
+      <div className="bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/8 rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+            <TrendingUp className="w-3 h-3 text-white" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('dashboard.communityStats')}</h3>
+          <span className="ml-auto flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] text-slate-400 dark:text-white/30">{t('dashboard.statsLive')}</span>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {statItems.map(({ icon: Icon, value, label, color, bg }) => (
+            <div key={label} className={`flex items-center gap-3 p-3 rounded-xl ${bg}`}>
+              <Icon className={`w-4 h-4 shrink-0 ${color}`} />
+              <div className="min-w-0">
+                <p className="text-base font-black text-slate-900 dark:text-white leading-none">
+                  {formatCompact(value)}
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-white/30 ml-0.5">+</span>
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-white/40 mt-0.5 truncate">{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Top Creators ── */}
       <div className="bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/8 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -73,9 +118,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick }: Ex
                       onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${c.username}`; }}
                     />
                   </div>
-                  {i === 0 && (
-                    <span className="absolute -top-1 -right-1 text-[10px]">👑</span>
-                  )}
+                  {i === 0 && <span className="absolute -top-1 -right-1 text-[10px]">👑</span>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 dark:text-white text-sm truncate group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
@@ -91,13 +134,12 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick }: Ex
         </div>
       </div>
 
-      {/* Popular Tags */}
+      {/* ── Popular Tags ── */}
       <div className="bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/8 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <Hash className="w-4 h-4 text-fuchsia-500 dark:text-fuchsia-400" />
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">🔥 {t('dashboard.popularTags')}</h3>
         </div>
-
         <div className="space-y-1">
           {popularTags.length === 0 ? (
             <p className="text-sm text-slate-400 dark:text-white/35 text-center py-4">{t('dashboard.popularTagsEmpty')}</p>
@@ -125,7 +167,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick }: Ex
         </div>
       </div>
 
-      {/* Create Poll CTA */}
+      {/* ── Create Poll CTA ── */}
       <div className="rounded-2xl p-6 bg-[#1e1340] dark:bg-[#1e1340] border border-violet-500/20 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_100%,rgba(123,47,247,0.25),transparent)] pointer-events-none" />
         <div className="relative z-10">

@@ -1,5 +1,6 @@
 import api from './api';
 import type { PageResponse } from '../types/page';
+import type { Category } from './category.service';
 
 export type PollPageResponse = PageResponse<Poll>;
 
@@ -22,6 +23,7 @@ export interface Poll {
     judgeWeight?: number; // % of total score assigned to judges (0 = no judges)
     judgeIds?: number[];
     visibility?: 'PUBLIC' | 'PRIVATE'; // Poll visibility type
+    category?: Category;
 }
 
 export interface PollOption {
@@ -40,7 +42,8 @@ export const pollService = {
         tag = 'ALL',
         status = 'ALL',
         sortBy?: string,
-        direction?: string
+        direction?: string,
+        category?: string
     ): Promise<PollPageResponse> => {
         const params = new URLSearchParams({
             page: page.toString(),
@@ -53,6 +56,7 @@ export const pollService = {
             params.append('sortBy', sortBy);
             params.append('direction', direction || 'desc');
         }
+        if (category) params.append('categorySlug', category);
 
         const response = await api.get(`/polls?${params.toString()}`);
         return response.data.data;

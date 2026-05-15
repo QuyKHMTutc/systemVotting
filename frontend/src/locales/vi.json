@@ -99,6 +99,9 @@
     "statsVotes": "Lượt bình chọn",
     "statsComments": "Bình luận",
     "statsActive": "Đang diễn ra",
+    "statsUsers": "Thành viên",
+    "communityStats": "Thống kê cộng đồng",
+    "statsLive": "Cập nhật thực tế",
     "seeMore": "Xem thêm",
     "viewProfile": "Xem hồ sơ"
   },
@@ -239,6 +242,8 @@
   "createPoll": {
     "title": "Tạo cuộc thăm dò ý kiến mới",
     "subtitle": "Đặt câu hỏi và để cộng đồng tham gia cuộc thăm dò ý kiến.",
+    "category": "Danh mục",
+    "categoryDesc": "Chọn danh mục phù hợp để người khác dễ tìm thấy cuộc thăm dò của bạn.",
     "errorEmptyOptions": "Tất cả các lựa chọn không được để trống",
     "errorFailed": "Tạo bình chọn thất bại",
     "question": "Câu hỏi bình chọn",
@@ -262,7 +267,8 @@
     "judgesEnable": "⚖️ Bình chọn có Hội đồng Giám khảo",
     "judgesWeightDesc": "Giám khảo chiếm {{judgeWeight}}% điểm, khán giả chiếm {{audienceWeight}}%",
     "judgesUpgrade": "Nâng cấp lên gói GO trở lên để sử dụng tính năng này",
-    "upgradeBtn": "Nâng cấp"
+    "upgradeBtn": "Nâng cấp",
+    "advancedOptions": "Tùy chọn nâng cao"
   },
   "profile": {
     "title": "Chỉnh sửa hồ sơ",

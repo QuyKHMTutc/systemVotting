@@ -10,7 +10,7 @@ import { TrendingHeroCarousel } from '../components/explore/TrendingHeroCarousel
 import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import { ExploreRightSidebar } from '../components/explore/ExploreRightSidebar';
 import { ExplorePollCard } from '../components/explore/ExplorePollCard';
-import { BarChart3, Flame, Hash, MessageCircle, Search, Users } from 'lucide-react';
+import { Flame, Hash, Search } from 'lucide-react';
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -18,15 +18,6 @@ function formatCompact(n: number): string {
   return String(n);
 }
 
-const CATEGORY_PRESETS = [
-  { tag: 'ALL', labelKey: 'dashboard.catAll' },
-  { tag: 'công nghệ', labelKey: 'dashboard.catTech' },
-  { tag: 'gaming', labelKey: 'dashboard.catGaming' },
-  { tag: 'giải trí', labelKey: 'dashboard.catEntertainment' },
-  { tag: 'thể thao', labelKey: 'dashboard.catSports' },
-  { tag: 'học tập', labelKey: 'dashboard.catEducation' },
-  { tag: 'kinh doanh', labelKey: 'dashboard.catBusiness' },
-];
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -43,15 +34,18 @@ const Dashboard = () => {
   const currentPage = parseInt(searchParams.get('page') || '0', 10);
   const filterStatus = (searchParams.get('filter') as 'ALL' | 'ACTIVE' | 'ENDED') || 'ALL';
   const filterTag = searchParams.get('tag') || 'ALL';
+  const filterCategory = searchParams.get('category') || '';
 
   const setCurrentPage = (v: number | ((p: number) => number)) => {
     const next = typeof v === 'function' ? v(currentPage) : v;
-    setSearchParams({ page: String(next), filter: filterStatus, tag: filterTag }, { replace: true });
+    setSearchParams({ page: String(next), filter: filterStatus, tag: filterTag, ...(filterCategory ? { category: filterCategory } : {}) }, { replace: true });
   };
   const setFilterStatus = (s: 'ALL' | 'ACTIVE' | 'ENDED') =>
-    setSearchParams({ page: '0', filter: s, tag: filterTag }, { replace: true });
+    setSearchParams({ page: '0', filter: s, tag: filterTag, ...(filterCategory ? { category: filterCategory } : {}) }, { replace: true });
   const setFilterTag = (tag: string) =>
     setSearchParams({ page: '0', filter: filterStatus, tag: tag || 'ALL' }, { replace: true });
+  const setFilterCategory = (slug: string) =>
+    setSearchParams({ page: '0', filter: filterStatus, tag: 'ALL', ...(slug ? { category: slug } : {}) }, { replace: true });
   const resetExplore = () => { setSearchQuery(''); setSearchParams({ page: '0', filter: 'ALL', tag: 'ALL' }, { replace: true }); };
   const scrollToPollGrid = () => document.getElementById('explore-polls-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const scrollToTrending = () => document.getElementById('explore-trending')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -77,9 +71,9 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchPolls(currentPage, searchQuery, filterTag, filterStatus), 300);
+    const timer = setTimeout(() => fetchPolls(currentPage, searchQuery, filterTag, filterStatus, filterCategory), 300);
     return () => clearTimeout(timer);
-  }, [currentPage, searchQuery, filterTag, filterStatus]);
+  }, [currentPage, searchQuery, filterTag, filterStatus, filterCategory]);
 
   const patchPoll = (list: Poll[], id: number, fn: (p: Poll) => Poll) => list.map((p) => (p.id === id ? fn(p) : p));
 
@@ -122,16 +116,16 @@ const Dashboard = () => {
 
   usePollEventsWebSocket({ onEvent: handlePollEvent });
 
-  const fetchPolls = async (page: number, title: string, tag: string, status: string) => {
+  const fetchPolls = async (page: number, title: string, tag: string, status: string, category?: string) => {
     setLoading(true);
-    try { const data = await pollService.getAllPolls(page, 6, title, tag, status); setPollPage(data); }
+    try { const data = await pollService.getAllPolls(page, 6, title, tag, status, undefined, undefined, category); setPollPage(data); }
     catch { setError('Failed to load polls.'); }
     finally { setLoading(false); }
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure?')) return;
-    try { await pollService.deletePoll(id); setTrendingPolls((tp) => tp.filter((p) => p.id !== id)); fetchPolls(currentPage, searchQuery, filterTag, filterStatus); }
+    try { await pollService.deletePoll(id); setTrendingPolls((tp) => tp.filter((p) => p.id !== id)); fetchPolls(currentPage, searchQuery, filterTag, filterStatus, filterCategory); }
     catch (err: unknown) { const msg = err && typeof err === 'object' && 'response' in err ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : undefined; alert(msg || 'Failed to delete'); }
   };
 
@@ -184,12 +178,14 @@ const Dashboard = () => {
             <div className="sticky top-24">
               <ExploreSidebar
                 filterTag={filterTag}
+                filterCategory={filterCategory}
                 filterStatus={filterStatus}
                 onResetExplore={resetExplore}
                 onScrollToTrending={scrollToTrending}
                 onScrollToPollGrid={scrollToPollGrid}
                 onSetFilterStatus={setFilterStatus}
                 onSetFilterTag={setFilterTag}
+                onSetFilterCategory={setFilterCategory}
               />
             </div>
           </aside>
@@ -198,28 +194,6 @@ const Dashboard = () => {
           <main className="order-1 xl:order-2 min-w-0 space-y-6">
             {/* Hero trending */}
             <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
-
-            {/* Category pills */}
-            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-              {CATEGORY_PRESETS.map((c) => {
-                const active = c.tag === 'ALL' ? filterTag === 'ALL' : filterTag.toLowerCase() === c.tag.toLowerCase();
-                return (
-                  <button
-                    key={c.tag}
-                    type="button"
-                    onClick={() => setFilterTag(c.tag === 'ALL' ? 'ALL' : c.tag)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap border transition-all shrink-0 ${
-                      active
-                        ? 'bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] text-white border-transparent shadow-md shadow-fuchsia-500/25'
-                        : 'bg-white dark:bg-[#13112a] border-slate-200 dark:border-white/8 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white/90 hover:border-violet-400/40 dark:hover:border-violet-500/30'
-                    }`}
-                  >
-                    {t(c.labelKey)}
-                  </button>
-                );
-              })}
-              <button className="px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap border bg-white dark:bg-[#13112a] border-slate-200 dark:border-white/8 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white/70 transition-all shrink-0">•••</button>
-            </div>
 
             {/* Search & Filter bar */}
             <div className="bg-white dark:bg-[#13112a] rounded-2xl border border-slate-200 dark:border-white/8 p-4">
@@ -325,21 +299,6 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Community stats strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: t('dashboard.statsPolls'), value: formatCompact(totalPolls), Icon: BarChart3, color: 'text-violet-500 dark:text-violet-400' },
-                { label: t('dashboard.statsVotes'), value: formatCompact(statsStrip.votes), Icon: Users, color: 'text-fuchsia-500 dark:text-fuchsia-400' },
-                { label: t('dashboard.statsComments'), value: formatCompact(statsStrip.comments), Icon: MessageCircle, color: 'text-cyan-500 dark:text-cyan-400' },
-                { label: t('dashboard.statsActive'), value: formatCompact(statsStrip.active), Icon: Flame, color: 'text-orange-500 dark:text-orange-400' },
-              ].map(({ label, value, Icon, color }) => (
-                <div key={label} className="bg-white dark:bg-[#13112a] rounded-2xl border border-slate-200 dark:border-white/8 p-4">
-                  <Icon className={`w-5 h-5 ${color} mb-2`} />
-                  <div className="text-xl font-black text-slate-900 dark:text-white font-heading">{value}</div>
-                  <div className="text-xs text-slate-500 dark:text-white/40 mt-0.5">{label}</div>
-                </div>
-              ))}
-            </div>
           </main>
 
           {/* RIGHT SIDEBAR */}
@@ -349,6 +308,12 @@ const Dashboard = () => {
                 topCreators={topCreators}
                 popularTags={popularTags}
                 onTagClick={setFilterTag}
+                communityStats={{
+                  totalPolls,
+                  votes: statsStrip.votes,
+                  comments: statsStrip.comments,
+                  active: statsStrip.active,
+                }}
               />
             </div>
           </aside>

@@ -99,6 +99,9 @@
     "statsVotes": "Total votes",
     "statsComments": "Comments",
     "statsActive": "Live now",
+    "statsUsers": "Members",
+    "communityStats": "Community Stats",
+    "statsLive": "Live updates",
     "seeMore": "See more",
     "viewProfile": "View profile"
   },
@@ -239,6 +242,8 @@
   "createPoll": {
     "title": "Create New Poll",
     "subtitle": "Set up a question and let the community vote.",
+    "category": "Category",
+    "categoryDesc": "Choose the right category so others can easily find your poll.",
     "errorEmptyOptions": "All options must be filled",
     "errorFailed": "Failed to create poll",
     "question": "Poll Question",
@@ -262,7 +267,8 @@
     "judgesEnable": "⚖️ Poll with Judging Panel",
     "judgesWeightDesc": "Judges account for {{judgeWeight}}% of the score, audience accounts for {{audienceWeight}}%",
     "judgesUpgrade": "Upgrade to GO plan or higher to use this feature",
-    "upgradeBtn": "Upgrade"
+    "upgradeBtn": "Upgrade",
+    "advancedOptions": "Advanced Options"
   },
   "profile": {
     "title": "Edit Profile",
