@@ -62,6 +62,7 @@
     "filterActive": "Active",
     "filterEnded": "Ended",
     "noPolls": "No polls found",
+    "noPollsInCategory": "No posts in this category yet.",
     "clearFilters": "Clear filters",
     "trendingToday": "Trending today",
     "trendingJoinNow": "Join now",

@@ -259,10 +259,23 @@ const Dashboard = () => {
             ) : (pollPage?.content ?? []).length === 0 ? (
               <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#13112a]">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                  <BarChart3 className="w-8 h-8 text-slate-300 dark:text-white/20" />
+                  <span className="text-3xl">🗳️</span>
                 </div>
-                <p className="text-slate-500 dark:text-white/50 text-base mb-2">{t('dashboard.noPolls')}</p>
-                <button onClick={() => { setSearchQuery(''); setFilterStatus('ALL'); setFilterTag('ALL'); }} className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors">
+                <p className="text-slate-500 dark:text-white/50 text-base mb-1">{t('dashboard.noPolls')}</p>
+                {filterCategory && (
+                  <p className="text-xs text-slate-400 dark:text-white/30 mb-3">
+                    {t('dashboard.noPollsInCategory')}
+                  </p>
+                )}
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterStatus('ALL');
+                    setFilterTag('ALL');
+                    setFilterCategory('');
+                  }}
+                  className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors"
+                >
                   {t('dashboard.clearFilters')}
                 </button>
               </div>

@@ -54,12 +54,8 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
 const ConditionalFooter = () => {
   const location = useLocation();
-  const noFooterRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/admin'];
-  
-  if (noFooterRoutes.includes(location.pathname)) {
-    return null;
-  }
-  
+  // Footer chỉ hiện ở trang chủ
+  if (location.pathname !== '/') return null;
   return <Footer />;
 };
 

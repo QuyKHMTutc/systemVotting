@@ -62,6 +62,7 @@
     "filterActive": "Đang diễn ra",
     "filterEnded": "Đã kết thúc",
     "noPolls": "Không tìm thấy bình chọn nào",
+    "noPollsInCategory": "Danh mục này chưa có bài đăng nào.",
     "clearFilters": "Xóa bộ lọc",
     "trendingToday": "Trending hôm nay",
     "trendingJoinNow": "Tham gia ngay",
