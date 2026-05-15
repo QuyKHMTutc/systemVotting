@@ -238,17 +238,17 @@ const CreatePoll = () => {
                                 </div>
                                 <div className="ml-4">
                                     <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">
-                                        🔒 Riêng tư (Private)
+                                        {t('createPoll.privacyPrivate')}
                                     </span>
                                     <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">
-                                        Chỉ những người được mời qua email mới có thể xem và bình chọn
+                                        {t('createPoll.privacyPrivateDesc')}
                                     </span>
                                 </div>
                             </label>
 
                             {visibility === 'PRIVATE' && (
                                 <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
-                                    <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 mb-3">Danh sách người được mời</p>
+                                    <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 mb-3">{t('createPoll.invitedUsersList')}</p>
                                     <InviteUserSelector
                                         invitedUsers={invitedUsers}
                                         onChange={setInvitedUsers}
@@ -293,11 +293,11 @@ const CreatePoll = () => {
                                     </div>
                                     <div className="ml-4">
                                         <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">
-                                            ⚖️ Bình chọn có Hội đồng Giám khảo
+                                            {t('createPoll.judgesEnable')}
                                             <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">{plan}</span>
                                         </span>
                                         <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">
-                                            Giám khảo chiếm {judgeWeight}% điểm, khán giả chiếm {100 - judgeWeight}%
+                                            {t('createPoll.judgesWeightDesc', { judgeWeight, audienceWeight: 100 - judgeWeight })}
                                         </span>
                                     </div>
                                 </label>
@@ -318,12 +318,12 @@ const CreatePoll = () => {
                                 <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                                     <span className="text-2xl">⚖️</span>
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Bình chọn có Hội đồng Giám khảo</p>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500">Nâng cấp lên gói GO trở lên để sử dụng tính năng này</p>
+                                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('createPoll.judgesEnable').replace('⚖️ ', '')}</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500">{t('createPoll.judgesUpgrade')}</p>
                                     </div>
                                     <button type="button" onClick={() => navigate('/profile')}
                                         className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all shadow-sm">
-                                        Nâng cấp
+                                        {t('createPoll.upgradeBtn')}
                                     </button>
                                 </div>
                             </div>

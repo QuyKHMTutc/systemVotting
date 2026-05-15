@@ -44,9 +44,9 @@ const Dashboard = () => {
         const votedIds = votedPage.content.map((p) => p.id);
         setVotedPollIds(votedIds);
         localStorage.setItem('votedPolls', JSON.stringify(votedIds));
-      }).catch(() => {});
+      }).catch(() => { });
     }
-  // Dùng user?.id thay vì user object — tránh re-fetch mỗi lần plan/avatar update tạo object mới
+    // Dùng user?.id thay vì user object — tránh re-fetch mỗi lần plan/avatar update tạo object mới
   }, [user?.id]);
 
   useEffect(() => {
@@ -200,11 +200,10 @@ const Dashboard = () => {
                 <button
                   key={status}
                   onClick={() => setFilterStatusConfig(status)}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 border ${
-                    filterStatus === status
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 border ${filterStatus === status
                       ? 'bg-indigo-600 border-indigo-500/50 text-white shadow-lg shadow-indigo-500/30'
                       : 'bg-white border-slate-300 shadow-sm dark:shadow-none dark:bg-white/[0.04] dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20'
-                  }`}
+                    }`}
                 >
                   {status === 'ALL' ? t('dashboard.filterAll') : status === 'ACTIVE' ? t('dashboard.filterActive') : t('dashboard.filterEnded')}
                 </button>

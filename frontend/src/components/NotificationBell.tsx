@@ -269,7 +269,7 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
                     {notif.type === 'NEW_COMMENT' && t('notification.commentedPoll')}
                     {notif.type === 'NEW_REPLY' && t('notification.repliedComment')}
                     {notif.type === 'NEW_VOTE' && t('notification.votedPoll')}
-                    {notif.type === 'JUDGE_INVITATION' && (notif.message.includes('Giám khảo') ? '' : 'đã mời bạn làm Giám khảo')}
+                    {notif.type === 'JUDGE_INVITATION' && (notif.message.includes('Giám khảo') || notif.message.includes('Judge') ? '' : t('notification.invitedJudge'))}
                     {notif.type === 'PRIVATE_POLL_INVITATION' && ''}
                 </p>
                 {(notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY' || notif.type === 'JUDGE_INVITATION' || notif.type === 'PRIVATE_POLL_INVITATION') && (

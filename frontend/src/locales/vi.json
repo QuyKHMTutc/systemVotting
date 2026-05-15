@@ -106,7 +106,10 @@
     "voteNow": "BÌNH CHỌN NGAY",
     "weighted": "Trọng số",
     "judge": "Giám khảo",
-    "noCommentsBeFirst": "Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ suy nghĩ của bạn!"
+    "noCommentsBeFirst": "Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ suy nghĩ của bạn!",
+    "creatorView": "Bạn là người tạo poll này",
+    "commentingAs": "Bạn đang bình luận dưới danh tính:",
+    "anonymous": "Ẩn danh"
   },
   "forgotPassword": {
     "invalidEmail": "Vui lòng nhập email hợp lệ (ví dụ: name@example.com)",
@@ -214,7 +217,14 @@
     "anonymousDesc": "Đăng dưới chế độ ẩn danh. Người khác sẽ không biết bạn là người tạo.",
     "cancel": "Hủy",
     "creating": "Đang tạo...",
-    "submitBtn": "Tạo Cuộc Thăm Dò Ý Kiến"
+    "submitBtn": "Tạo Cuộc Thăm Dò Ý Kiến",
+    "privacyPrivate": "🔒 Riêng tư (Private)",
+    "privacyPrivateDesc": "Chỉ những người được mời qua email mới có thể xem và bình chọn",
+    "invitedUsersList": "Danh sách người được mời",
+    "judgesEnable": "⚖️ Bình chọn có Hội đồng Giám khảo",
+    "judgesWeightDesc": "Giám khảo chiếm {{judgeWeight}}% điểm, khán giả chiếm {{audienceWeight}}%",
+    "judgesUpgrade": "Nâng cấp lên gói GO trở lên để sử dụng tính năng này",
+    "upgradeBtn": "Nâng cấp"
   },
   "profile": {
     "title": "Chỉnh sửa hồ sơ",
@@ -246,7 +256,29 @@
     "failUpdate": "Cập nhật hồ sơ thất bại",
     "deleteConfirm": "Bạn có chắc chắn muốn xóa bài đăng này không?",
     "deleteFail": "Xóa thất bại. Vui lòng thử lại.",
-    "loadFail": "Tải dữ liệu thất bại. Vui lòng thử lại sau."
+    "deleteFail": "Xóa thất bại. Vui lòng thử lại.",
+    "loadFail": "Tải dữ liệu thất bại. Vui lòng thử lại sau.",
+    "posts": "bài đăng",
+    "votesCount": "lượt vote",
+    "commentsCount": "bình luận",
+    "back": "Quay lại",
+    "expired": "Đã hết hạn",
+    "daysLeftWarning": "⚠ Còn {{days}} ngày",
+    "daysLeft": "Còn {{days}} ngày",
+    "paymentHistory": "Lịch sử thanh toán",
+    "loading": "Đang tải...",
+    "loadMore": "Xem thêm",
+    "txnCode": "Mã giao dịch",
+    "time": "Thời gian",
+    "plan": "Gói",
+    "amount": "Số tiền",
+    "status": "Trạng thái",
+    "success": "Thành công",
+    "pending": "Chờ thanh toán",
+    "notScannedQR": "Chưa quét mã QR",
+    "failed": "Thất bại",
+    "noTransactions": "Chưa có giao dịch",
+    "noTransactionsDesc": "Bạn chưa thực hiện giao dịch thanh toán gói nào."
   },
   "termsPage": {
     "title": "Điều khoản dịch vụ",
@@ -321,7 +353,9 @@
     "justNow": "Vừa xong",
     "minutesAgo": "{{count}} phút",
     "hoursAgo": "{{count}} giờ",
-    "daysAgo": "{{count}} ngày"
+    "daysAgo": "{{count}} ngày",
+    "invitedJudge": "đã mời bạn làm Giám khảo",
+    "invitedPrivate": "đã mời bạn tham gia cuộc bình chọn riêng tư:"
   },
   "liveChart": {
     "option": "Lựa chọn",

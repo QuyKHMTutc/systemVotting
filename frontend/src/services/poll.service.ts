@@ -46,6 +46,11 @@ export const pollService = {
         return response.data.data;
     },
 
+    getTrendingPolls: async (limit = 5): Promise<Poll[]> => {
+        const response = await api.get(`/polls/trending`, { params: { limit } });
+        return response.data.data;
+    },
+
     getPollById: async (id: number): Promise<Poll> => {
         const response = await api.get(`/polls/${id}`);
         return response.data.data;

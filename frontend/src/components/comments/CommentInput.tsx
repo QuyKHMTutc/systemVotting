@@ -201,7 +201,7 @@ export default function CommentInput({
           {identityLocked && (
              <div className="mb-1.5 px-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-white/50">
                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30" />
-               Bạn đang bình luận dưới danh tính: <strong className="font-semibold">{isAnonymous ? "Ẩn danh" : username}</strong>
+               {t('pollDetail.commentingAs')} <strong className="font-semibold">{isAnonymous ? t('pollDetail.anonymous') : username}</strong>
              </div>
           )}
           <div className="flex items-end gap-2 rounded-2xl bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 focus-within:border-indigo-400 dark:focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white dark:focus-within:bg-white/[0.06] transition-all duration-200 shadow-sm">

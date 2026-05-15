@@ -179,15 +179,15 @@ export const Profile = () => {
   const expDate = user?.plan && user.plan !== 'FREE' ? (user as any).planExpirationDate : null;
   const daysLeft = expDate ? Math.ceil((new Date(expDate).getTime() - Date.now()) / 86400000) : null;
   const expiryUI = daysLeft === null ? null
-    : daysLeft <= 0 ? { text: 'Đã hết hạn', color: 'text-red-500 dark:text-red-400', dot: 'bg-red-500 animate-ping' }
-      : daysLeft <= 7 ? { text: `⚠ Còn ${daysLeft} ngày`, color: 'text-orange-500 dark:text-orange-400', dot: 'bg-orange-500 animate-pulse' }
-        : { text: `Còn ${daysLeft} ngày`, color: 'text-slate-500 dark:text-white/40', dot: 'bg-emerald-400' };
+    : daysLeft <= 0 ? { text: t('profile.expired'), color: 'text-red-500 dark:text-red-400', dot: 'bg-red-500 animate-ping' }
+      : daysLeft <= 7 ? { text: t('profile.daysLeftWarning', { days: daysLeft }), color: 'text-orange-500 dark:text-orange-400', dot: 'bg-orange-500 animate-pulse' }
+        : { text: t('profile.daysLeft', { days: daysLeft }), color: 'text-slate-500 dark:text-white/40', dot: 'bg-emerald-400' };
 
   const tabs = [
     { key: 'created', icon: <ListPlus className="w-4 h-4" />, label: t('profile.createdPolls'), count: createdTotal },
     { key: 'voted', icon: <CheckSquare className="w-4 h-4" />, label: t('profile.votedPolls'), count: votedTotal },
     { key: 'comments', icon: <MessageSquare className="w-4 h-4" />, label: t('profile.myComments'), count: commentsTotal },
-    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: 'Lịch sử thanh toán', count: paymentsTotal },
+    { key: 'payments', icon: <CreditCard className="w-4 h-4" />, label: t('profile.paymentHistory'), count: paymentsTotal },
   ];
 
   if (loading) return <LoadingSpinner />;
@@ -216,7 +216,7 @@ export const Profile = () => {
           onClick={() => navigate(-1)}
           className="absolute top-5 left-5 z-10 flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white/80 text-sm font-medium transition-all"
         >
-          <ArrowLeft className="w-4 h-4" /> Quay lại
+          <ArrowLeft className="w-4 h-4" /> {t('profile.back')}
         </button>
       </div>
 
@@ -287,9 +287,9 @@ export const Profile = () => {
               {/* Stats inline — kiểu GitHub/Twitter */}
               <div className="flex items-center gap-5 flex-wrap">
                 {[
-                  { val: createdTotal, label: 'bài đăng' },
-                  { val: votedTotal, label: 'lượt vote' },
-                  { val: commentsTotal, label: 'bình luận' },
+                  { val: createdTotal, label: t('profile.posts') },
+                  { val: votedTotal, label: t('profile.votesCount') },
+                  { val: commentsTotal, label: t('profile.commentsCount') },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <span className="text-xl font-black text-slate-900 dark:text-white">{s.val}</span>
@@ -367,7 +367,7 @@ export const Profile = () => {
                     disabled={loadingMore === 'created'}
                     className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loadingMore === 'created' ? 'Đang tải...' : 'Xem thêm'}
+                    {loadingMore === 'created' ? t('profile.loading') : t('profile.loadMore')}
                   </button>
                 )}
               </>
@@ -393,7 +393,7 @@ export const Profile = () => {
                     disabled={loadingMore === 'voted'}
                     className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loadingMore === 'voted' ? 'Đang tải...' : 'Xem thêm'}
+                    {loadingMore === 'voted' ? t('profile.loading') : t('profile.loadMore')}
                   </button>
                 )}
               </>
@@ -439,7 +439,7 @@ export const Profile = () => {
                     disabled={loadingMore === 'comments'}
                     className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loadingMore === 'comments' ? 'Đang tải...' : 'Xem thêm'}
+                    {loadingMore === 'comments' ? t('profile.loading') : t('profile.loadMore')}
                   </button>
                 )}
               </>
@@ -454,7 +454,7 @@ export const Profile = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-white/[0.06]">
-                        {['Mã giao dịch', 'Thời gian', 'Gói', 'Số tiền', 'Trạng thái'].map((h, i) => (
+                        {[t('profile.txnCode'), t('profile.time'), t('profile.plan'), t('profile.amount'), t('profile.status')].map((h, i) => (
                           <th key={i} className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/30">{h}</th>
                         ))}
                       </tr>
@@ -477,20 +477,20 @@ export const Profile = () => {
                           <td className="px-6 py-4">
                             {txn.status === 'SUCCESS' && (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-200 dark:border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Thành công
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{t('profile.success')}
                               </span>
                             )}
                             {txn.status === 'PENDING' && (
                               <div className="flex flex-col gap-1">
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/[0.08]">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30" />Chờ thanh toán
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30" />{t('profile.pending')}
                                 </span>
-                                <span className="text-[10px] text-slate-400 dark:text-white/25 px-1">Chưa quét mã QR</span>
+                                <span className="text-[10px] text-slate-400 dark:text-white/25 px-1">{t('profile.notScannedQR')}</span>
                               </div>
                             )}
                             {txn.status === 'FAILED' && (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg text-xs font-semibold border border-red-100 dark:border-red-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />Thất bại
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />{t('profile.failed')}
                               </span>
                             )}
                           </td>
@@ -505,11 +505,11 @@ export const Profile = () => {
                     disabled={loadingMore === 'payments'}
                     className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loadingMore === 'payments' ? 'Đang tải...' : 'Xem thêm'}
+                    {loadingMore === 'payments' ? t('profile.loading') : t('profile.loadMore')}
                   </button>
                 )}
               </>
-              : <ProfileEmpty icon={<CreditCard className="w-8 h-8" />} title="Chưa có giao dịch" desc="Bạn chưa thực hiện giao dịch thanh toán gói nào." />
+              : <ProfileEmpty icon={<CreditCard className="w-8 h-8" />} title={t('profile.noTransactions')} desc={t('profile.noTransactionsDesc')} />
           )}
         </div>
       </div>

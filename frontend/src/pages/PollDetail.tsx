@@ -35,7 +35,7 @@ const PollDetail = () => {
 
   const [showComments, setShowComments] = useState(false);
   const [barAnimated, setBarAnimated] = useState(false);
-  const [liveVoteReceived, setLiveVoteReceived] = useState(false);
+
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentPage, setCommentPage] = useState(0);
   const [hasMoreComments, setHasMoreComments] = useState(false);
@@ -43,10 +43,10 @@ const PollDetail = () => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
-  
+
   const [identityLocked, setIdentityLocked] = useState(false);
   const [lockedIsAnonymous, setLockedIsAnonymous] = useState(false);
-  
+
   const [searchParams] = useSearchParams();
   const highlightCommentId = searchParams.get('commentId') ? Number(searchParams.get('commentId')) : null;
 
@@ -112,7 +112,7 @@ const PollDetail = () => {
       judgeWeight?: number;
     }[]
   }) => {
-    setLiveVoteReceived(true);
+
     setPoll(prev => {
       if (!prev) return prev;
       return {
@@ -123,7 +123,7 @@ const PollDetail = () => {
           const updated = payload.options.find(o => o.optionId === opt.id);
           if (!updated) return opt;
           const audienceCount = updated.audienceCount ?? opt.audienceCount ?? 0;
-          const judgeCount    = updated.judgeCount    ?? opt.judgeCount    ?? 0;
+          const judgeCount = updated.judgeCount ?? opt.judgeCount ?? 0;
           // voteCount: use explicit value or fallback to audience+judge sum
           const voteCount = updated.voteCount !== undefined
             ? updated.voteCount
@@ -283,7 +283,7 @@ const PollDetail = () => {
         setShowComments(true);
         // Add slight delay to let the UI render the comment section opening, then scroll
         setTimeout(() => {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }, 100);
       }
     };
@@ -380,11 +380,10 @@ const PollDetail = () => {
           <div className="p-6 sm:p-8 pb-6 border-b border-slate-200 dark:border-white/10">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${
-                  isActive
+                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${isActive
                     ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                     : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                }`}
+                  }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
                 {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
@@ -405,10 +404,10 @@ const PollDetail = () => {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
                   {poll.creator.avatarUrl && poll.creator.avatarUrl !== 'null' && poll.creator.avatarUrl.trim() !== '' ? (
-                    <img 
-                      src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`} 
-                      alt={poll.creator.username} 
-                      className="w-full h-full object-cover" 
+                    <img
+                      src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
+                      alt={poll.creator.username}
+                      className="w-full h-full object-cover"
                       onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
                     />
                   ) : (
@@ -485,15 +484,13 @@ const PollDetail = () => {
                 <div
                   key={option.id}
                   onClick={() => canSelect && setSelectedOption(option.id)}
-                  className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${
-                    canSelect
+                  className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${canSelect
                       ? 'cursor-pointer hover:shadow-md dark:hover:shadow-black/30'
                       : 'cursor-default'
-                  } ${
-                    isSelected
+                    } ${isSelected
                       ? 'border-indigo-500 ring-1 ring-indigo-500 dark:ring-0'
                       : 'border-slate-200 dark:border-white/10'
-                  }`}
+                    }`}
                   style={isSelected
                     ? { background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.05))' }
                     : undefined
@@ -503,9 +500,8 @@ const PollDetail = () => {
                   <div className="relative flex items-center gap-3 px-4 py-3.5">
                     {/* Selection radio */}
                     {canSelect && (
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                        isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-white/30'
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-white/30'
+                        }`}>
                         {isSelected && (
                           <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -612,7 +608,7 @@ const PollDetail = () => {
                 <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span className="text-indigo-500 dark:text-indigo-400 font-medium text-sm">Bạn là người tạo poll này</span>
+                <span className="text-indigo-500 dark:text-indigo-400 font-medium text-sm">{t('pollDetail.creatorView')}</span>
               </div>
             ) : (
               <>
@@ -681,20 +677,20 @@ const PollDetail = () => {
               <div className="shrink-0 p-4 sm:p-6 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-transparent">
                 {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
                 {!user ? (
-                   <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
-                     <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
-                       {t('pollDetail.loginToComment')}
-                     </Link>
-                   </div>
+                  <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+                    <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
+                      {t('pollDetail.loginToComment')}
+                    </Link>
+                  </div>
                 ) : (
-                   <CommentInput 
-                     onSubmit={handleCommentSubmit} 
-                     placeholder={t('pollDetail.writeComment')} 
-                     avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
-                     username={user?.username}
-                     identityLocked={identityLocked}
-                     lockedIsAnonymous={lockedIsAnonymous}
-                   />
+                  <CommentInput
+                    onSubmit={handleCommentSubmit}
+                    placeholder={t('pollDetail.writeComment')}
+                    avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
+                    username={user?.username}
+                    identityLocked={identityLocked}
+                    lockedIsAnonymous={lockedIsAnonymous}
+                  />
                 )}
               </div>
             </div>
@@ -703,7 +699,7 @@ const PollDetail = () => {
       </main>
 
       {poll && (
-        <PollLiveChartModal 
+        <PollLiveChartModal
           isOpen={isLiveChartOpen}
           onClose={() => setIsLiveChartOpen(false)}
           options={poll.options}

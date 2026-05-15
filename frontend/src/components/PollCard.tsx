@@ -58,18 +58,17 @@ export const PollCard = ({
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${
-                  isActive
+                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${isActive
                     ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                     : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                }`}
+                  }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
                 {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
               </span>
-              {poll.judgeWeight > 0 && (
+              {(poll.judgeWeight ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                   ⚖️ {t('pollDetail.weighted')}
+                  ⚖️ {t('pollDetail.weighted')}
                 </span>
               )}
               {poll.visibility === 'PRIVATE' && (
@@ -161,15 +160,14 @@ export const PollCard = ({
           {/* CTA Button */}
           <div className="mt-auto pt-2">
             <span
-              className={`block text-center w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                !isActive
+              className={`block text-center w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 ${!isActive
                   ? 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/50 border border-slate-200 dark:border-white/10'
                   : isCreator
                     ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30'
                     : hasVoted
                       ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
                       : 'btn-primary text-white border-0 hover:opacity-95 group-hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)]'
-              }`}
+                }`}
             >
               {!isActive
                 ? t('pollDetail.viewResults')

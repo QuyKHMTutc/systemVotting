@@ -5,7 +5,7 @@ export interface Notification {
     id: number;
     actorName: string;
     actorAvatar: string | null;
-    type: 'NEW_COMMENT' | 'NEW_REPLY' | 'NEW_VOTE';
+    type: 'NEW_COMMENT' | 'NEW_REPLY' | 'NEW_VOTE' | 'JUDGE_INVITATION' | 'PRIVATE_POLL_INVITATION';
     message: string;
     relatedPollId: number;
     relatedCommentId?: number;
