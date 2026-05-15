@@ -11,7 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.Date;
 import java.util.List;
 
@@ -25,6 +25,21 @@ public class GlobalExceptionHandler {
         ErrorResponse response = buildErrorCodeResponse(ErrorCode.INTERNAL_ERROR, request);
 
         return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.getHttpStatus()).body(response);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException ex, WebRequest request) {
+        log.warn("Resource not found: {}", ex.getResourcePath());
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(new Date().getTime())
+                .code(HttpStatus.NOT_FOUND.value())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                .message("Resource not found: " + ex.getResourcePath())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(AppException.class)

@@ -58,6 +58,17 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     long countByCreator_Id(Long creatorId);
 
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    @Query("SELECT DISTINCT p FROM Poll p " +
+           "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND p.endTime > :currentTime " +
+           "AND p.createdAt >= :since " +
+           "ORDER BY p.createdAt DESC")
+    List<Poll> findRecentPublicActivePolls(
+            @Param("currentTime") java.time.LocalDateTime currentTime,
+            @Param("since") java.time.LocalDateTime since,
+            Pageable pageable);
+
     @Query("SELECT COUNT(p) FROM Poll p WHERE p.creator.id = :creatorId AND (p.endTime IS NULL OR p.endTime > :now)")
     long countActiveByCreator(@Param("creatorId") Long creatorId, @Param("now") java.time.LocalDateTime now);
 }

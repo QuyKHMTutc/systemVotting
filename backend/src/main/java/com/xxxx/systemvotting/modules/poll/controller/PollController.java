@@ -106,6 +106,18 @@ public class PollController {
                 .build();
     }
 
+    @Operation(summary = "Trending bình chọn", description = "Lấy danh sách các poll public đang hoạt động nổi bật nhất")
+    @GetMapping("/trending")
+    public ApiResponse<List<PollResponseDTO>> getTrendingPolls(
+            @RequestParam(defaultValue = "5") @Min(1) @Max(50) int limit) {
+        List<PollResponseDTO> polls = pollService.getTrendingPolls(limit);
+        return ApiResponse.<List<PollResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(polls)
+                .build();
+    }
+
     @Operation(summary = "Xóa bình chọn", description = "Chỉ creator hoặc admin mới xóa được", security = { @SecurityRequirement(name = "Bearer Authentication") })
     @ApiResponses({ @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xóa thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền") })
     @DeleteMapping("/{id}")

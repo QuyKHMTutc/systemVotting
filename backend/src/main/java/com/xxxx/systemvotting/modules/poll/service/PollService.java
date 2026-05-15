@@ -24,6 +24,8 @@ public interface PollService {
 
     PageResponse<PollResponseDTO> getVotedPolls(Long userId, int page, int size);
 
+    List<PollResponseDTO> getTrendingPolls(int limit);
+
     List<JudgeCandidateDTO> parseJudgesFromCsv(String csvContent);
 
     List<JudgeCandidateDTO> searchUsers(String keyword);

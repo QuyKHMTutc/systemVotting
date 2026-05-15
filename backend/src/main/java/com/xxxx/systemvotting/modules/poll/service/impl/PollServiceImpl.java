@@ -478,6 +478,47 @@ public class PollServiceImpl implements PollService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PollResponseDTO> getTrendingPolls(int limit) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime since = now.minusDays(14);
+        Pageable pageable = PageRequest.of(0, 50); // Fetch top 50 recent active polls
+        List<Poll> candidatePolls = pollRepository.findRecentPublicActivePolls(now, since, pageable);
+
+        if (candidatePolls.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Long> pollIds = candidatePolls.stream().map(Poll::getId).collect(Collectors.toList());
+        Map<Long, Integer> commentCountMap = getCommentCountsForPolls(pollIds);
+
+        List<PollResponseDTO> dtos = candidatePolls.stream()
+                .map(pollMapper::toDto)
+                .collect(Collectors.toList());
+
+        enrichPollListWithRedisData(dtos);
+
+        // Compute trending score and sort
+        return dtos.stream()
+                .map(dto -> {
+                    int comments = commentCountMap.getOrDefault(dto.getId(), 0);
+                    dto.setCommentCount(comments);
+                    
+                    int totalVotes = 0;
+                    if (dto.getOptions() != null) {
+                        totalVotes = dto.getOptions().stream().mapToInt(o -> o.voteCount() != null ? o.voteCount() : 0).sum();
+                    }
+                    
+                    int score = (totalVotes * 2) + (comments * 3);
+                    return new java.util.AbstractMap.SimpleEntry<>(dto, score);
+                })
+                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue())) // Descending
+                .limit(limit)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<PollResponseDTO> getVotedPolls(Long userId, int page, int size) {
         int pageNumber = Math.max(0, page);
         int pageSize = Math.min(Math.max(1, size), MAX_PROFILE_POLL_PAGE_SIZE);
