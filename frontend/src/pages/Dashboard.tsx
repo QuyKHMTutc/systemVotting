@@ -1,17 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import type { Poll, PollPageResponse } from '../services/poll.service';
 import Navbar from '../components/Navbar';
-import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { PollCard } from '../components/PollCard';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
-import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TrendingHeroCarousel } from '../components/explore/TrendingHeroCarousel';
+import { ExploreSidebar } from '../components/explore/ExploreSidebar';
+import { ExploreRightSidebar } from '../components/explore/ExploreRightSidebar';
+import { ExplorePollCard } from '../components/explore/ExplorePollCard';
+import { BarChart3, Flame, Hash, MessageCircle, Search, Users } from 'lucide-react';
+
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(n);
+}
+
+const CATEGORY_PRESETS = [
+  { tag: 'ALL', labelKey: 'dashboard.catAll' },
+  { tag: 'công nghệ', labelKey: 'dashboard.catTech' },
+  { tag: 'gaming', labelKey: 'dashboard.catGaming' },
+  { tag: 'giải trí', labelKey: 'dashboard.catEntertainment' },
+  { tag: 'thể thao', labelKey: 'dashboard.catSports' },
+  { tag: 'học tập', labelKey: 'dashboard.catEducation' },
+  { tag: 'kinh doanh', labelKey: 'dashboard.catBusiness' },
+];
 
 const Dashboard = () => {
   const { t } = useTranslation();
   const [pollPage, setPollPage] = useState<PollPageResponse | null>(null);
+  const [trendingPolls, setTrendingPolls] = useState<Poll[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,104 +44,79 @@ const Dashboard = () => {
   const filterStatus = (searchParams.get('filter') as 'ALL' | 'ACTIVE' | 'ENDED') || 'ALL';
   const filterTag = searchParams.get('tag') || 'ALL';
 
-  const setCurrentPage = (valOrFn: number | ((prev: number) => number)) => {
-    const next = typeof valOrFn === 'function' ? valOrFn(currentPage) : valOrFn;
+  const setCurrentPage = (v: number | ((p: number) => number)) => {
+    const next = typeof v === 'function' ? v(currentPage) : v;
     setSearchParams({ page: String(next), filter: filterStatus, tag: filterTag }, { replace: true });
   };
-
-  const setFilterStatusConfig = (status: 'ALL' | 'ACTIVE' | 'ENDED') => {
-    setSearchParams({ page: '0', filter: status, tag: filterTag }, { replace: true });
-  };
-
-  const setFilterTagValue = (tag: string) => {
+  const setFilterStatus = (s: 'ALL' | 'ACTIVE' | 'ENDED') =>
+    setSearchParams({ page: '0', filter: s, tag: filterTag }, { replace: true });
+  const setFilterTag = (tag: string) =>
     setSearchParams({ page: '0', filter: filterStatus, tag: tag || 'ALL' }, { replace: true });
-  };
+  const resetExplore = () => { setSearchQuery(''); setSearchParams({ page: '0', filter: 'ALL', tag: 'ALL' }, { replace: true }); };
+  const scrollToPollGrid = () => document.getElementById('explore-polls-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scrollToTrending = () => document.getElementById('explore-trending')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('votedPolls') || '[]');
     setVotedPollIds(stored);
     if (user) {
-      pollService.getMyVotedPolls(0, 500).then((votedPage) => {
-        const votedIds = votedPage.content.map((p) => p.id);
-        setVotedPollIds(votedIds);
-        localStorage.setItem('votedPolls', JSON.stringify(votedIds));
-      }).catch(() => { });
+      pollService.getMyVotedPolls(0, 500)
+        .then((vp) => { const ids = vp.content.map((p) => p.id); setVotedPollIds(ids); localStorage.setItem('votedPolls', JSON.stringify(ids)); })
+        .catch(() => {});
     }
-    // Dùng user?.id thay vì user object — tránh re-fetch mỗi lần plan/avatar update tạo object mới
   }, [user?.id]);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      fetchPolls(currentPage, searchQuery, filterTag, filterStatus);
-    }, 300);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    setTrendingLoading(true);
+    pollService.getTrendingPolls(8)
+      .then((list) => { if (!cancelled) setTrendingPolls(list); })
+      .catch(() => { if (!cancelled) setTrendingPolls([]); })
+      .finally(() => { if (!cancelled) setTrendingLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchPolls(currentPage, searchQuery, filterTag, filterStatus), 300);
+    return () => clearTimeout(timer);
   }, [currentPage, searchQuery, filterTag, filterStatus]);
 
-  const handlePollEvent = useCallback((payload: PollEventPayload) => {
-    setPollPage(prev => {
-      if (!prev) return prev;
-      let newContent = [...prev.content];
-      let nextTotalElements = prev.totalElements;
+  const patchPoll = (list: Poll[], id: number, fn: (p: Poll) => Poll) => list.map((p) => (p.id === id ? fn(p) : p));
 
-      const matchesCurrentFilters = (poll: Poll) => {
-        if (filterStatus !== 'ALL') {
-          const isActive = new Date(poll.endTime) > new Date();
-          if (filterStatus === 'ACTIVE' && !isActive) return false;
-          if (filterStatus === 'ENDED' && isActive) return false;
-        }
-        if (filterTag !== 'ALL' && !poll.tags.some(tag => tag.toLowerCase().includes(filterTag.toLowerCase()))) {
-          return false;
-        }
-        if (searchQuery.trim() && !poll.title.toLowerCase().includes(searchQuery.trim().toLowerCase())) {
-          return false;
-        }
+  const handlePollEvent = useCallback((payload: PollEventPayload) => {
+    setTrendingPolls((prev) => {
+      if (payload.type === 'CREATED') {
+        if (payload.poll.visibility === 'PRIVATE') return prev;
+        if (prev.some((p) => p.id === payload.poll.id)) return prev;
+        return [payload.poll, ...prev].slice(0, 8);
+      }
+      if (payload.type === 'DELETED') return prev.filter((p) => p.id !== payload.pollId);
+      if (payload.type === 'VOTED') return patchPoll(prev, payload.pollId, (p) => ({ ...p, options: p.options.map((o) => { const u = payload.options.find((x) => x.optionId === o.id); return u ? { ...o, voteCount: u.voteCount } : o; }) }));
+      if (payload.type === 'COMMENT_ADDED') return patchPoll(prev, payload.pollId, (p) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
+      return prev;
+    });
+    setPollPage((prev) => {
+      if (!prev) return prev;
+      let content = [...prev.content];
+      let total = prev.totalElements;
+      const matchFilter = (p: Poll) => {
+        if (filterStatus !== 'ALL') { const active = new Date(p.endTime) > new Date(); if (filterStatus === 'ACTIVE' && !active) return false; if (filterStatus === 'ENDED' && active) return false; }
+        if (filterTag !== 'ALL' && !p.tags.some((t) => t.toLowerCase().includes(filterTag.toLowerCase()))) return false;
+        if (searchQuery.trim() && !p.title.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
         return true;
       };
-
       if (payload.type === 'CREATED') {
-        // Guard: never show PRIVATE polls in the public dashboard
-        if (payload.poll.visibility === 'PRIVATE') return prev;
-        // Respect server pagination on dashboard:
-        // only page 0 receives optimistic inserted polls and keeps fixed page size.
-        if (prev.currentPage === 0 && matchesCurrentFilters(payload.poll) && !newContent.some(p => p.id === payload.poll.id)) {
-          newContent.unshift(payload.poll);
-          newContent = newContent.slice(0, prev.pageSize);
-          nextTotalElements += 1;
+        if (payload.poll.visibility !== 'PRIVATE' && prev.currentPage === 0 && matchFilter(payload.poll) && !content.some((p) => p.id === payload.poll.id)) {
+          content.unshift(payload.poll); content = content.slice(0, prev.pageSize); total += 1;
         }
       } else if (payload.type === 'DELETED') {
-        const before = newContent.length;
-        newContent = newContent.filter(p => p.id !== payload.pollId);
-        if (newContent.length < before) {
-          nextTotalElements = Math.max(0, nextTotalElements - 1);
-        }
+        const before = content.length; content = content.filter((p) => p.id !== payload.pollId); if (content.length < before) total = Math.max(0, total - 1);
       } else if (payload.type === 'VOTED') {
-        newContent = newContent.map(p => {
-          if (p.id === payload.pollId) {
-            return {
-              ...p,
-              options: p.options.map(opt => {
-                const updated = payload.options.find(o => o.optionId === opt.id);
-                return updated ? { ...opt, voteCount: updated.voteCount } : opt;
-              })
-            };
-          }
-          return p;
-        });
+        content = patchPoll(content, payload.pollId, (p) => ({ ...p, options: p.options.map((o) => { const u = payload.options.find((x) => x.optionId === o.id); return u ? { ...o, voteCount: u.voteCount } : o; }) }));
       } else if (payload.type === 'COMMENT_ADDED') {
-        newContent = newContent.map(p => {
-          if (p.id === payload.pollId) {
-            return { ...p, commentCount: (p.commentCount || 0) + 1 };
-          }
-          return p;
-        });
+        content = patchPoll(content, payload.pollId, (p) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
       }
-
-      return {
-        ...prev,
-        content: newContent,
-        totalElements: nextTotalElements,
-        totalPages: Math.max(1, Math.ceil(nextTotalElements / prev.pageSize)),
-      };
+      return { ...prev, content, totalElements: total, totalPages: Math.max(1, Math.ceil(total / prev.pageSize)) };
     });
   }, [filterStatus, filterTag, searchQuery]);
 
@@ -128,165 +124,236 @@ const Dashboard = () => {
 
   const fetchPolls = async (page: number, title: string, tag: string, status: string) => {
     setLoading(true);
-    try {
-      const data = await pollService.getAllPolls(page, 6, title, tag, status);
-      setPollPage(data);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch {
-      setError('Failed to load polls. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
+    try { const data = await pollService.getAllPolls(page, 6, title, tag, status); setPollPage(data); }
+    catch { setError('Failed to load polls.'); }
+    finally { setLoading(false); }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this poll?')) return;
-    try {
-      await pollService.deletePoll(id);
-      fetchPolls(currentPage, searchQuery, filterTag, filterStatus);
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete poll');
-    }
+    if (!window.confirm('Are you sure?')) return;
+    try { await pollService.deletePoll(id); setTrendingPolls((tp) => tp.filter((p) => p.id !== id)); fetchPolls(currentPage, searchQuery, filterTag, filterStatus); }
+    catch (err: unknown) { const msg = err && typeof err === 'object' && 'response' in err ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : undefined; alert(msg || 'Failed to delete'); }
   };
 
   const canDelete = (poll: Poll) => user?.role === 'ADMIN' || user?.id === poll.creator.id;
 
+  const mergedPolls = useMemo(() => {
+    const m = new Map<number, Poll>();
+    trendingPolls.forEach((p) => m.set(p.id, p));
+    pollPage?.content.forEach((p) => m.set(p.id, p));
+    return Array.from(m.values());
+  }, [trendingPolls, pollPage]);
+
+  const topCreators = useMemo(() => {
+    const scores = new Map<number, { username: string; avatarUrl?: string; votes: number }>();
+    mergedPolls.forEach((p) => {
+      const v = p.options.reduce((s, o) => s + (o.voteCount ?? 0), 0);
+      const cur = scores.get(p.creator.id);
+      if (!cur) scores.set(p.creator.id, { username: p.creator.username, avatarUrl: p.creator.avatarUrl, votes: v });
+      else cur.votes += v;
+    });
+    return Array.from(scores.entries()).map(([id, d]) => ({ id, ...d })).sort((a, b) => b.votes - a.votes).slice(0, 5);
+  }, [mergedPolls]);
+
+  const popularTags = useMemo(() => {
+    const c = new Map<string, { display: string; count: number }>();
+    mergedPolls.forEach((p) => (p.tags || []).forEach((tag) => { const k = tag.toLowerCase(); const prev = c.get(k); if (prev) prev.count += 1; else c.set(k, { display: tag, count: 1 }); }));
+    return Array.from(c.values()).sort((a, b) => b.count - a.count).slice(0, 8);
+  }, [mergedPolls]);
+
+  const statsStrip = useMemo(() => {
+    let votes = 0, comments = 0, active = 0;
+    const now = Date.now();
+    mergedPolls.forEach((p) => { votes += p.options.reduce((s, o) => s + (o.voteCount ?? 0), 0); comments += p.commentCount ?? 0; if (new Date(p.endTime).getTime() > now) active += 1; });
+    return { votes, comments, active };
+  }, [mergedPolls]);
+
+  const totalPolls = pollPage?.totalElements ?? 0;
+
   return (
-    <div className="min-h-screen pb-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0a18] transition-colors">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
-        {error && (
-          <div className="glass-panel bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-xl mb-8">
-            {error}
-          </div>
-        )}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16">
+        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm">{error}</div>}
 
-        {/* Search & Filters */}
-        <div className="glass-panel p-5 rounded-2xl mb-10 border border-slate-200 dark:border-white/10 transition-colors">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              <div className="relative flex-1 group/input">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/40 group-focus-within/input:text-indigo-500 dark:group-focus-within/input:text-indigo-400 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder={t('dashboard.searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-white dark:bg-white/[0.04] border border-slate-300 shadow-sm dark:shadow-none dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 dark:focus:bg-white/[0.06] transition-all duration-200"
-                />
-              </div>
-              <div className="relative flex-1 group/input">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/40 group-focus-within/input:text-indigo-500 dark:group-focus-within/input:text-indigo-400 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder={t('dashboard.filterTags')}
-                  value={filterTag === 'ALL' ? '' : filterTag}
-                  onChange={(e) => setFilterTagValue(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-white dark:bg-white/[0.04] border border-slate-300 shadow-sm dark:shadow-none dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 dark:focus:bg-white/[0.06] transition-all duration-200"
-                />
-              </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr_280px] gap-6">
+
+          {/* LEFT SIDEBAR */}
+          <aside className="order-2 xl:order-1 hidden xl:block">
+            <div className="sticky top-24">
+              <ExploreSidebar
+                filterTag={filterTag}
+                filterStatus={filterStatus}
+                onResetExplore={resetExplore}
+                onScrollToTrending={scrollToTrending}
+                onScrollToPollGrid={scrollToPollGrid}
+                onSetFilterStatus={setFilterStatus}
+                onSetFilterTag={setFilterTag}
+              />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar shrink-0">
-              {(['ALL', 'ACTIVE', 'ENDED'] as const).map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setFilterStatusConfig(status)}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 border ${filterStatus === status
-                      ? 'bg-indigo-600 border-indigo-500/50 text-white shadow-lg shadow-indigo-500/30'
-                      : 'bg-white border-slate-300 shadow-sm dark:shadow-none dark:bg-white/[0.04] dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20'
+          </aside>
+
+          {/* MAIN CONTENT */}
+          <main className="order-1 xl:order-2 min-w-0 space-y-6">
+            {/* Hero trending */}
+            <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
+
+            {/* Category pills */}
+            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+              {CATEGORY_PRESETS.map((c) => {
+                const active = c.tag === 'ALL' ? filterTag === 'ALL' : filterTag.toLowerCase() === c.tag.toLowerCase();
+                return (
+                  <button
+                    key={c.tag}
+                    type="button"
+                    onClick={() => setFilterTag(c.tag === 'ALL' ? 'ALL' : c.tag)}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap border transition-all shrink-0 ${
+                      active
+                        ? 'bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] text-white border-transparent shadow-md shadow-fuchsia-500/25'
+                        : 'bg-white dark:bg-[#13112a] border-slate-200 dark:border-white/8 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white/90 hover:border-violet-400/40 dark:hover:border-violet-500/30'
                     }`}
-                >
-                  {status === 'ALL' ? t('dashboard.filterAll') : status === 'ACTIVE' ? t('dashboard.filterActive') : t('dashboard.filterEnded')}
-                </button>
-              ))}
+                  >
+                    {t(c.labelKey)}
+                  </button>
+                );
+              })}
+              <button className="px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap border bg-white dark:bg-[#13112a] border-slate-200 dark:border-white/8 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white/70 transition-all shrink-0">•••</button>
             </div>
-          </div>
-        </div>
 
-        {/* Poll Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center py-24">
-            <div className="w-12 h-12 rounded-full border-2 border-white/10 border-t-indigo-400 animate-spin" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {(pollPage?.content ?? []).length === 0 ? (
-              <div className="col-span-full glass-panel py-20 text-center rounded-2xl border border-dashed border-slate-300 dark:border-white/20 transition-colors">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400 dark:text-white/40 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
+            {/* Search & Filter bar */}
+            <div className="bg-white dark:bg-[#13112a] rounded-2xl border border-slate-200 dark:border-white/8 p-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search input */}
+                <div className="relative flex-1 group">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
+                  <input
+                    type="text"
+                    placeholder={t('dashboard.searchPlaceholder')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/8 rounded-xl text-slate-800 dark:text-white text-sm placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all"
+                  />
                 </div>
-                <p className="text-slate-500 dark:text-white/60 text-lg mb-2 transition-colors">{t('dashboard.noPolls')}</p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setFilterStatusConfig('ALL');
-                    setFilterTagValue('ALL');
-                  }}
-                  className="text-indigo-400 hover:text-indigo-300 font-medium"
-                >
+                {/* Tag filter */}
+                <div className="relative flex-1 group">
+                  <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
+                  <input
+                    type="text"
+                    placeholder={t('dashboard.filterTags')}
+                    value={filterTag === 'ALL' ? '' : filterTag}
+                    onChange={(e) => setFilterTag(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/8 rounded-xl text-slate-800 dark:text-white text-sm placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all"
+                  />
+                </div>
+                {/* Status filters */}
+                <div className="flex gap-2 shrink-0">
+                  {(['ALL', 'ACTIVE', 'ENDED'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setFilterStatus(s)}
+                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                        filterStatus === s
+                          ? 'bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] text-white border-transparent shadow-md'
+                          : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/8 text-slate-600 dark:text-white/55 hover:text-slate-900 dark:hover:text-white/80 hover:border-violet-400/40 dark:hover:border-violet-500/25'
+                      }`}
+                    >
+                      {s === 'ALL' ? t('dashboard.filterAll') : s === 'ACTIVE' ? t('dashboard.filterActive') : t('dashboard.filterEnded')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Section title */}
+            <div id="explore-polls-grid" className="flex items-center justify-between scroll-mt-28">
+              <div className="flex items-center gap-2">
+                <Flame className="w-5 h-5 text-orange-400" />
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('dashboard.exploreSectionTitle')}</h2>
+                <span className="text-slate-400 dark:text-white/35 text-sm ml-1">{totalPolls > 0 ? `(${totalPolls})` : ''}</span>
+              </div>
+              <button type="button" onClick={resetExplore} className="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
+                {t('dashboard.seeAll')}
+              </button>
+            </div>
+
+            {/* Poll grid */}
+            {loading ? (
+              <div className="flex justify-center items-center py-24">
+                <div className="w-10 h-10 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
+              </div>
+            ) : (pollPage?.content ?? []).length === 0 ? (
+              <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#13112a]">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                  <BarChart3 className="w-8 h-8 text-slate-300 dark:text-white/20" />
+                </div>
+                <p className="text-slate-500 dark:text-white/50 text-base mb-2">{t('dashboard.noPolls')}</p>
+                <button onClick={() => { setSearchQuery(''); setFilterStatus('ALL'); setFilterTag('ALL'); }} className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors">
                   {t('dashboard.clearFilters')}
                 </button>
               </div>
             ) : (
-              (pollPage?.content ?? []).map((poll, index) => (
-                <div
-                  key={poll.id}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${index * 60}ms` }}
-                >
-                  <PollCard
-                    poll={poll}
-                    hasVoted={votedPollIds.includes(poll.id)}
-                    commentCount={poll.commentCount}
-                    onDelete={canDelete(poll) ? handleDelete : undefined}
-                    showDeleteButton={canDelete(poll)}
-                  />
-                </div>
-              ))
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {(pollPage?.content ?? []).map((poll, idx) => (
+                  <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
+                    <ExplorePollCard
+                      poll={poll}
+                      hasVoted={votedPollIds.includes(poll.id)}
+                      commentCount={poll.commentCount}
+                      onDelete={canDelete(poll) ? handleDelete : undefined}
+                      showDeleteButton={canDelete(poll)}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
-        )}
 
-        {/* Pagination */}
-        {!loading && pollPage && pollPage.totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-12 mb-8">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={pollPage.currentPage === 0}
-              className="p-3 bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200 dark:border-white/10"
-              aria-label="Previous"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <span className="text-slate-600 dark:text-white/80 font-medium">
-              Page <span className="text-slate-900 dark:text-white">{pollPage.currentPage + 1}</span> of {pollPage.totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(pollPage.totalPages - 1, p + 1))}
-              disabled={pollPage.currentPage >= pollPage.totalPages - 1}
-              className="p-3 bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200 dark:border-white/10"
-              aria-label="Next"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        )}
-      </main>
+            {/* Pagination */}
+            {!loading && pollPage && pollPage.totalPages > 1 && (
+              <div className="flex justify-center items-center gap-3">
+                <button onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} disabled={pollPage.currentPage === 0}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/8 text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:border-violet-400/40 dark:hover:border-violet-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <span className="text-slate-500 dark:text-white/50 text-sm">
+                  <span className="text-slate-900 dark:text-white font-semibold">{pollPage.currentPage + 1}</span> / {pollPage.totalPages}
+                </span>
+                <button onClick={() => setCurrentPage((p) => Math.min(pollPage.totalPages - 1, p + 1))} disabled={pollPage.currentPage >= pollPage.totalPages - 1}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/8 text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:border-violet-400/40 dark:hover:border-violet-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            )}
+
+            {/* Community stats strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: t('dashboard.statsPolls'), value: formatCompact(totalPolls), Icon: BarChart3, color: 'text-violet-500 dark:text-violet-400' },
+                { label: t('dashboard.statsVotes'), value: formatCompact(statsStrip.votes), Icon: Users, color: 'text-fuchsia-500 dark:text-fuchsia-400' },
+                { label: t('dashboard.statsComments'), value: formatCompact(statsStrip.comments), Icon: MessageCircle, color: 'text-cyan-500 dark:text-cyan-400' },
+                { label: t('dashboard.statsActive'), value: formatCompact(statsStrip.active), Icon: Flame, color: 'text-orange-500 dark:text-orange-400' },
+              ].map(({ label, value, Icon, color }) => (
+                <div key={label} className="bg-white dark:bg-[#13112a] rounded-2xl border border-slate-200 dark:border-white/8 p-4">
+                  <Icon className={`w-5 h-5 ${color} mb-2`} />
+                  <div className="text-xl font-black text-slate-900 dark:text-white font-heading">{value}</div>
+                  <div className="text-xs text-slate-500 dark:text-white/40 mt-0.5">{label}</div>
+                </div>
+              ))}
+            </div>
+          </main>
+
+          {/* RIGHT SIDEBAR */}
+          <aside className="order-3 hidden xl:block">
+            <div className="sticky top-24">
+              <ExploreRightSidebar
+                topCreators={topCreators}
+                popularTags={popularTags}
+                onTagClick={setFilterTag}
+              />
+            </div>
+          </aside>
+        </div>
+      </div>
     </div>
   );
 };

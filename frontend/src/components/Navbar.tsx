@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard } from 'lucide-react';
 import NotificationBell from './NotificationBell';
@@ -51,16 +51,51 @@ const Navbar = () => {
                     </Link>
                 </div>
 
-                {/* Center: Navigation Links */}
+                {/* Center: Navigation Links (Explore first — discovery layout) */}
                 <div className="hidden lg:flex flex-1 justify-center items-center gap-6 xl:gap-10 px-4">
-                    <Link to="/" className="relative group text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white font-bold transition-colors text-sm uppercase tracking-wider whitespace-nowrap">
-                        {t('navbar.home')}
-                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300 rounded-full" />
-                    </Link>
-                    <Link to="/explore" className="relative group text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white font-bold transition-colors text-sm uppercase tracking-wider whitespace-nowrap">
-                        {t('navbar.explore')}
-                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300 rounded-full" />
-                    </Link>
+                    <NavLink
+                        to="/explore"
+                        className={({ isActive }) =>
+                            `relative inline-block pb-1 text-sm uppercase tracking-wider font-bold whitespace-nowrap transition-colors ${
+                                isActive
+                                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#7B2FF7] to-[#F107A3]'
+                                    : 'text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white'
+                            }`
+                        }
+                    >
+                        {({ isActive }) => (
+                            <>
+                                {t('navbar.explore')}
+                                <span
+                                    className={`pointer-events-none absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] transition-transform origin-left duration-300 ${
+                                        isActive ? 'scale-x-100' : 'scale-x-0'
+                                    }`}
+                                />
+                            </>
+                        )}
+                    </NavLink>
+                    <NavLink
+                        to="/"
+                        end
+                        className={({ isActive }) =>
+                            `relative inline-block pb-1 text-sm uppercase tracking-wider font-bold whitespace-nowrap transition-colors ${
+                                isActive
+                                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#7B2FF7] to-[#F107A3]'
+                                    : 'text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white'
+                            }`
+                        }
+                    >
+                        {({ isActive }) => (
+                            <>
+                                {t('navbar.home')}
+                                <span
+                                    className={`pointer-events-none absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] transition-transform origin-left duration-300 ${
+                                        isActive ? 'scale-x-100' : 'scale-x-0'
+                                    }`}
+                                />
+                            </>
+                        )}
+                    </NavLink>
                 </div>
 
                 {/* Right: Actions */}

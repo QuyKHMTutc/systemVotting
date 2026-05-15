@@ -255,3 +255,8 @@ h1, h2, h3, h4, h5, h6, .font-heading,
   20% { left: 200%; }
   100% { left: 200%; }
 }
+
+@keyframes orbit {
+  from { transform: translateX(-50%) rotate(0deg) translateX(60px) rotate(0deg); }
+  to { transform: translateX(-50%) rotate(360deg) translateX(60px) rotate(-360deg); }
+}

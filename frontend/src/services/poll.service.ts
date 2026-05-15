@@ -33,7 +33,15 @@ export interface PollOption {
 }
 
 export const pollService = {
-    getAllPolls: async (page = 0, size = 10, title = '', tag = 'ALL', status = 'ALL'): Promise<PollPageResponse> => {
+    getAllPolls: async (
+        page = 0,
+        size = 10,
+        title = '',
+        tag = 'ALL',
+        status = 'ALL',
+        sortBy?: string,
+        direction?: string
+    ): Promise<PollPageResponse> => {
         const params = new URLSearchParams({
             page: page.toString(),
             size: size.toString(),
@@ -41,6 +49,10 @@ export const pollService = {
             status: status
         });
         if (title) params.append('title', title);
+        if (sortBy) {
+            params.append('sortBy', sortBy);
+            params.append('direction', direction || 'desc');
+        }
 
         const response = await api.get(`/polls?${params.toString()}`);
         return response.data.data;
