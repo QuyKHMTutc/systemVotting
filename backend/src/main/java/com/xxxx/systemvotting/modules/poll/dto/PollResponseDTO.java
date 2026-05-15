@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.xxxx.systemvotting.modules.poll.dto.CategoryDTO;
 
 import java.io.Serializable;
 
@@ -23,6 +24,9 @@ public class PollResponseDTO implements Serializable {
 
     @Schema(description = "Mô tả chi tiết về cuộc bình chọn", example = "Cuộc khảo sát nhỏ về sở thích ngôn ngữ lập trình năm 2024")
     private String description;
+
+    @Schema(description = "Danh mục của cuộc bình chọn")
+    private CategoryDTO category;
 
     @Schema(description = "Danh sách các nhãn (tags)", example = "[\"IT\", \"Programming\"]")
     private List<String> tags;

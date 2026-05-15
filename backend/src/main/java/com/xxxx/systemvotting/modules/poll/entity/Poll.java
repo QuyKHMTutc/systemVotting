@@ -20,6 +20,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import com.xxxx.systemvotting.modules.poll.entity.Category;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -55,6 +56,12 @@ public class Poll {
     private String title;
 
     private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Category category;
 
     // NEW: Tags & Privacy
     @ManyToMany(fetch = FetchType.LAZY)

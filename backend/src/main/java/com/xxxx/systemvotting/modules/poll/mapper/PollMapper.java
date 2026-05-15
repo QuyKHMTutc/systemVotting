@@ -33,14 +33,17 @@ public interface PollMapper {
     @Mapping(target = "visibility",    ignore = true)   // set in service
     @Mapping(target = "invitedEmails", ignore = true)   // set in service
     @Mapping(target = "members",       ignore = true)   // set in service
+    @Mapping(target = "category",      ignore = true)   // set in service
     @Mapping(target = "isAnonymous", source = "isAnonymous")
     Poll toEntity(PollCreateRequestDTO dto);
 
     /**
      * Maps Poll entity → PollResponseDTO.
      * Anonymous-poll masking and Redis vote enrichment are handled in the service layer.
+     * category is intentionally ignored here — set manually in service using CategoryServiceImpl.toDTO()
      */
     @Mapping(target = "judgeIds", source = "members")
+    @Mapping(target = "category", ignore = true)
     PollResponseDTO toDto(Poll entity);
 
     List<PollResponseDTO> toDtoList(List<Poll> entities);

@@ -59,6 +59,7 @@ public class PollController {
                 requestDTO.judgeIds(),
                 requestDTO.visibility(),
                 requestDTO.invitedEmails(),
+                requestDTO.categoryId(),
                 Long.valueOf(jwt.getSubject())
         );
         PollResponseDTO createdPoll = pollService.createPoll(withCreator);
@@ -88,17 +89,18 @@ public class PollController {
                 .build();
     }
 
-    @Operation(summary = "Danh sách bình chọn", description = "Lấy danh sách có phân trang, lọc theo title/tag/status, sắp xếp")
+    @Operation(summary = "Danh sách bình chọn", description = "Lấy danh sách có phân trang, lọc theo title/tag/status/category, sắp xếp")
     @GetMapping
     public ApiResponse<PageResponse<PollResponseDTO>> getAllPolls(
             @RequestParam(required = false) String title,
             @RequestParam(required = false, defaultValue = "ALL") String tag,
             @RequestParam(required = false, defaultValue = "ALL") String status,
+            @RequestParam(required = false) String categorySlug,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(1000) int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        PageResponse<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, page, size, sortBy, direction);
+        PageResponse<PollResponseDTO> polls = pollService.getAllPolls(title, tag, status, categorySlug, page, size, sortBy, direction);
         return ApiResponse.<PageResponse<PollResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")

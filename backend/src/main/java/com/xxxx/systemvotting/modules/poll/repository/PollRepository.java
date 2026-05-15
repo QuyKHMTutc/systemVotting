@@ -34,6 +34,37 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
             @Param("currentTime") java.time.LocalDateTime currentTime,
             Pageable pageable);
 
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    @Query(value =
+           "SELECT DISTINCT p FROM Poll p " +
+           "LEFT JOIN p.tags t " +
+           "LEFT JOIN p.category c " +
+           "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
+           "AND (:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) " +
+           "AND (:categorySlug IS NULL OR :categorySlug = '' OR c.slug = :categorySlug) " +
+           "AND (:status IS NULL OR :status = 'ALL' " +
+           "  OR (:status = 'ACTIVE' AND p.endTime > :currentTime) " +
+           "  OR (:status = 'ENDED' AND p.endTime <= :currentTime))",
+           countQuery =
+           "SELECT COUNT(DISTINCT p) FROM Poll p " +
+           "LEFT JOIN p.tags t " +
+           "LEFT JOIN p.category c " +
+           "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
+           "AND (:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) " +
+           "AND (:categorySlug IS NULL OR :categorySlug = '' OR c.slug = :categorySlug) " +
+           "AND (:status IS NULL OR :status = 'ALL' " +
+           "  OR (:status = 'ACTIVE' AND p.endTime > :currentTime) " +
+           "  OR (:status = 'ENDED' AND p.endTime <= :currentTime))")
+    Page<Poll> findWithFiltersAndCategory(
+            @Param("title") String title,
+            @Param("tag") String tag,
+            @Param("status") String status,
+            @Param("categorySlug") String categorySlug,
+            @Param("currentTime") java.time.LocalDateTime currentTime,
+            Pageable pageable);
+
     /**
      * Đếm số poll PUBLIC để kiểm tra limit của creator (chỉ tính poll PUBLIC trong limit).
      */
@@ -71,4 +102,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     @Query("SELECT COUNT(p) FROM Poll p WHERE p.creator.id = :creatorId AND (p.endTime IS NULL OR p.endTime > :now)")
     long countActiveByCreator(@Param("creatorId") Long creatorId, @Param("now") java.time.LocalDateTime now);
+
+    @Query("SELECT COUNT(p) FROM Poll p WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) AND p.endTime > :now")
+    long countPublicActivePolls(@Param("now") java.time.LocalDateTime now);
 }

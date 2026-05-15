@@ -53,6 +53,9 @@ public record PollCreateRequestDTO(
     @Schema(description = "Danh sách email được mời (chỉ dùng khi visibility = PRIVATE)", example = "[\"a@b.com\", \"c@d.com\"]")
     List<String> invitedEmails,
 
+    @Schema(description = "ID danh mục của cuộc thăm dò", example = "1")
+    Long categoryId,
+
     /**
      * Injected by the controller from the JWT — never from the client request body.
      * Hidden from Swagger to avoid confusion.

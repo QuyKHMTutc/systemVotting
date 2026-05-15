@@ -10,10 +10,12 @@ import com.xxxx.systemvotting.modules.poll.dto.OptionRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.OptionResponseDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollCreateRequestDTO;
 import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
+import com.xxxx.systemvotting.modules.poll.entity.Category;
 import com.xxxx.systemvotting.modules.poll.entity.Option;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.entity.Tag;
 import com.xxxx.systemvotting.modules.poll.mapper.PollMapper;
+import com.xxxx.systemvotting.modules.poll.repository.CategoryRepository;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.poll.repository.TagRepository;
 import com.xxxx.systemvotting.modules.poll.service.PollDetailsCacheLoader;
@@ -61,6 +63,8 @@ public class PollServiceImpl implements PollService {
     private final UserRepository userRepository;
     private final VoteRepository voteRepository;
     private final TagRepository tagRepository;
+    private final CategoryRepository categoryRepository;
+    private final CategoryServiceImpl categoryServiceImpl;
     private final PollMapper pollMapper;
     private final CommentRepository commentRepository;
     private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
@@ -249,6 +253,12 @@ public class PollServiceImpl implements PollService {
             }
         }
 
+        // Link category if provided
+        if (requestDTO.categoryId() != null) {
+            categoryRepository.findById(requestDTO.categoryId())
+                    .ifPresent(poll::setCategory);
+        }
+
         // Map and add options while preserving bidirectional relationship
         for (OptionRequestDTO optionRequest : requestDTO.options()) {
             // AI Toxicity Check for each Option
@@ -391,7 +401,7 @@ public class PollServiceImpl implements PollService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, int page, int size, String sortBy, String direction) {
+    public PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, String categorySlug, int page, int size, String sortBy, String direction) {
         String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
         Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(safeSortBy).ascending()
                 : Sort.by(safeSortBy).descending();
@@ -399,7 +409,14 @@ public class PollServiceImpl implements PollService {
         
         int pageNumber = Math.max(0, page);
         Pageable pageable = PageRequest.of(pageNumber, size, sort);
-        Page<Poll> pollPage = pollRepository.findWithFilters(title, tag, status, LocalDateTime.now(), pageable);
+
+        Page<Poll> pollPage;
+        boolean hasCategoryFilter = categorySlug != null && !categorySlug.isBlank();
+        if (hasCategoryFilter) {
+            pollPage = pollRepository.findWithFiltersAndCategory(title, tag, status, categorySlug, LocalDateTime.now(), pageable);
+        } else {
+            pollPage = pollRepository.findWithFilters(title, tag, status, LocalDateTime.now(), pageable);
+        }
         
         List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toList());
         Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
@@ -409,6 +426,9 @@ public class PollServiceImpl implements PollService {
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
+                    if (poll.getCategory() != null) {
+                        dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+                    }
                     return dto;
                 })
                 .collect(Collectors.toList());
