@@ -6,7 +6,7 @@ import type { Poll } from '../services/poll.service';
 import { PollCard } from '../components/PollCard';
 import {
   ListPlus, CheckSquare, PenLine, MessageSquare,
-  CreditCard, Crown, Zap, ArrowLeft
+  CreditCard, Crown, Zap, ArrowLeft, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -42,8 +42,8 @@ export const Profile = () => {
   const [loadingMore, setLoadingMore] = useState<'created' | 'voted' | 'comments' | 'payments' | null>(null);
 
   const PAGE_SIZE = {
-    created: 12,
-    voted: 12,
+    created: 6,
+    voted: 6,
     comments: 20,
     payments: 10,
   } as const;
@@ -102,41 +102,66 @@ export const Profile = () => {
     // Dùng user?.id thay vì user — chỉ re-fetch khi đổi user, không phải khi plan/avatar update
   }, [user?.id]);
 
-  const loadMore = useCallback(async (tab: 'created' | 'voted' | 'comments' | 'payments') => {
+  const handlePageChange = useCallback(async (tab: 'created' | 'voted' | 'comments' | 'payments', newPage: number) => {
     if (loadingMore) return;
     setLoadingMore(tab);
     try {
       if (tab === 'created') {
-        const next = createdPage + 1;
-        const res = await pollService.getMyPolls(next, PAGE_SIZE.created);
-        setCreatedPage(next);
+        const res = await pollService.getMyPolls(newPage, PAGE_SIZE.created);
+        setCreatedPage(newPage);
         setCreatedTotal(res.totalElements);
-        setCreatedPolls((prev) => [...prev, ...res.content.filter(x => !prev.some(p => p.id === x.id))]);
+        setCreatedPolls(res.content);
       } else if (tab === 'voted') {
-        const next = votedPage + 1;
-        const res = await pollService.getMyVotedPolls(next, PAGE_SIZE.voted);
-        setVotedPage(next);
+        const res = await pollService.getMyVotedPolls(newPage, PAGE_SIZE.voted);
+        setVotedPage(newPage);
         setVotedTotal(res.totalElements);
-        setVotedPolls((prev) => [...prev, ...res.content.filter(x => !prev.some(p => p.id === x.id))]);
+        setVotedPolls(res.content);
       } else if (tab === 'comments') {
-        const next = commentsPage + 1;
-        const res = await commentService.getMyComments(next, PAGE_SIZE.comments);
-        setCommentsPage(next);
+        const res = await commentService.getMyComments(newPage, PAGE_SIZE.comments);
+        setCommentsPage(newPage);
         setCommentsTotal(res.totalElements);
-        setMyComments((prev) => [...prev, ...res.content.filter(x => !prev.some(c => c.id === x.id))]);
+        setMyComments(res.content);
       } else {
-        const next = paymentsPage + 1;
-        const res = await paymentService.getPaymentHistory(next, PAGE_SIZE.payments);
-        setPaymentsPage(next);
+        const res = await paymentService.getPaymentHistory(newPage, PAGE_SIZE.payments);
+        setPaymentsPage(newPage);
         setPaymentsTotal(res.totalElements);
-        setPayments((prev) => [...prev, ...res.content.filter(x => !prev.some(p => p.id === x.id))]);
+        setPayments(res.content);
       }
+      
+      // Scroll to top of tab content smoothly
+      window.scrollTo({ top: 300, behavior: 'smooth' });
     } catch {
       // keep silent; user can retry
     } finally {
       setLoadingMore(null);
     }
-  }, [commentsPage, createdPage, loadingMore, paymentsPage, votedPage]);
+  }, [loadingMore]);
+
+  const renderPagination = (tab: 'created' | 'voted' | 'comments' | 'payments', currentPage: number, totalElements: number, pageSize: number) => {
+    const totalPages = Math.ceil(totalElements / pageSize);
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex justify-center items-center gap-4 mt-8">
+        <button 
+          disabled={currentPage === 0 || loadingMore === tab}
+          onClick={() => handlePageChange(tab, currentPage - 1)}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/40 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <span className="text-sm font-semibold text-slate-600 dark:text-white/60">
+          Trang {currentPage + 1} / {totalPages}
+        </span>
+        <button 
+          disabled={currentPage >= totalPages - 1 || loadingMore === tab}
+          onClick={() => handlePageChange(tab, currentPage + 1)}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/40 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+    );
+  };
 
   const handlePollEvent = useCallback((payload: PollEventPayload) => {
     const up = (prev: Poll[]) => {
@@ -354,22 +379,14 @@ export const Profile = () => {
               ? <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                   {createdPolls.map((poll, i) => (
-                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
-                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
+                    <div key={poll.id} className="animate-fade-in-up h-full" style={{ animationDelay: `${i * 35}ms` }}>
+                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl h-full">
                         <PollCard poll={poll} onDelete={handleDeletePoll} showDeleteButton />
                       </div>
                     </div>
                   ))}
                 </div>
-                {createdPolls.length < createdTotal && (
-                  <button
-                    onClick={() => loadMore('created')}
-                    disabled={loadingMore === 'created'}
-                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingMore === 'created' ? t('profile.loading') : t('profile.loadMore')}
-                  </button>
-                )}
+                {renderPagination('created', createdPage, createdTotal, PAGE_SIZE.created)}
               </>
               : <ProfileEmpty icon={<ListPlus className="w-8 h-8" />} title={t('profile.noPollsYet')} desc={t('profile.noPollsDesc')} action={{ label: t('profile.createPollBtn'), onClick: () => navigate('/create-poll') }} />
           )}
@@ -380,22 +397,14 @@ export const Profile = () => {
               ? <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                   {votedPolls.map((poll, i) => (
-                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
-                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl">
+                    <div key={poll.id} className="animate-fade-in-up h-full" style={{ animationDelay: `${i * 35}ms` }}>
+                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl h-full">
                         <PollCard poll={poll} hasVoted={true} />
                       </div>
                     </div>
                   ))}
                 </div>
-                {votedPolls.length < votedTotal && (
-                  <button
-                    onClick={() => loadMore('voted')}
-                    disabled={loadingMore === 'voted'}
-                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingMore === 'voted' ? t('profile.loading') : t('profile.loadMore')}
-                  </button>
-                )}
+                {renderPagination('voted', votedPage, votedTotal, PAGE_SIZE.voted)}
               </>
               : <ProfileEmpty icon={<CheckSquare className="w-8 h-8" />} title={t('profile.noVotesYet')} desc={t('profile.noVotesDesc')} action={{ label: t('profile.browsePollsBtn'), onClick: () => navigate('/') }} />
           )}
@@ -433,15 +442,7 @@ export const Profile = () => {
                     </div>
                   ))}
                 </div>
-                {myComments.length < commentsTotal && (
-                  <button
-                    onClick={() => loadMore('comments')}
-                    disabled={loadingMore === 'comments'}
-                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingMore === 'comments' ? t('profile.loading') : t('profile.loadMore')}
-                  </button>
-                )}
+                {renderPagination('comments', commentsPage, commentsTotal, PAGE_SIZE.comments)}
               </>
               : <ProfileEmpty icon={<MessageSquare className="w-8 h-8" />} title={t('profile.noCommentsYet')} desc={t('profile.noCommentsDesc')} action={{ label: t('profile.browsePollsBtn'), onClick: () => navigate('/') }} />
           )}
@@ -499,15 +500,7 @@ export const Profile = () => {
                     </tbody>
                   </table>
                 </div>
-                {payments.length < paymentsTotal && (
-                  <button
-                    onClick={() => loadMore('payments')}
-                    disabled={loadingMore === 'payments'}
-                    className="mt-6 mx-auto block px-5 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingMore === 'payments' ? t('profile.loading') : t('profile.loadMore')}
-                  </button>
-                )}
+                {renderPagination('payments', paymentsPage, paymentsTotal, PAGE_SIZE.payments)}
               </>
               : <ProfileEmpty icon={<CreditCard className="w-8 h-8" />} title={t('profile.noTransactions')} desc={t('profile.noTransactionsDesc')} />
           )}

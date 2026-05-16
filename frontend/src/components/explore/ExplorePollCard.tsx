@@ -75,7 +75,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
   const displayOptions = sortedOptions.slice(0, 4);
 
   return (
-    <Link to={`/poll/${poll.id}`} className="block group">
+    <Link to={`/poll/${poll.id}`} className="block group h-full">
       <div className="
         rounded-2xl flex flex-col h-full
         bg-white dark:bg-[#13112a]
@@ -163,16 +163,25 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
             const barColor = BAR_COLORS[idx % BAR_COLORS.length];
             return (
               <div key={option.id}>
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[12px] text-slate-700 dark:text-white/70 truncate max-w-[75%] font-medium">{option.text}</span>
-                  <span className="text-[11px] text-slate-400 dark:text-white/40 font-semibold shrink-0 ml-2">{pct}% <span className="text-slate-300 dark:text-white/25 font-normal">({formatCompact(option.voteCount ?? 0)})</span></span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/8 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${barColor} transition-all duration-500`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
+                {hasVoted || isCreator ? (
+                  <>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[12px] text-slate-700 dark:text-white/70 truncate max-w-[75%] font-medium">{option.text}</span>
+                      <span className="text-[11px] text-slate-400 dark:text-white/40 font-semibold shrink-0 ml-2">{pct}% <span className="text-slate-300 dark:text-white/25 font-normal">({formatCompact(option.voteCount ?? 0)})</span></span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/8 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${barColor} transition-all duration-500`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center p-1.5 rounded-lg border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02]">
+                    <div className="w-3 h-3 rounded-full border border-slate-300 dark:border-white/20 mr-2 shrink-0"></div>
+                    <span className="text-[12px] text-slate-700 dark:text-white/70 truncate font-medium">{option.text}</span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -182,24 +191,26 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
         </div>
 
         {/* Footer: vote/comment + creator */}
-        <div className="px-4 py-3 border-t border-slate-100 dark:border-white/6 flex items-center justify-between">
+        <div className="px-4 py-3 border-t border-slate-100 dark:border-white/6 flex flex-col gap-2.5">
           {/* Stats */}
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-[12px] text-slate-500 dark:text-white/40">
-              <Users className="w-3.5 h-3.5 text-violet-400" />
-              <span className="text-slate-700 dark:text-white/65 font-semibold">{formatCompact(totalVotes)}</span>
-              <span className="text-slate-400 dark:text-white/30">lượt vote</span>
-            </span>
-            <span className="flex items-center gap-1 text-[12px] text-slate-500 dark:text-white/40">
-              <MessageCircle className="w-3.5 h-3.5 text-fuchsia-400" />
-              <span className="text-slate-700 dark:text-white/65 font-semibold">{resolvedCommentCount}</span>
-              <span className="text-slate-400 dark:text-white/30">bình luận</span>
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-[12px] text-slate-500 dark:text-white/40">
+                <Users className="w-3.5 h-3.5 text-violet-400" />
+                <span className="text-slate-700 dark:text-white/65 font-semibold">{formatCompact(totalVotes)}</span>
+                <span className="text-slate-400 dark:text-white/30">lượt vote</span>
+              </span>
+              <span className="flex items-center gap-1 text-[12px] text-slate-500 dark:text-white/40">
+                <MessageCircle className="w-3.5 h-3.5 text-fuchsia-400" />
+                <span className="text-slate-700 dark:text-white/65 font-semibold">{resolvedCommentCount}</span>
+                <span className="text-slate-400 dark:text-white/30">bình luận</span>
+              </span>
+            </div>
           </div>
 
           {/* Creator */}
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-fuchsia-500 shrink-0 ring-1 ring-white dark:ring-white/10">
+          <div className="flex items-center gap-1.5 border-t border-slate-50 dark:border-white/[0.02] pt-2">
+            <div className="w-4 h-4 rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-fuchsia-500 shrink-0 ring-1 ring-white dark:ring-white/10">
               {poll.creator.avatarUrl ? (
                 <img
                   src={poll.creator.avatarUrl.startsWith('http')
@@ -210,18 +221,13 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
                   onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}`; }}
                 />
               ) : (
-                <span className="flex items-center justify-center w-full h-full text-white text-[9px] font-bold">
+                <span className="flex items-center justify-center w-full h-full text-white text-[8px] font-bold">
                   {poll.creator.username.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
-            <span className="text-[11px] text-slate-500 dark:text-white/40 truncate max-w-[80px]">{poll.creator.username}</span>
-            <button
-              className="ml-1 text-slate-300 dark:text-white/20 hover:text-slate-500 dark:hover:text-white/40 transition-colors"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </button>
+            <span className="text-[11px] text-slate-500 dark:text-white/40 truncate max-w-[120px]">{poll.creator.username}</span>
+            <span className="text-[10px] text-slate-400 dark:text-white/30 ml-auto italic">Tác giả</span>
           </div>
         </div>
 

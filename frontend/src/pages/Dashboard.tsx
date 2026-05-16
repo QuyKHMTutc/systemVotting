@@ -297,7 +297,7 @@ const Dashboard = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {(pollPage?.content ?? []).map((poll, idx) => (
-                  <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
+                  <div key={poll.id} className="animate-fade-in-up h-full" style={{ animationDelay: `${idx * 50}ms` }}>
                     <ExplorePollCard
                       poll={poll}
                       hasVoted={votedPollIds.includes(poll.id)}
