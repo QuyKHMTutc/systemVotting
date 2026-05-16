@@ -7,15 +7,18 @@ import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import { paymentService } from '../services/payment.service';
 import type { AdminPaymentHistory } from '../services/payment.service';
+import { categoryService } from '../services/category.service';
+import type { Category } from '../services/category.service';
 import {
   LayoutDashboard, Users, BarChart3, ShieldAlert,
   Lock, Unlock, Trash2, Search, RefreshCw,
   TrendingUp, Activity, ChevronRight, LogOut, X,
-  CreditCard, CheckCircle2, XCircle, Clock
+  CreditCard, CheckCircle2, XCircle, Clock, Tag,
+  ArrowUpRight, Zap
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
 
-type Tab = 'OVERVIEW' | 'USERS' | 'POLLS' | 'PAYMENTS';
+type Tab = 'OVERVIEW' | 'USERS' | 'POLLS' | 'PAYMENTS' | 'CATEGORIES';
 
 interface Stats {
   totalUsers: number;
@@ -39,6 +42,7 @@ const AdminPanel = () => {
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; msg: string; onConfirm: () => void } | null>(null);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, lockedUsers: 0, totalPolls: 0, activePolls: 0, totalVotes: 0 });
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -49,14 +53,16 @@ const AdminPanel = () => {
     if (user?.role !== 'ADMIN') { navigate('/'); return; }
     setLoading(true);
     try {
-      const [ud, pd, pay] = await Promise.all([
+      const [ud, pd, pay, cats] = await Promise.all([
         userService.getAllUsers(0, 1000),
         pollService.getAllPolls(0, 1000),
         paymentService.getAllPayments(0, 200),
+        categoryService.getAllCategories(),
       ]);
       setUsers(ud.content);
       setPolls(pd.content);
       setPayments(pay.content);
+      setCategories(cats);
       const now = new Date();
       setStats({
         totalUsers: ud.totalElements ?? ud.content.length,
@@ -126,11 +132,12 @@ const AdminPanel = () => {
 
   if (user?.role !== 'ADMIN') return null;
 
-  const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'OVERVIEW', label: 'Overview', icon: <LayoutDashboard size={18} /> },
-    { id: 'USERS', label: 'Users', icon: <Users size={18} /> },
-    { id: 'POLLS', label: 'Polls', icon: <BarChart3 size={18} /> },
-    { id: 'PAYMENTS', label: 'Payments', icon: <CreditCard size={18} /> },
+  const navItems: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: 'OVERVIEW',    label: 'Overview',    icon: <LayoutDashboard size={16} /> },
+    { id: 'USERS',       label: 'Users',       icon: <Users size={16} />,     badge: stats.totalUsers },
+    { id: 'POLLS',       label: 'Polls',       icon: <BarChart3 size={16} />, badge: stats.totalPolls },
+    { id: 'PAYMENTS',    label: 'Payments',    icon: <CreditCard size={16} /> },
+    { id: 'CATEGORIES',  label: 'Categories',  icon: <Tag size={16} />,       badge: categories.length },
   ];
 
   return (
@@ -161,10 +168,15 @@ const AdminPanel = () => {
                   ? 'text-white shadow-lg'
                   : 'text-white/50 hover:text-white/80 hover:bg-white/5'
               }`}
-              style={tab === item.id ? { background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(168,85,247,0.2))', border: '1px solid rgba(139,92,246,0.3)' } : {}}>
+              style={tab === item.id ? { background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(168,85,247,0.2))', border: '1px solid rgba(139,92,246,0.3)' } : { border: '1px solid transparent' }}>
               {item.icon}
-              {item.label}
-              {tab === item.id && <ChevronRight size={14} className="ml-auto" />}
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge !== undefined && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  tab === item.id ? 'bg-violet-500/40 text-violet-200' : 'bg-white/10 text-white/40'
+                }`}>{item.badge > 999 ? '999+' : item.badge}</span>
+              )}
+              {tab === item.id && !item.badge && <ChevronRight size={13} className="ml-auto opacity-60" />}
             </button>
           ))}
         </nav>
@@ -194,16 +206,18 @@ const AdminPanel = () => {
         <header className="flex items-center justify-between px-8 py-5 border-b border-white/10"
           style={{ background: 'rgba(255,255,255,0.02)' }}>
           <div>
-            <h1 className="text-2xl font-bold text-white font-heading">
-              {tab === 'OVERVIEW' ? 'Dashboard Overview'
-                : tab === 'USERS' ? 'User Management'
-                : tab === 'POLLS' ? 'Poll Management'
-                : 'Payment Transactions'}
+            <h1 className="text-xl font-bold text-white font-heading">
+              {tab === 'OVERVIEW'    ? '📊 Dashboard Overview'
+                : tab === 'USERS'   ? '👥 User Management'
+                : tab === 'POLLS'   ? '🗳️ Poll Management'
+                : tab === 'CATEGORIES' ? '🏷️ Category Management'
+                : '💳 Payment Transactions'}
             </h1>
             <p className="text-white/40 text-sm mt-0.5">
-              {tab === 'OVERVIEW' ? 'Platform metrics at a glance'
-                : tab === 'USERS' ? `${users.length} total accounts`
-                : tab === 'POLLS' ? `${polls.length} total polls`
+              {tab === 'OVERVIEW'    ? 'Platform metrics at a glance'
+                : tab === 'USERS'   ? `${users.length} total accounts`
+                : tab === 'POLLS'   ? `${polls.length} total polls`
+                : tab === 'CATEGORIES' ? `${categories.length} categories`
                 : `${payments.length} transactions`}
             </p>
           </div>
@@ -235,23 +249,26 @@ const AdminPanel = () => {
               {/* Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Users', value: stats.totalUsers, icon: <Users size={20}/>, color: '#6366f1', sub: `${stats.lockedUsers} locked` },
-                  { label: 'Total Polls', value: stats.totalPolls, icon: <BarChart3 size={20}/>, color: '#a855f7', sub: `${stats.activePolls} active` },
-                  { label: 'Total Votes', value: stats.totalVotes.toLocaleString(), icon: <Activity size={20}/>, color: '#ec4899', sub: 'all time' },
-                  { label: 'Active Now', value: stats.activePolls, icon: <TrendingUp size={20}/>, color: '#10b981', sub: 'live polls' },
+                  { label: 'Total Users',  value: stats.totalUsers,              icon: <Users size={20}/>,     color: '#6366f1', sub: `${stats.lockedUsers} locked`,                 trend: '+12%' },
+                  { label: 'Total Polls',  value: stats.totalPolls,              icon: <BarChart3 size={20}/>, color: '#a855f7', sub: `${stats.activePolls} active`,                trend: '+8%' },
+                  { label: 'Total Votes',  value: stats.totalVotes.toLocaleString(), icon: <Activity size={20}/>,  color: '#ec4899', sub: 'all time',                              trend: '+24%' },
+                  { label: 'Revenue',      value: payments.filter(p=>p.status==='SUCCESS').reduce((s,p)=>s+p.amount,0).toLocaleString('vi-VN')+'đ', icon: <TrendingUp size={20}/>, color: '#10b981', sub: 'successful', trend: '+5%' },
                 ].map((s, i) => (
-                  <div key={i} className="rounded-2xl p-5 border border-white/10 flex flex-col gap-3"
+                  <div key={i} className="rounded-2xl p-5 border border-white/10 flex flex-col gap-3 relative overflow-hidden group hover:border-white/20 transition-all"
                     style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(20px)' }}>
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                        style={{ background: `${s.color}22`, color: s.color }}>
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: `radial-gradient(ellipse at top left, ${s.color}10, transparent 70%)` }} />
+                    <div className="flex items-center justify-between relative z-10">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${s.color}22`, color: s.color }}>
                         {s.icon}
                       </div>
-                      <span className="text-2xl font-bold text-white font-heading">{s.value}</span>
+                      <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                        <ArrowUpRight size={10} />{s.trend}
+                      </span>
                     </div>
-                    <div>
-                      <p className="text-white/80 text-sm font-medium">{s.label}</p>
-                      <p className="text-white/40 text-xs">{s.sub}</p>
+                    <div className="relative z-10">
+                      <p className="text-2xl font-black text-white font-heading">{s.value}</p>
+                      <p className="text-white/60 text-xs font-medium mt-0.5">{s.label}</p>
+                      <p className="text-white/30 text-xs">{s.sub}</p>
                     </div>
                   </div>
                 ))}
@@ -566,6 +583,48 @@ const AdminPanel = () => {
               </div>
             );
           })()}
+
+          {/* CATEGORIES TAB */}
+          {tab === 'CATEGORIES' && (
+            <div className="space-y-6 animate-fade-in-up">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: 'Total Categories', value: categories.length, color: '#a855f7', icon: <Tag size={18}/> },
+                  { label: 'With Icon', value: categories.filter(c => c.icon).length, color: '#6366f1', icon: <Zap size={18}/> },
+                  { label: 'Sorted', value: categories.filter(c => c.sortOrder != null).length, color: '#10b981', icon: <Activity size={18}/> },
+                ].map((s, i) => (
+                  <div key={i} className="rounded-2xl p-4 border border-white/10 flex items-center gap-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${s.color}22`, color: s.color }}>{s.icon}</div>
+                    <div>
+                      <p className="text-white font-bold text-xl">{s.value}</p>
+                      <p className="text-white/40 text-xs">{s.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Categories grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {categories.map((cat) => (
+                  <div key={cat.id} className="group rounded-2xl p-4 border border-white/10 hover:border-violet-500/30 transition-all cursor-default relative overflow-hidden"
+                    style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'radial-gradient(ellipse at top left,rgba(139,92,246,0.08),transparent 70%)' }} />
+                    <div className="relative z-10">
+                      <div className="text-3xl mb-3">{cat.icon ?? '📋'}</div>
+                      <p className="text-white font-semibold text-sm truncate">{cat.name}</p>
+                      <p className="text-white/40 text-xs font-mono mt-0.5">/{cat.slug}</p>
+                      {cat.sortOrder != null && (
+                        <span className="inline-block mt-2 text-[10px] font-bold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
+                          #{cat.sortOrder}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

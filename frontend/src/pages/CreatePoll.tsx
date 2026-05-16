@@ -19,6 +19,7 @@ const CreatePoll = () => {
     const canUseJudges = maxJudges > 0;
 
     const [question, setQuestion] = useState('');
+    const [description, setDescription] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
     const [isAnonymous, setIsAnonymous] = useState(false);
@@ -61,6 +62,7 @@ const CreatePoll = () => {
             const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
             await pollService.createPoll({
                 title: question,
+                description: description.trim() || undefined,
                 tags: tags.length > 0 ? tags : ['General'],
                 isAnonymous,
                 options: options.map(opt => ({ text: opt })),
@@ -97,6 +99,21 @@ const CreatePoll = () => {
                             <input type="text" value={question} onChange={e => setQuestion(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
                                 placeholder={t('createPoll.questionPlaceholder')} required />
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-1">Mô tả <span className="text-slate-400 dark:text-white/35 font-normal">(tùy chọn)</span></label>
+                            <p className="text-xs text-slate-400 dark:text-white/40 mb-2">Thêm mô tả ngắn để người tham gia hiểu rõ hơn về cuộc thăm dò.</p>
+                            <textarea
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
+                                rows={3}
+                                maxLength={500}
+                                className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm resize-none"
+                                placeholder="Chia sẻ thêm bối cảnh hoặc chi tiết về cuộc thăm dò..."
+                            />
+                            <p className="text-right text-xs text-slate-400 dark:text-white/30 mt-1">{description.length}/500</p>
                         </div>
 
                         {/* Options */}

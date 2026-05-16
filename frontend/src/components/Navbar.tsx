@@ -37,51 +37,28 @@ const Navbar = () => {
     }, [isUpgradeModalOpen]);
 
     return (
-        <nav className={`sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 mb-8 transition-all duration-300 ${
-            isScrolled 
-                ? 'bg-gradient-to-r from-pink-100/80 via-purple-100/80 to-indigo-100/80 dark:bg-none dark:bg-[#0a051d]/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(236,72,153,0.1)] dark:shadow-lg border-b border-white/50 dark:border-white/10' 
+        <nav className={`sticky top-0 z-50 py-3 sm:py-4 mb-8 transition-all duration-300 ${isScrolled
+                ? 'bg-gradient-to-r from-pink-100/80 via-purple-100/80 to-indigo-100/80 dark:bg-none dark:bg-[#0a051d]/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(236,72,153,0.1)] dark:shadow-lg border-b border-white/50 dark:border-white/10'
                 : 'bg-transparent border-b border-transparent'
-        }`}>
-            <div className="w-full max-w-7xl mx-auto flex items-center justify-between px-1 sm:px-2 relative">
-                
-                {/* Left: Logo */}
-                <div className="flex items-center shrink-0 min-w-fit">
+            }`}>
+            <div className="w-full pl-4 pr-4 flex items-center justify-between relative">
+
+                {/* Left: Logo — 220px to align with explore sidebar */}
+                <div className="flex items-center justify-center shrink-0 w-[220px]">
                     <Link to="/" className="text-3xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 pr-1 drop-shadow-sm hover:scale-[1.02] transition-transform">
                         Voting
                     </Link>
                 </div>
 
-                {/* Center: Navigation Links (Explore first — discovery layout) */}
-                <div className="hidden lg:flex flex-1 justify-center items-center gap-6 xl:gap-10 px-4">
-                    <NavLink
-                        to="/explore"
-                        className={({ isActive }) =>
-                            `relative inline-block pb-1 text-sm uppercase tracking-wider font-bold whitespace-nowrap transition-colors ${
-                                isActive
-                                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#7B2FF7] to-[#F107A3]'
-                                    : 'text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white'
-                            }`
-                        }
-                    >
-                        {({ isActive }) => (
-                            <>
-                                {t('navbar.explore')}
-                                <span
-                                    className={`pointer-events-none absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] transition-transform origin-left duration-300 ${
-                                        isActive ? 'scale-x-100' : 'scale-x-0'
-                                    }`}
-                                />
-                            </>
-                        )}
-                    </NavLink>
+                {/* Center: Navigation Links */}
+                <div className="hidden lg:flex flex-1 justify-start items-center gap-6 xl:gap-10 pl-8">
                     <NavLink
                         to="/"
                         end
                         className={({ isActive }) =>
-                            `relative inline-block pb-1 text-sm uppercase tracking-wider font-bold whitespace-nowrap transition-colors ${
-                                isActive
-                                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#7B2FF7] to-[#F107A3]'
-                                    : 'text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white'
+                            `relative inline-block pb-1 text-sm uppercase tracking-wider font-bold whitespace-nowrap transition-colors ${isActive
+                                ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#7B2FF7] to-[#F107A3]'
+                                : 'text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white'
                             }`
                         }
                     >
@@ -89,9 +66,27 @@ const Navbar = () => {
                             <>
                                 {t('navbar.home')}
                                 <span
-                                    className={`pointer-events-none absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] transition-transform origin-left duration-300 ${
-                                        isActive ? 'scale-x-100' : 'scale-x-0'
-                                    }`}
+                                    className={`pointer-events-none absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] transition-transform origin-left duration-300 ${isActive ? 'scale-x-100' : 'scale-x-0'
+                                        }`}
+                                />
+                            </>
+                        )}
+                    </NavLink>
+                    <NavLink
+                        to="/explore"
+                        className={({ isActive }) =>
+                            `relative inline-block pb-1 text-sm uppercase tracking-wider font-bold whitespace-nowrap transition-colors ${isActive
+                                ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#7B2FF7] to-[#F107A3]'
+                                : 'text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white'
+                            }`
+                        }
+                    >
+                        {({ isActive }) => (
+                            <>
+                                {t('navbar.explore')}
+                                <span
+                                    className={`pointer-events-none absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] transition-transform origin-left duration-300 ${isActive ? 'scale-x-100' : 'scale-x-0'
+                                        }`}
                                 />
                             </>
                         )}
@@ -101,7 +96,7 @@ const Navbar = () => {
                 {/* Right: Actions */}
                 <div className="flex items-center justify-end space-x-3 sm:space-x-4 shrink-0">
                     {user && (
-                        <button 
+                        <button
                             onClick={(e) => { e.stopPropagation(); setIsUpgradeModalOpen(true); }}
                             className="hidden md:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/30 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                         >
@@ -134,7 +129,7 @@ const Navbar = () => {
                             <option value="vi" className="text-gray-900">VI</option>
                         </select>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500 dark:text-white/50">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
                         </div>
                     </div>
 
@@ -175,7 +170,7 @@ const Navbar = () => {
                                                 </Link>
                                             </div>
                                         )}
-                                        
+
                                         <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
                                             <div className="w-8 h-8 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400 shrink-0">
                                                 <PenLine className="w-4 h-4" />
@@ -233,7 +228,7 @@ const Navbar = () => {
                     )}
                 </div>
             </div>
-            
+
             {/* UpgradeModal — đặt ngoài {user&&} để không bị unmount khi user sync */}
             <UpgradeModal
                 isOpen={isUpgradeModalOpen && !!user}

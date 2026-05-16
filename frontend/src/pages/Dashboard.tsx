@@ -10,7 +10,7 @@ import { TrendingHeroCarousel } from '../components/explore/TrendingHeroCarousel
 import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import { ExploreRightSidebar } from '../components/explore/ExploreRightSidebar';
 import { ExplorePollCard } from '../components/explore/ExplorePollCard';
-import { Flame, Hash, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Hash, Menu, Search } from 'lucide-react';
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -28,6 +28,7 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [votedPollIds, setVotedPollIds] = useState<number[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useAuth();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -165,17 +166,28 @@ const Dashboard = () => {
   const totalPolls = pollPage?.totalElements ?? 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0a18] transition-colors">
+    <div className="h-screen overflow-hidden flex flex-col bg-slate-50 dark:bg-[#0b0a18] transition-colors">
       <Navbar />
 
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-16">
+      <div className="flex flex-1 min-h-0 pl-4 pr-4">
         {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm">{error}</div>}
 
-        <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr_280px] gap-6">
+        <div className="flex flex-1 min-h-0 w-full">
 
           {/* LEFT SIDEBAR */}
-          <aside className="order-2 xl:order-1 hidden xl:block">
-            <div className="sticky top-24">
+          <aside className={`relative hidden xl:flex xl:flex-col shrink-0 mr-4 transition-all duration-300 ease-in-out ${
+            sidebarOpen ? 'w-[220px]' : 'w-4'
+          }`}>
+            {/* Collapse toggle (absolute on the right edge) */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              title={sidebarOpen ? 'Thu gọn menu điều hướng' : 'Mở menu điều hướng'}
+              className="absolute -right-4 top-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-sm"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+
+            <div className={`flex-1 overflow-y-auto overflow-x-hidden thin-scrollbar transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible'}`}>
               <ExploreSidebar
                 filterTag={filterTag}
                 filterCategory={filterCategory}
@@ -191,7 +203,10 @@ const Dashboard = () => {
           </aside>
 
           {/* MAIN CONTENT */}
-          <main className="order-1 xl:order-2 min-w-0 space-y-6">
+          <main className="flex-1 min-w-0 overflow-y-auto pb-8 pr-2"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(139,92,246,0.3) transparent' }}
+          >
+            <div className="space-y-6">
             {/* Hero trending */}
             <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
 
@@ -312,23 +327,22 @@ const Dashboard = () => {
               </div>
             )}
 
+            </div>
           </main>
 
           {/* RIGHT SIDEBAR */}
-          <aside className="order-3 hidden xl:block">
-            <div className="sticky top-24">
-              <ExploreRightSidebar
-                topCreators={topCreators}
-                popularTags={popularTags}
-                onTagClick={setFilterTag}
-                communityStats={{
-                  totalPolls,
-                  votes: statsStrip.votes,
-                  comments: statsStrip.comments,
-                  active: statsStrip.active,
-                }}
-              />
-            </div>
+          <aside className="hidden xl:flex xl:flex-col w-[280px] shrink-0 ml-4 overflow-y-auto thin-scrollbar pb-8">
+            <ExploreRightSidebar
+              topCreators={topCreators}
+              popularTags={popularTags}
+              onTagClick={setFilterTag}
+              communityStats={{
+                totalPolls,
+                votes: statsStrip.votes,
+                comments: statsStrip.comments,
+                active: statsStrip.active,
+              }}
+            />
           </aside>
         </div>
       </div>
