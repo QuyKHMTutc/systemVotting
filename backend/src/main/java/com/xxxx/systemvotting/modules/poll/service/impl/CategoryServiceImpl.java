@@ -5,6 +5,7 @@ import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.poll.dto.CategoryDTO;
 import com.xxxx.systemvotting.modules.poll.entity.Category;
 import com.xxxx.systemvotting.modules.poll.repository.CategoryRepository;
+import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.poll.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -19,13 +20,25 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final PollRepository pollRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<CategoryDTO> getAllCategories() {
+        // Fetch poll counts
+        java.util.Map<Long, Long> pollCounts = pollRepository.countPollsByCategory().stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
         return categoryRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder"))
                 .stream()
-                .map(this::toDTO)
+                .map(cat -> {
+                    CategoryDTO dto = toDTO(cat);
+                    dto.setPollCount(pollCounts.getOrDefault(cat.getId(), 0L));
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -34,7 +47,15 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDTO getCategoryBySlug(String slug) {
         Category category = categoryRepository.findBySlug(slug)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
-        return toDTO(category);
+        CategoryDTO dto = toDTO(category);
+        
+        java.util.Map<Long, Long> pollCounts = pollRepository.countPollsByCategory().stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+        dto.setPollCount(pollCounts.getOrDefault(category.getId(), 0L));
+        return dto;
     }
 
     public CategoryDTO toDTO(Category category) {

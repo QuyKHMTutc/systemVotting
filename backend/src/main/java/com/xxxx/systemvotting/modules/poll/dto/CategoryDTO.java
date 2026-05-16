@@ -27,4 +27,7 @@ public class CategoryDTO {
 
     @Schema(description = "Thứ tự hiển thị", example = "1")
     private Integer sortOrder;
+
+    @Schema(description = "Số lượng poll trong danh mục", example = "10")
+    private Long pollCount;
 }
