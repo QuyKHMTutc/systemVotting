@@ -89,7 +89,12 @@ export function ExploreSidebar({
                                         ? 'bg-violet-500/10 border border-violet-500/20 text-violet-700 dark:text-violet-300 font-semibold'
                                         : 'text-slate-600 dark:text-white/55 hover:text-slate-900 dark:hover:text-white/90 hover:bg-slate-100 dark:hover:bg-white/5 font-medium'}`}>
                                     <span className="text-base leading-none w-4 text-center shrink-0">{cat.icon}</span>
-                                    {cat.name}
+                                    <span className="flex-1 text-left">{cat.name}</span>
+                                    {cat.pollCount && cat.pollCount > 0 ? (
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isActive ? 'bg-violet-200 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/40'}`}>
+                                            {cat.pollCount}
+                                        </span>
+                                    ) : null}
                                 </button>
                             );
                         })}

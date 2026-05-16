@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard } from 'lucide-react';
+import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UpgradeModal from './payment/UpgradeModal';
 
@@ -15,6 +15,31 @@ const Navbar = () => {
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(() => typeof window !== 'undefined' ? window.scrollY > 20 : false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+
+    useEffect(() => {
+        setSearchQuery(searchParams.get('q') || '');
+    }, [searchParams]);
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const q = e.target.value;
+        setSearchQuery(q);
+        if (window.location.pathname === '/') {
+            const newParams = new URLSearchParams(searchParams);
+            if (q) newParams.set('q', q);
+            else newParams.delete('q');
+            setSearchParams(newParams, { replace: true });
+        }
+    };
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (window.location.pathname !== '/') {
+            navigate(`/?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -51,7 +76,7 @@ const Navbar = () => {
                 </div>
 
                 {/* Center: Navigation Links */}
-                <div className="hidden lg:flex flex-1 justify-start items-center gap-6 xl:gap-10 pl-8">
+                <div className="hidden lg:flex items-center gap-6 xl:gap-8 ml-2 xl:ml-4 shrink-0">
                     <NavLink
                         to="/"
                         end
@@ -91,6 +116,20 @@ const Navbar = () => {
                             </>
                         )}
                     </NavLink>
+                </div>
+
+                {/* Search bar inside Navbar */}
+                <div className="hidden md:flex flex-1 ml-4 mr-4 lg:ml-6 lg:mr-8 min-w-[200px]">
+                    <form onSubmit={handleSearchSubmit} className="relative w-full group">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder={t('dashboard.searchPlaceholder') || "Tìm kiếm..."}
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-full text-slate-800 dark:text-white text-sm placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all shadow-sm focus:bg-white dark:focus:bg-[#13112a]"
+                        />
+                    </form>
                 </div>
 
                 {/* Right: Actions */}
@@ -149,12 +188,6 @@ const Navbar = () => {
                                             <img src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} alt={user.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} />
                                         ) : (
                                             <span className="text-sm font-bold text-indigo-500 dark:text-indigo-300">{user?.username?.charAt(0).toUpperCase()}</span>
-                                        )}
-                                    </div>
-                                    <div className="hidden sm:flex flex-col text-left">
-                                        <span className="font-semibold text-slate-800 dark:text-white/90 text-sm leading-tight">{user?.username}</span>
-                                        {user?.role !== 'USER' && (
-                                            <span className="text-slate-500 dark:text-white/40 text-[10px] uppercase tracking-wider font-bold">{user?.role}</span>
                                         )}
                                     </div>
                                     <ChevronDown className={`hidden sm:block w-4 h-4 text-slate-500 dark:text-white/50 transition-transform duration-300 ml-1 ${isDropdownOpen ? 'rotate-180 text-slate-800 dark:text-white' : ''}`} />

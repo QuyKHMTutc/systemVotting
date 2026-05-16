@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Hash, Trophy, PenSquare, BarChart3, Users, MessageCircle, Flame, TrendingUp } from 'lucide-react';
+import { Hash, Trophy, PenSquare, BarChart3, Users, MessageCircle, Flame, TrendingUp, Search } from 'lucide-react';
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -48,6 +49,15 @@ const RANK_ICONS = ['🥇', '🥈', '🥉', '4', '5'];
 
 export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, communityStats }: ExploreRightSidebarProps) {
   const { t } = useTranslation();
+  const [customTag, setCustomTag] = useState('');
+
+  const handleTagSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customTag.trim()) {
+      onTagClick(customTag.trim().replace(/^#/, ''));
+      setCustomTag('');
+    }
+  };
 
   const statItems = [
     { icon: BarChart3,     value: communityStats.totalPolls, label: t('dashboard.statsPolls'),    color: 'text-violet-400',  bg: 'bg-violet-500/10' },
@@ -137,9 +147,21 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
       {/* ── Popular Tags ── */}
       <div className="bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/8 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Hash className="w-4 h-4 text-fuchsia-500 dark:text-fuchsia-400" />
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">🔥 {t('dashboard.popularTags')}</h3>
         </div>
+
+        {/* Custom Tag Search */}
+        <form onSubmit={handleTagSubmit} className="relative mb-4 group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
+          <input
+            type="text"
+            placeholder={t('dashboard.filterTags') || "Tìm kiếm thẻ..."}
+            value={customTag}
+            onChange={(e) => setCustomTag(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/8 rounded-xl text-slate-800 dark:text-white text-xs placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all"
+          />
+        </form>
+
         <div className="space-y-1">
           {popularTags.length === 0 ? (
             <p className="text-sm text-slate-400 dark:text-white/35 text-center py-4">{t('dashboard.popularTagsEmpty')}</p>
@@ -152,7 +174,6 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
               >
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-white/75 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                  <Hash className="w-3.5 h-3.5 text-violet-400/60" />
                   {tg.display}
                 </span>
                 <span className="text-xs text-slate-400 dark:text-white/35 font-medium">

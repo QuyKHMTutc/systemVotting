@@ -26,7 +26,6 @@ const Dashboard = () => {
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [votedPollIds, setVotedPollIds] = useState<number[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useAuth();
@@ -36,6 +35,7 @@ const Dashboard = () => {
   const filterStatus = (searchParams.get('filter') as 'ALL' | 'ACTIVE' | 'ENDED') || 'ALL';
   const filterTag = searchParams.get('tag') || 'ALL';
   const filterCategory = searchParams.get('category') || '';
+  const searchQuery = searchParams.get('q') || '';
 
   const setCurrentPage = (v: number | ((p: number) => number)) => {
     const next = typeof v === 'function' ? v(currentPage) : v;
@@ -47,7 +47,7 @@ const Dashboard = () => {
     setSearchParams({ page: '0', filter: filterStatus, tag: tag || 'ALL' }, { replace: true });
   const setFilterCategory = (slug: string) =>
     setSearchParams({ page: '0', filter: filterStatus, tag: 'ALL', ...(slug ? { category: slug } : {}) }, { replace: true });
-  const resetExplore = () => { setSearchQuery(''); setSearchParams({ page: '0', filter: 'ALL', tag: 'ALL' }, { replace: true }); };
+  const resetExplore = () => { setSearchParams({ page: '0', filter: 'ALL', tag: 'ALL' }, { replace: true }); };
   const scrollToPollGrid = () => document.getElementById('explore-polls-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const scrollToTrending = () => document.getElementById('explore-trending')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -210,49 +210,6 @@ const Dashboard = () => {
             {/* Hero trending */}
             <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
 
-            {/* Search & Filter bar */}
-            <div className="bg-white dark:bg-[#13112a] rounded-2xl border border-slate-200 dark:border-white/8 p-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* Search input */}
-                <div className="relative flex-1 group">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
-                  <input
-                    type="text"
-                    placeholder={t('dashboard.searchPlaceholder')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/8 rounded-xl text-slate-800 dark:text-white text-sm placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all"
-                  />
-                </div>
-                {/* Tag filter */}
-                <div className="relative flex-1 group">
-                  <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
-                  <input
-                    type="text"
-                    placeholder={t('dashboard.filterTags')}
-                    value={filterTag === 'ALL' ? '' : filterTag}
-                    onChange={(e) => setFilterTag(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/8 rounded-xl text-slate-800 dark:text-white text-sm placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all"
-                  />
-                </div>
-                {/* Status filters */}
-                <div className="flex gap-2 shrink-0">
-                  {(['ALL', 'ACTIVE', 'ENDED'] as const).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setFilterStatus(s)}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-                        filterStatus === s
-                          ? 'bg-gradient-to-r from-[#7B2FF7] to-[#F107A3] text-white border-transparent shadow-md'
-                          : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/8 text-slate-600 dark:text-white/55 hover:text-slate-900 dark:hover:text-white/80 hover:border-violet-400/40 dark:hover:border-violet-500/25'
-                      }`}
-                    >
-                      {s === 'ALL' ? t('dashboard.filterAll') : s === 'ACTIVE' ? t('dashboard.filterActive') : t('dashboard.filterEnded')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
 
             {/* Section title */}
             <div id="explore-polls-grid" className="flex items-center justify-between scroll-mt-28">
