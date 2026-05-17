@@ -7,6 +7,7 @@ import com.xxxx.systemvotting.modules.poll.dto.PollResponseDTO;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.mapper.PollMapper;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
+import com.xxxx.systemvotting.modules.poll.service.impl.CategoryServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -25,14 +26,18 @@ public class PollDetailsCacheLoader {
     private final PollRepository pollRepository;
     private final PollMapper pollMapper;
     private final CommentRepository commentRepository;
+    private final CategoryServiceImpl categoryServiceImpl;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "pollDetails", key = "#id")
+    @Cacheable(value = "pollDetails_v2", key = "#id")
     public PollResponseDTO loadDbSnapshot(Long id) {
         Poll poll = pollRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
         PollResponseDTO dto = pollMapper.toDto(poll);
         dto.setCommentCount((int) commentRepository.countByPollId(id));
+        if (poll.getCategory() != null) {
+            dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+        }
         return dto;
     }
 }

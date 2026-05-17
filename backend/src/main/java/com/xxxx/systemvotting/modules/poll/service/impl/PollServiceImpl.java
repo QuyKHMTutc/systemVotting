@@ -330,6 +330,9 @@ public class PollServiceImpl implements PollService {
         PollResponseDTO dto = pollMapper.toDto(savedPoll);
         dto.setJudgeIds(requestDTO.judgeIds());
         dto.setCommentCount(0); // Brand new poll has 0 comments
+        if (savedPoll.getCategory() != null) {
+            dto.setCategory(categoryServiceImpl.toDTO(savedPoll.getCategory()));
+        }
 
         // Broadcast new poll to dashboard — ONLY for PUBLIC polls
         // Private polls must NOT appear in the public feed
@@ -444,7 +447,7 @@ public class PollServiceImpl implements PollService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "pollDetails", key = "#pollId")
+    @CacheEvict(value = "pollDetails_v2", key = "#pollId")
     public void deletePoll(Long pollId, User authenticatedUser) {
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
