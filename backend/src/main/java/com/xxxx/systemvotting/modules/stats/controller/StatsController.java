@@ -4,6 +4,8 @@ import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
+import com.xxxx.systemvotting.modules.payment.repository.PaymentTransactionRepository;
+import com.xxxx.systemvotting.modules.payment.enums.TransactionStatus;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +29,7 @@ public class StatsController {
     private final VoteRepository voteRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
 
     @Operation(summary = "Community stats", description = "Returns aggregate community statistics")
     @GetMapping("/community")
@@ -39,6 +42,7 @@ public class StatsController {
         stats.put("totalComments", commentRepository.count());
         stats.put("activePolls",   pollRepository.countPublicActivePolls(now));
         stats.put("totalUsers",    userRepository.count());
+        stats.put("totalRevenue",  paymentTransactionRepository.sumAmountByStatus(TransactionStatus.SUCCESS));
 
         return ApiResponse.<Map<String, Long>>builder()
                 .code(HttpStatus.OK.value())

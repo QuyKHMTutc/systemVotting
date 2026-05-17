@@ -278,6 +278,36 @@ public class CommentServiceImpl implements CommentService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public void deleteComment(Long commentId, Long userId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.FORBIDDEN); // Or UNAUTHORIZED / NO_PERMISSION
+        }
+
+        Long pollId = comment.getPoll().getId();
+
+        // If it's a root comment, delete all its replies first
+        if (comment.getParent() == null) {
+            commentRepository.deleteByParentId(commentId);
+        }
+
+        commentRepository.delete(comment);
+
+        // Invalidate cache
+        commentCacheInvalidator.evictAllPagesForPoll(pollId);
+
+        // Broadcast event
+        Map<String, Object> eventPayload = new HashMap<>();
+        eventPayload.put("type", "COMMENT_DELETED");
+        eventPayload.put("pollId", pollId);
+        eventPayload.put("commentId", commentId);
+        realTimeService.broadcast("/topic/polls/events", eventPayload);
+    }
+
     private Map<Long, String> buildUserVoteLabelMap(Long pollId) {
         Map<Long, String> userVoteMap = new HashMap<>();
         for (Object[] row : voteRepository.findUserIdAndOptionTextByPollId(pollId)) {

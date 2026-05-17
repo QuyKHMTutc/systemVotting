@@ -108,4 +108,6 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL GROUP BY p.category.id")
     List<Object[]> countPollsByCategory();
+
+    List<Poll> findByCategory_Id(Long categoryId);
 }

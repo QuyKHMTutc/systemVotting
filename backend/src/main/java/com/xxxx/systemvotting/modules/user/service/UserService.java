@@ -12,7 +12,7 @@ public interface UserService {
 
     UserResponseDTO getUserById(Long id);
 
-    PageResponse<UserResponseDTO> getAllUsers(int page, int size);
+    PageResponse<UserResponseDTO> getAllUsers(int page, int size, String search);
 
     UserResponseDTO promoteToAdmin(Long id);
 

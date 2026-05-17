@@ -15,4 +15,19 @@ public interface CategoryService {
      * Finds a category by its slug.
      */
     CategoryDTO getCategoryBySlug(String slug);
+
+    /**
+     * Creates a new category.
+     */
+    CategoryDTO createCategory(CategoryDTO categoryDTO);
+
+    /**
+     * Updates an existing category.
+     */
+    CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO);
+
+    /**
+     * Deletes a category and nullifies its reference in associated polls.
+     */
+    void deleteCategory(Long id);
 }

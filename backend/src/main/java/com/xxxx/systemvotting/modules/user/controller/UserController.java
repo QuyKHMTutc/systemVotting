@@ -113,8 +113,9 @@ public class UserController {
     @GetMapping
     public ApiResponse<PageResponse<UserResponseDTO>> getAllUsers(
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(1000) int size) {
-        PageResponse<UserResponseDTO> users = userService.getAllUsers(page, size);
+            @RequestParam(defaultValue = "20") @Min(1) @Max(1000) int size,
+            @RequestParam(required = false) String search) {
+        PageResponse<UserResponseDTO> users = userService.getAllUsers(page, size, search);
         return ApiResponse.<PageResponse<UserResponseDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -25,6 +26,7 @@ public record PollCreateRequestDTO(
     String description,
 
     @Schema(description = "Danh sách các nhãn (tags)", example = "[\"IT\", \"Programming\"]")
+    @NotEmpty(message = "At least one tag is required")
     List<String> tags,
 
     @Schema(description = "Chế độ ẩn danh", example = "false")
@@ -54,6 +56,7 @@ public record PollCreateRequestDTO(
     List<String> invitedEmails,
 
     @Schema(description = "ID danh mục của cuộc thăm dò", example = "1")
+    @NotNull(message = "Category is required")
     Long categoryId,
 
     /**

@@ -93,11 +93,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<UserResponseDTO> getAllUsers(int page, int size) {
+    public PageResponse<UserResponseDTO> getAllUsers(int page, int size, String search) {
         int pageNumber = Math.max(0, page);
         int pageSize = Math.min(Math.max(1, size), MAX_USER_PAGE_SIZE);
         Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("id").ascending());
-        Page<User> userPage = userRepository.findAll(pageable);
+        
+        Page<User> userPage;
+        if (search == null || search.trim().isEmpty()) {
+            userPage = userRepository.findAll(pageable);
+        } else {
+            userPage = userRepository.searchUsers(search.trim(), pageable);
+        }
+        
         List<UserResponseDTO> dtos = userMapper.toDtoList(userPage.getContent());
         Page<UserResponseDTO> dtoPage = new PageImpl<>(dtos, pageable, userPage.getTotalElements());
         return PageResponse.from(dtoPage);

@@ -114,8 +114,9 @@ public class PaymentController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<PaymentDTO.AdminPaymentHistory>> getAllPayments(
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
-        PageResponse<PaymentDTO.AdminPaymentHistory> result = paymentService.getAllPayments(page, size);
+            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size,
+            @RequestParam(required = false) String search) {
+        PageResponse<PaymentDTO.AdminPaymentHistory> result = paymentService.getAllPayments(page, size, search);
         return ApiResponse.<PageResponse<PaymentDTO.AdminPaymentHistory>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")

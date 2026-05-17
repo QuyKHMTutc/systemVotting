@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -250,12 +251,17 @@ public class PaymentService {
 
     /** Admin: lấy toàn bộ giao dịch thanh toán của tất cả user */
     @Transactional(readOnly = true)
-    public PageResponse<PaymentDTO.AdminPaymentHistory> getAllPayments(int page, int size) {
+    public PageResponse<PaymentDTO.AdminPaymentHistory> getAllPayments(int page, int size, String search) {
         int pageNumber = Math.max(0, page);
         int pageSize = Math.min(Math.max(1, size), 200);
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
 
-        Page<PaymentTransaction> txnPage = paymentTransactionRepository.findAllByOrderByCreatedAtDesc(pageable);
+        Page<PaymentTransaction> txnPage;
+        if (search == null || search.trim().isEmpty()) {
+            txnPage = paymentTransactionRepository.findAllByOrderByCreatedAtDesc(pageable);
+        } else {
+            txnPage = paymentTransactionRepository.searchAllByOrderByCreatedAtDesc(search.trim(), pageable);
+        }
         List<PaymentDTO.AdminPaymentHistory> dtos = txnPage.getContent().stream()
                 .map(txn -> new PaymentDTO.AdminPaymentHistory(
                         txn.getId(),

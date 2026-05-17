@@ -11,6 +11,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -41,6 +47,41 @@ public class CategoryController {
                 .code(HttpStatus.OK.value())
                 .message("Success")
                 .data(category)
+                .build();
+    }
+
+    @Operation(summary = "Tạo danh mục mới (Chỉ Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
+    public ApiResponse<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
+        CategoryDTO category = categoryService.createCategory(categoryDTO);
+        return ApiResponse.<CategoryDTO>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Success")
+                .data(category)
+                .build();
+    }
+
+    @Operation(summary = "Cập nhật danh mục (Chỉ Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}")
+    public ApiResponse<CategoryDTO> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryDTO categoryDTO) {
+        CategoryDTO category = categoryService.updateCategory(id, categoryDTO);
+        return ApiResponse.<CategoryDTO>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(category)
+                .build();
+    }
+
+    @Operation(summary = "Xóa danh mục (Chỉ Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteCategory(@PathVariable Long id) {
+        categoryService.deleteCategory(id);
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
                 .build();
     }
 }

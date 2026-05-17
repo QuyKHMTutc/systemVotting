@@ -58,6 +58,10 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     void deleteByPoll_Id(Long pollId);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Comment c WHERE c.parent.id = :parentId")
+    void deleteByParentId(@Param("parentId") Long parentId);
+
     long countByPollId(Long pollId);
 
     /**

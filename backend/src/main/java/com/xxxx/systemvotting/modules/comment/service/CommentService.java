@@ -13,4 +13,6 @@ public interface CommentService {
     PageResponse<CommentResponseDTO> getMyComments(Long userId, int page, int size);
 
     com.xxxx.systemvotting.modules.comment.dto.response.IdentityStatusDTO getIdentityStatus(Long pollId, Long userId);
+
+    void deleteComment(Long commentId, Long userId);
 }

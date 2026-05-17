@@ -103,4 +103,26 @@ public class CommentController {
                 .data(response)
                 .build();
     }
+
+    @Operation(summary = "Xóa bình luận", description = "Cho phép người dùng xóa bình luận của chính mình")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xóa thành công"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền xóa")
+    })
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteComment(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            return ApiResponse.<Void>builder()
+                    .code(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .build();
+        }
+        commentService.deleteComment(id, Long.valueOf(jwt.getSubject()));
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Comment deleted successfully")
+                .build();
+    }
 }
