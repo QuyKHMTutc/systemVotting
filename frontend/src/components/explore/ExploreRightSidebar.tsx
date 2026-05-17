@@ -105,7 +105,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
             <Trophy className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('dashboard.topCreators')}</h3>
           </div>
-          <button className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors">
+          <button className="cursor-pointer text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors">
             {t('dashboard.seeAll')}
           </button>
         </div>
@@ -171,10 +171,10 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
                 key={tg.display}
                 type="button"
                 onClick={() => onTagClick(tg.display)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
+                className="cursor-pointer w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
               >
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-white/75 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                  {tg.display}
+                  #{tg.display}
                 </span>
                 <span className="text-xs text-slate-400 dark:text-white/35 font-medium">
                   {formatCompact(tg.count)} {t('dashboard.statsPolls')}
@@ -182,7 +182,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
               </button>
             ))
           )}
-          <button className="w-full text-center text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium py-1.5 transition-colors">
+          <button className="cursor-pointer w-full text-center text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium py-1.5 transition-colors">
             {t('dashboard.seeAll')} →
           </button>
         </div>

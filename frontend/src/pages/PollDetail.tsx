@@ -378,27 +378,55 @@ const PollDetail = () => {
         <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 animate-modal-enter shadow-2xl shadow-slate-200/50 dark:shadow-black/30 bg-white/80 dark:bg-transparent">
           {/* Header */}
           <div className="p-6 sm:p-8 pb-6 border-b border-slate-200 dark:border-white/10">
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${isActive
-                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                  }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
-              </span>
-              {poll.tags?.map((tag) => (
+            {/* Top Row: Category on left, Status on right */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                {/* Category Badge */}
+                {poll.category && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/30">
+                    {poll.category.icon && <span>{poll.category.icon}</span>}
+                    {poll.category.name}
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center">
+                {/* Status Badge */}
                 <span
-                  key={tag}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getTagPillClass(tag)}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${isActive
+                      ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
+                      : 'bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
+                    }`}
                 >
-                  #{tag}
+                  <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 dark:bg-emerald-400 animate-pulse' : 'bg-rose-500 dark:bg-rose-400'}`} />
+                  {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
                 </span>
-              ))}
+              </div>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4 leading-tight">{poll.title}</h1>
+            {/* Title */}
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">{poll.title}</h1>
+            
+            {/* Description */}
+            {poll.description?.trim() && (
+              <p className="text-slate-600 dark:text-white/60 text-[15px] mb-4 leading-relaxed">
+                {poll.description}
+              </p>
+            )}
+
+            {/* Tags (moved below description) */}
+            {poll.tags && poll.tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                {poll.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getTagPillClass(tag)}`}
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">

@@ -145,7 +145,7 @@ export default function NotificationBell() {
         <div className="relative flex items-center" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="cursor-pointer relative p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -162,7 +162,7 @@ export default function NotificationBell() {
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('notification.title')}</h3>
                         <div className="flex items-center gap-2 relative">
-                             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-white/60 transition-colors">
+                             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="cursor-pointer p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-white/60 transition-colors">
                                  <MoreHorizontal className="w-5 h-5" />
                              </button>
                              {isMenuOpen && (
@@ -171,7 +171,7 @@ export default function NotificationBell() {
                                      <div className="absolute top-10 right-0 w-60 bg-white dark:bg-[#303031] border border-slate-200/50 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.15)] rounded-lg overflow-hidden z-[70] py-2">
                                         <button 
                                             onClick={() => { handleMarkAllRead(); setIsMenuOpen(false); }}
-                                            className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-white/90 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3"
+                                            className="cursor-pointer w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-white/90 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3"
                                         >
                                             <div className="w-6 flex justify-center"><Check className="w-5 h-5" /></div>
                                             {t('notification.markAllRead')}
@@ -186,13 +186,13 @@ export default function NotificationBell() {
                     <div className="flex items-center gap-2 mb-2">
                         <button 
                             onClick={() => setFilter('ALL')}
-                            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'ALL' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
+                            className={`cursor-pointer px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'ALL' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
                         >
                             {t('notification.filterAll')}
                         </button>
                         <button 
                             onClick={() => setFilter('UNREAD')}
-                            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'UNREAD' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
+                            className={`cursor-pointer px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'UNREAD' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
                         >
                             {t('notification.filterUnread')}
                         </button>
@@ -232,7 +232,7 @@ export default function NotificationBell() {
                             {filteredNotifications.length > visibleCount && (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); setVisibleCount(prev => prev + 10); }}
-                                    className="mt-2 mx-2 p-2 rounded-lg text-sm font-semibold text-blue-600 dark:text-blue-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center"
+                                    className="cursor-pointer mt-2 mx-2 p-2 rounded-lg text-sm font-semibold text-blue-600 dark:text-blue-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center"
                                 >
                                     {t('notification.viewMore')}
                                 </button>
@@ -250,7 +250,7 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
     return (
         <button
             onClick={onClick}
-            className={`w-full text-left flex gap-3 px-2 py-2.5 rounded-lg hover:bg-slate-100/80 dark:hover:bg-white/5 transition-colors relative mb-1 ${!notif.isRead ? 'bg-blue-50/50 dark:bg-blue-500/10' : ''}`}
+            className={`cursor-pointer w-full text-left flex gap-3 px-2 py-2.5 rounded-lg hover:bg-slate-100/80 dark:hover:bg-white/5 transition-colors relative mb-1 ${!notif.isRead ? 'bg-blue-50/50 dark:bg-blue-500/10' : ''}`}
         >
             <div className="shrink-0 mt-0.5 relative">
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center ring-1 ring-slate-200 dark:ring-white/10">

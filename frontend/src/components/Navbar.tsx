@@ -24,21 +24,15 @@ const Navbar = () => {
     }, [searchParams]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const q = e.target.value;
-        setSearchQuery(q);
-        if (window.location.pathname === '/') {
-            const newParams = new URLSearchParams(searchParams);
-            if (q) newParams.set('q', q);
-            else newParams.delete('q');
-            setSearchParams(newParams, { replace: true });
-        }
+        setSearchQuery(e.target.value);
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (window.location.pathname !== '/') {
-            navigate(`/?q=${encodeURIComponent(searchQuery)}`);
-        }
+        navigate(`/explore?q=${encodeURIComponent(searchQuery)}`);
+        setTimeout(() => {
+            document.getElementById('explore-polls-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     };
 
     useEffect(() => {
@@ -62,9 +56,9 @@ const Navbar = () => {
     }, [isUpgradeModalOpen]);
 
     return (
-        <nav className={`sticky top-0 z-50 py-3 sm:py-4 mb-8 transition-all duration-300 ${isScrolled
-                ? 'bg-gradient-to-r from-pink-100/80 via-purple-100/80 to-indigo-100/80 dark:bg-none dark:bg-[#0a051d]/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(236,72,153,0.1)] dark:shadow-lg border-b border-white/50 dark:border-white/10'
-                : 'bg-transparent border-b border-transparent'
+        <nav className={`sticky top-0 z-50 py-3 sm:py-4 mb-2 transition-all duration-300 bg-slate-50 dark:bg-[#0b0a18] ${isScrolled
+            ? 'shadow-sm border-b border-slate-200 dark:border-white/10'
+            : 'border-b border-transparent'
             }`}>
             <div className="w-full pl-4 pr-4 flex items-center justify-between relative">
 
@@ -127,7 +121,7 @@ const Navbar = () => {
                             placeholder={t('dashboard.searchPlaceholder') || "Tìm kiếm..."}
                             value={searchQuery}
                             onChange={handleSearchChange}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-full text-slate-800 dark:text-white text-sm placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all shadow-sm focus:bg-white dark:focus:bg-[#13112a]"
+                            className="w-full pl-10 pr-4 py-2 bg-slate-200/60 hover:bg-slate-200/80 dark:bg-white/10 dark:hover:bg-white/15 border border-slate-300/50 dark:border-white/10 rounded-full text-slate-800 dark:text-white text-sm placeholder-slate-500 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/50 transition-all shadow-inner focus:bg-white dark:focus:bg-[#13112a]"
                         />
                     </form>
                 </div>
@@ -137,7 +131,7 @@ const Navbar = () => {
                     {user && (
                         <button
                             onClick={(e) => { e.stopPropagation(); setIsUpgradeModalOpen(true); }}
-                            className="hidden md:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/30 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                            className="cursor-pointer hidden md:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/30 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                         >
                             <Crown className="w-5 h-5 text-amber-500" />
                             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400">
@@ -151,7 +145,7 @@ const Navbar = () => {
                     {/* Theme Switcher */}
                     <button
                         onClick={toggleTheme}
-                        className="p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        className="cursor-pointer p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         aria-label="Toggle theme"
                     >
                         {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -179,7 +173,7 @@ const Navbar = () => {
                             <div className="text-slate-800 dark:text-white flex items-center gap-4 relative" ref={dropdownRef}>
                                 <button
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    className="flex items-center gap-2 sm:gap-3 hover:bg-slate-200/50 dark:hover:bg-white/5 pr-2 sm:pr-3 p-1.5 rounded-full sm:rounded-xl transition-colors text-left"
+                                    className="cursor-pointer flex items-center gap-2 sm:gap-3 hover:bg-slate-200/50 dark:hover:bg-white/5 pr-2 sm:pr-3 p-1.5 rounded-full sm:rounded-xl transition-colors text-left"
                                     aria-label={t('navbar.viewProfile')}
                                     aria-expanded={isDropdownOpen}
                                 >

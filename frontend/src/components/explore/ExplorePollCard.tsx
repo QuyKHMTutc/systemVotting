@@ -55,9 +55,24 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
   const isCreator = !!user && Number(user.id) === Number(poll.creator.id);
   const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
+  
+  const hasWeightedVoting = (poll.judgeWeight ?? 0) > 0;
+  const judgeWeight = poll.judgeWeight ?? 0;
+  const audienceWeight = 100 - judgeWeight;
+
   const totalVotes = poll.options.reduce((s, o) => s + (o.voteCount ?? 0), 0);
+  const totalJudgeVotes = poll.options.reduce((s, o) => s + (o.judgeCount ?? 0), 0);
+  const totalAudienceVotes = poll.options.reduce((s, o) => s + (o.audienceCount ?? 0), 0);
+
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const getWeightedScore = (option: typeof poll.options[0]) => {
+    if (!hasWeightedVoting) return option.voteCount ?? 0;
+    const judgeScore = totalJudgeVotes > 0 ? ((option.judgeCount ?? 0) / totalJudgeVotes) * judgeWeight : 0;
+    const audienceScore = totalAudienceVotes > 0 ? ((option.audienceCount ?? 0) / totalAudienceVotes) * audienceWeight : 0;
+    return judgeScore + audienceScore;
+  };
 
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -70,8 +85,15 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
   };
 
   const categoryStyle = getCategoryStyle(poll.category?.name);
-  // Show top 3 options (most voted first)
-  const sortedOptions = [...poll.options].sort((a, b) => (b.voteCount ?? 0) - (a.voteCount ?? 0));
+  
+  // Sort options: if weighted, sort by weighted score. Otherwise by raw vote count.
+  const sortedOptions = [...poll.options].sort((a, b) => {
+    if (hasWeightedVoting) {
+      return getWeightedScore(b) - getWeightedScore(a);
+    }
+    return (b.voteCount ?? 0) - (a.voteCount ?? 0);
+  });
+  
   const displayOptions = sortedOptions.slice(0, 4);
 
   return (
@@ -143,14 +165,40 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
             )}
           </div>
         </div>
+        
+        {/* Tags and Judge Weight */}
+        {(poll.judgeWeight || (poll.tags && poll.tags.length > 0)) && (
+          <div className="px-4 pb-2 flex flex-col gap-1.5 -mt-1">
+            {poll.judgeWeight ? (
+              <div className="w-full block">
+                <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 shrink-0">
+                  ⚖️ GK {poll.judgeWeight}% - KG {100 - poll.judgeWeight}%
+                </span>
+              </div>
+            ) : null}
+            {poll.tags && poll.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 w-full block mt-1">
+                {poll.tags.slice(0, 3).map(tag => (
+                  <span key={tag} className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 px-1.5 py-0.5 rounded-md font-medium border border-violet-100 dark:border-violet-500/20 truncate max-w-[80px]">
+                    #{tag}
+                  </span>
+                ))}
+                {poll.tags.length > 3 && (
+                  <span className="text-[10px] text-slate-400 dark:text-white/40 px-1 py-0.5">+{poll.tags.length - 3}</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
+        {/* Title + Description */}
         {/* Title + Description */}
         <div className="px-4 pb-3">
           <h3 className="text-slate-900 dark:text-white font-bold text-[14px] leading-snug mb-1.5 line-clamp-2 group-hover:text-violet-700 dark:group-hover:text-violet-200 transition-colors">
             {poll.title}
           </h3>
           {poll.description?.trim() && (
-            <p className="text-slate-500 dark:text-white/40 text-[12px] leading-relaxed line-clamp-2">
+            <p className="text-slate-500 dark:text-white/40 text-[12px] leading-relaxed line-clamp-2 mb-2">
               {poll.description}
             </p>
           )}
@@ -159,7 +207,13 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
         {/* Options with progress bars */}
         <div className="px-4 pb-3 space-y-2 flex-1">
           {displayOptions.map((option, idx) => {
-            const pct = totalVotes > 0 ? Math.round(((option.voteCount ?? 0) / totalVotes) * 100) : 0;
+            let pct = 0;
+            if (hasWeightedVoting) {
+              pct = Math.round(getWeightedScore(option));
+            } else {
+              pct = totalVotes > 0 ? Math.round(((option.voteCount ?? 0) / totalVotes) * 100) : 0;
+            }
+            
             const barColor = BAR_COLORS[idx % BAR_COLORS.length];
             return (
               <div key={option.id}>
@@ -191,7 +245,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
         </div>
 
         {/* Footer: vote/comment + creator */}
-        <div className="px-4 py-3 border-t border-slate-100 dark:border-white/6 flex flex-col gap-2.5">
+        <div className="px-4 py-3 border-t border-slate-100 dark:border-white/6 flex flex-col gap-2.5 mt-auto">
           {/* Stats */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

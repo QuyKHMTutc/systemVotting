@@ -113,7 +113,7 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
   return (
     <div
       id="explore-trending"
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} shadow-[0_0_80px_-20px_rgba(123,47,247,0.5)] border border-white/5`}
+      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} shadow-[0_0_80px_-20px_rgba(123,47,247,0.5)] border border-white/5 lg:h-[340px]`}
       style={{ minHeight: 280 }}
     >
       {/* Atmospheric glows */}
@@ -155,9 +155,9 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col lg:flex-row min-h-[280px]">
+      <div className="relative z-10 flex flex-col lg:flex-row h-full min-h-[280px]">
         {/* Left content */}
-        <div className="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
+        <div className="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col h-full">
           {/* Badge */}
           <div className="flex items-center gap-2 mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/15 border border-orange-500/30 text-orange-300">
@@ -175,17 +175,17 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
           </div>
 
           {/* Title */}
-          <div className="flex-1">
+          <div className="flex-1 flex flex-col justify-center py-2">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight mb-3 line-clamp-2 font-heading">
               {featured.title}
             </h2>
-            <p className="text-white/55 text-sm sm:text-base line-clamp-2 mb-6 max-w-lg">
+            <p className="text-white/55 text-sm sm:text-base line-clamp-2 max-w-lg">
               {featured.description?.trim() ? featured.description : t('dashboard.trendingFallbackDesc')}
             </p>
           </div>
 
           {/* CTA */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-4 mb-5 lg:mb-6 mt-4">
             <Link
               to={`/poll/${featured.id}`}
               className={`inline-flex items-center justify-center px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r ${accent} shadow-lg hover:opacity-95 active:scale-[0.98] transition-all text-sm`}
@@ -231,9 +231,9 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
         </div>
 
         {/* Right stats panel */}
-        <div className="lg:w-[260px] flex flex-row lg:flex-col items-stretch justify-between p-6 sm:p-8 lg:py-10 lg:pr-10 lg:pl-0 gap-4 border-t lg:border-t-0 lg:border-l border-white/[0.07]">
+        <div className="lg:w-[280px] flex flex-row lg:flex-col items-stretch p-6 sm:p-8 lg:py-10 lg:pr-10 lg:pl-0 gap-4 border-t lg:border-t-0 lg:border-l border-white/[0.07] h-full">
           {/* Votes stat */}
-          <div className="flex-1 lg:flex-none rounded-2xl bg-black/20 border border-white/8 p-5 lg:p-6 flex flex-col gap-1.5 backdrop-blur-sm">
+          <div className="flex-1 rounded-2xl bg-black/20 border border-white/8 p-5 lg:p-6 flex flex-col justify-center gap-1.5 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-white/40 text-xs font-medium mb-1">
               <Users className="w-3.5 h-3.5" />
               {t('dashboard.trendingVotes')}
@@ -245,7 +245,7 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
           </div>
 
           {/* Comments stat */}
-          <div className="flex-1 lg:flex-none rounded-2xl bg-black/20 border border-white/8 p-5 lg:p-6 flex flex-col gap-1.5 backdrop-blur-sm">
+          <div className="flex-1 rounded-2xl bg-black/20 border border-white/8 p-5 lg:p-6 flex flex-col justify-center gap-1.5 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-white/40 text-xs font-medium mb-1">
               <MessageCircle className="w-3.5 h-3.5" />
               {t('dashboard.trendingComments')}
@@ -257,7 +257,7 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
           </div>
 
           {/* Time remaining */}
-          <div className="hidden lg:flex rounded-xl bg-white/5 border border-white/8 px-4 py-3 items-center gap-2 text-sm text-white/60">
+          <div className="hidden lg:flex shrink-0 rounded-xl bg-white/5 border border-white/8 px-4 py-3 items-center justify-center gap-2 text-sm text-white/60">
             <Clock className="w-4 h-4 text-violet-400 shrink-0" />
             <span className="truncate">{endsIn(featured.endTime)}</span>
           </div>

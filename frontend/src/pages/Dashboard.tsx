@@ -39,14 +39,14 @@ const Dashboard = () => {
 
   const setCurrentPage = (v: number | ((p: number) => number)) => {
     const next = typeof v === 'function' ? v(currentPage) : v;
-    setSearchParams({ page: String(next), filter: filterStatus, tag: filterTag, ...(filterCategory ? { category: filterCategory } : {}) }, { replace: true });
+    setSearchParams({ page: String(next), filter: filterStatus, tag: filterTag, ...(filterCategory ? { category: filterCategory } : {}), ...(searchQuery ? { q: searchQuery } : {}) }, { replace: true });
   };
   const setFilterStatus = (s: 'ALL' | 'ACTIVE' | 'ENDED') =>
-    setSearchParams({ page: '0', filter: s, tag: filterTag, ...(filterCategory ? { category: filterCategory } : {}) }, { replace: true });
+    setSearchParams({ page: '0', filter: s, tag: filterTag, ...(filterCategory ? { category: filterCategory } : {}), ...(searchQuery ? { q: searchQuery } : {}) }, { replace: true });
   const setFilterTag = (tag: string) =>
-    setSearchParams({ page: '0', filter: filterStatus, tag: tag || 'ALL' }, { replace: true });
+    setSearchParams({ page: '0', filter: filterStatus, tag: tag || 'ALL', ...(searchQuery ? { q: searchQuery } : {}) }, { replace: true });
   const setFilterCategory = (slug: string) =>
-    setSearchParams({ page: '0', filter: filterStatus, tag: 'ALL', ...(slug ? { category: slug } : {}) }, { replace: true });
+    setSearchParams({ page: '0', filter: filterStatus, tag: 'ALL', ...(slug ? { category: slug } : {}), ...(searchQuery ? { q: searchQuery } : {}) }, { replace: true });
   const resetExplore = () => { setSearchParams({ page: '0', filter: 'ALL', tag: 'ALL' }, { replace: true }); };
   const scrollToPollGrid = () => document.getElementById('explore-polls-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const scrollToTrending = () => document.getElementById('explore-trending')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -240,12 +240,7 @@ const Dashboard = () => {
                   </p>
                 )}
                 <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setFilterStatus('ALL');
-                    setFilterTag('ALL');
-                    setFilterCategory('');
-                  }}
+                  onClick={resetExplore}
                   className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors"
                 >
                   {t('dashboard.clearFilters')}
