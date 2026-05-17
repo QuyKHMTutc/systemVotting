@@ -9,76 +9,152 @@ import { paymentService } from '../services/payment.service';
 import type { AdminPaymentHistory } from '../services/payment.service';
 import { categoryService } from '../services/category.service';
 import type { Category } from '../services/category.service';
+import { statsService } from '../services/stats.service';
 import {
   LayoutDashboard, Users, BarChart3, ShieldAlert,
   Lock, Unlock, Trash2, Search, RefreshCw,
   TrendingUp, Activity, ChevronRight, LogOut, X,
   CreditCard, CheckCircle2, XCircle, Clock, Tag,
-  ArrowUpRight, Zap
+  ArrowUpRight, Zap, Plus, Edit3, Save, Smile
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
+import type { CommunityStats } from '../services/stats.service';
 
 type Tab = 'OVERVIEW' | 'USERS' | 'POLLS' | 'PAYMENTS' | 'CATEGORIES';
 
-interface Stats {
-  totalUsers: number;
-  lockedUsers: number;
-  totalPolls: number;
-  activePolls: number;
-  totalVotes: number;
-}
-
 const COLORS = ['#8b5cf6', '#6366f1', '#ec4899', '#f59e0b', '#10b981'];
+
+const Pagination = ({ page, totalPages, onPageChange }: { page: number, totalPages: number, onPageChange: (p: number) => void }) => {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between mt-4 py-2 border-t border-white/5">
+      <span className="text-sm text-white/50">Page {page + 1} of {totalPages}</span>
+      <div className="flex items-center gap-2">
+        <button disabled={page === 0} onClick={() => onPageChange(page - 1)}
+          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 text-white">
+          Previous
+        </button>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: totalPages }, (_, i) => {
+            // Simple windowing logic
+            if (i === 0 || i === totalPages - 1 || (i >= page - 1 && i <= page + 1)) {
+              return (
+                <button key={i} onClick={() => onPageChange(i)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors flex items-center justify-center ${page === i ? 'bg-purple-600 text-white' : 'hover:bg-white/10 text-white/70'}`}>
+                  {i + 1}
+                </button>
+              );
+            }
+            if (i === page - 2 || i === page + 2) return <span key={i} className="text-white/30">...</span>;
+            return null;
+          })}
+        </div>
+        <button disabled={page >= totalPages - 1} onClick={() => onPageChange(page + 1)}
+          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 text-white">
+          Next
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const AdminPanel = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('OVERVIEW');
   const [users, setUsers] = useState<UserDTO[]>([]);
+  const [pageUsers, setPageUsers] = useState(0);
+  const [totalPagesUsers, setTotalPagesUsers] = useState(0);
+
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [pagePolls, setPagePolls] = useState(0);
+  const [totalPagesPolls, setTotalPagesPolls] = useState(0);
+
   const [payments, setPayments] = useState<AdminPaymentHistory[]>([]);
+  const [pagePayments, setPagePayments] = useState(0);
+  const [totalPagesPayments, setTotalPagesPayments] = useState(0);
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [stats, setStats] = useState<CommunityStats | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; msg: string; onConfirm: () => void } | null>(null);
-  const [stats, setStats] = useState<Stats>({ totalUsers: 0, lockedUsers: 0, totalPolls: 0, activePolls: 0, totalVotes: 0 });
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryModal, setCategoryModal] = useState<{
+    isOpen: boolean;
+    isEdit: boolean;
+    data: Partial<Category>;
+  }>({ isOpen: false, isEdit: false, data: {} });
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchAll = useCallback(async () => {
-    if (user?.role !== 'ADMIN') { navigate('/'); return; }
+  const fetchOverview = useCallback(async () => {
+    try {
+      const data = await statsService.getCommunityStats();
+      setStats(data);
+    } catch (err) { console.error('Failed to load stats', err); }
+  }, []);
+
+  const fetchUsers = useCallback(async (page = 0, q = search) => {
     setLoading(true);
     try {
-      const [ud, pd, pay, cats] = await Promise.all([
-        userService.getAllUsers(0, 1000),
-        pollService.getAllPolls(0, 1000),
-        paymentService.getAllPayments(0, 200),
-        categoryService.getAllCategories(),
-      ]);
+      const ud = await userService.getAllUsers(page, 20, q);
       setUsers(ud.content);
-      setPolls(pd.content);
-      setPayments(pay.content);
-      setCategories(cats);
-      const now = new Date();
-      setStats({
-        totalUsers: ud.totalElements ?? ud.content.length,
-        lockedUsers: ud.content.filter(u => u.locked).length,
-        totalPolls: pd.totalElements ?? pd.content.length,
-        activePolls: pd.content.filter(p => new Date(p.endTime) > now).length,
-        totalVotes: pd.content.reduce((s, p) => s + p.options.reduce((a, o) => a + o.voteCount, 0), 0),
-      });
-    } catch (err) {
-      console.error('AdminPanel fetchAll error:', err);
-      showToast('Failed to load data', 'error');
-    }
-    finally { setLoading(false); }
-  }, [user, navigate]);
+      setTotalPagesUsers(ud.totalPages);
+    } catch (err) { console.error(err); } finally { setLoading(false); }
+  }, [search]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  const fetchPolls = useCallback(async (page = 0, q = search) => {
+    setLoading(true);
+    try {
+      const pd = await pollService.getAllPolls(page, 15, q);
+      setPolls(pd.content);
+      setTotalPagesPolls(pd.totalPages);
+    } catch (err) { console.error(err); } finally { setLoading(false); }
+  }, [search]);
+
+  const fetchPayments = useCallback(async (page = 0, q = search) => {
+    setLoading(true);
+    try {
+      const pay = await paymentService.getAllPayments(page, 20, q);
+      setPayments(pay.content);
+      setTotalPagesPayments(pay.totalPages);
+    } catch (err) { console.error(err); } finally { setLoading(false); }
+  }, [search]);
+
+  const fetchCategories = useCallback(async () => {
+    setLoading(true);
+    try {
+      const cats = await categoryService.getAllCategories();
+      setCategories(cats);
+    } catch (err) { console.error(err); } finally { setLoading(false); }
+  }, []);
+
+  const fetchAll = useCallback(() => {
+    if (user?.role !== 'ADMIN') { navigate('/'); return; }
+    if (tab === 'OVERVIEW') { fetchOverview(); fetchPolls(0, ''); }
+    if (tab === 'USERS') fetchUsers(pageUsers);
+    if (tab === 'POLLS') fetchPolls(pagePolls);
+    if (tab === 'PAYMENTS') fetchPayments(pagePayments);
+    if (tab === 'CATEGORIES') fetchCategories();
+  }, [user, navigate, tab, fetchOverview, fetchUsers, pageUsers, fetchPolls, pagePolls, fetchPayments, pagePayments, fetchCategories]);
+
+  // Initial load when tab changes
+  useEffect(() => {
+    fetchAll();
+  }, [tab]); // Only fetch when tab changes, search is handled separately by a form/button or debounce
+
+  // Search trigger
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (tab === 'USERS') { setPageUsers(0); fetchUsers(0); }
+    if (tab === 'POLLS') { setPagePolls(0); fetchPolls(0); }
+    if (tab === 'PAYMENTS') { setPagePayments(0); fetchPayments(0); }
+  };
 
   const handleToggleLock = (u: UserDTO) => {
     setConfirmModal({
@@ -88,7 +164,7 @@ const AdminPanel = () => {
         try {
           await userService.toggleLock(u.id);
           showToast(`User ${u.locked ? 'unlocked' : 'locked'} successfully`);
-          fetchAll();
+          fetchUsers(pageUsers);
         } catch { showToast('Action failed', 'error'); }
         setConfirmModal(null);
       }
@@ -103,28 +179,54 @@ const AdminPanel = () => {
         try {
           await pollService.deletePoll(p.id);
           showToast('Poll deleted');
-          fetchAll();
+          fetchPolls(pagePolls);
         } catch { showToast('Deletion failed', 'error'); }
         setConfirmModal(null);
       }
     });
   };
 
-  const filteredUsers = users.filter(u =>
-    u.username.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSaveCategory = async () => {
+    try {
+      if (!categoryModal.data.name?.trim()) {
+        showToast('Category name is required', 'error');
+        return;
+      }
+      
+      if (categoryModal.isEdit && categoryModal.data.id) {
+        await categoryService.updateCategory(categoryModal.data.id, categoryModal.data);
+        showToast('Category updated successfully');
+      } else {
+        await categoryService.createCategory(categoryModal.data);
+        showToast('Category created successfully');
+      }
+      setCategoryModal({ isOpen: false, isEdit: false, data: {} });
+      fetchCategories();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to save category', 'error');
+    }
+  };
 
-  const filteredPolls = polls.filter(p =>
-    p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.creator.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleDeleteCategory = (cat: Category) => {
+    setConfirmModal({
+      title: 'Delete Category',
+      msg: `Delete category "${cat.name}"? All polls under this category will become Uncategorized.`,
+      onConfirm: async () => {
+        try {
+          await categoryService.deleteCategory(cat.id);
+          showToast('Category deleted successfully');
+          fetchCategories();
+        } catch { showToast('Failed to delete category', 'error'); }
+        setConfirmModal(null);
+      }
+    });
+  };
 
   // Chart data
-  const pieData = [
+  const pieData = stats ? [
     { name: 'Active', value: stats.activePolls },
     { name: 'Ended', value: stats.totalPolls - stats.activePolls },
-  ];
+  ] : [];
   const barData = polls.slice(0, 8).map(p => ({
     name: p.title.length > 14 ? p.title.slice(0, 14) + '…' : p.title,
     votes: p.options.reduce((s, o) => s + o.voteCount, 0),
@@ -134,8 +236,8 @@ const AdminPanel = () => {
 
   const navItems: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'OVERVIEW',    label: 'Overview',    icon: <LayoutDashboard size={16} /> },
-    { id: 'USERS',       label: 'Users',       icon: <Users size={16} />,     badge: stats.totalUsers },
-    { id: 'POLLS',       label: 'Polls',       icon: <BarChart3 size={16} />, badge: stats.totalPolls },
+    { id: 'USERS',       label: 'Users',       icon: <Users size={16} />,     badge: stats?.totalUsers },
+    { id: 'POLLS',       label: 'Polls',       icon: <BarChart3 size={16} />, badge: stats?.totalPolls },
     { id: 'PAYMENTS',    label: 'Payments',    icon: <CreditCard size={16} /> },
     { id: 'CATEGORIES',  label: 'Categories',  icon: <Tag size={16} />,       badge: categories.length },
   ];
@@ -223,13 +325,13 @@ const AdminPanel = () => {
           </div>
           <div className="flex items-center gap-3">
             {(tab === 'USERS' || tab === 'POLLS' || tab === 'PAYMENTS') && (
-              <div className="relative">
+              <form onSubmit={handleSearchSubmit} className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder={tab === 'USERS' ? 'Search users…' : tab === 'POLLS' ? 'Search polls…' : 'Search user / ref…'}
                   className="pl-9 pr-4 py-2 rounded-xl text-sm text-white placeholder-white/30 border border-white/10 focus:outline-none focus:border-purple-500/50 w-56"
                   style={{ background: 'rgba(255,255,255,0.05)' }} />
-              </div>
+              </form>
             )}
             <button onClick={fetchAll} disabled={loading}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white/70 border border-white/10 hover:border-purple-500/40 hover:text-white transition-all"
@@ -249,10 +351,10 @@ const AdminPanel = () => {
               {/* Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Users',  value: stats.totalUsers,              icon: <Users size={20}/>,     color: '#6366f1', sub: `${stats.lockedUsers} locked`,                 trend: '+12%' },
-                  { label: 'Total Polls',  value: stats.totalPolls,              icon: <BarChart3 size={20}/>, color: '#a855f7', sub: `${stats.activePolls} active`,                trend: '+8%' },
-                  { label: 'Total Votes',  value: stats.totalVotes.toLocaleString(), icon: <Activity size={20}/>,  color: '#ec4899', sub: 'all time',                              trend: '+24%' },
-                  { label: 'Revenue',      value: payments.filter(p=>p.status==='SUCCESS').reduce((s,p)=>s+p.amount,0).toLocaleString('vi-VN')+'đ', icon: <TrendingUp size={20}/>, color: '#10b981', sub: 'successful', trend: '+5%' },
+                  { label: 'Total Users',  value: stats?.totalUsers || 0,              icon: <Users size={20}/>,     color: '#6366f1', sub: `${stats?.totalComments || 0} comments`,                 trend: '+12%' },
+                  { label: 'Total Polls',  value: stats?.totalPolls || 0,              icon: <BarChart3 size={20}/>, color: '#a855f7', sub: `${stats?.activePolls || 0} active`,                trend: '+8%' },
+                  { label: 'Total Votes',  value: (stats?.totalVotes || 0).toLocaleString(), icon: <Activity size={20}/>,  color: '#ec4899', sub: 'all time',                              trend: '+24%' },
+                  { label: 'Revenue',      value: (stats?.totalRevenue || 0).toLocaleString('vi-VN')+'đ', icon: <TrendingUp size={20}/>, color: '#10b981', sub: 'successful', trend: '+5%' },
                 ].map((s, i) => (
                   <div key={i} className="rounded-2xl p-5 border border-white/10 flex flex-col gap-3 relative overflow-hidden group hover:border-white/20 transition-all"
                     style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(20px)' }}>
@@ -367,9 +469,11 @@ const AdminPanel = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {filteredUsers.map((u, i) => (
+                      {users.length === 0 ? (
+                        <tr><td colSpan={6} className="text-center py-12 text-white/50">No users found</td></tr>
+                      ) : users.map((u, i) => (
                         <tr key={u.id} className="hover:bg-white/3 transition-colors group">
-                          <td className="px-6 py-4 text-white/30 text-xs">{i + 1}</td>
+                          <td className="px-6 py-4 text-white/30 text-xs">{pageUsers * 20 + i + 1}</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
@@ -406,13 +510,14 @@ const AdminPanel = () => {
                           </td>
                         </tr>
                       ))}
-                      {filteredUsers.length === 0 && (
+                      {users.length === 0 && (
                         <tr><td colSpan={6} className="px-6 py-16 text-center text-white/30">No users found.</td></tr>
                       )}
                     </tbody>
                   </table>
                 </div>
               )}
+              {!loading && <Pagination page={pageUsers} totalPages={totalPagesUsers} onPageChange={(p) => { setPageUsers(p); fetchUsers(p); }} />}
             </div>
           )}
 
@@ -431,12 +536,14 @@ const AdminPanel = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {filteredPolls.map((p, i) => {
+                      {polls.length === 0 ? (
+                        <tr><td colSpan={7} className="text-center py-12 text-white/50">No polls found</td></tr>
+                      ) : polls.map((p, i) => {
                         const active = new Date(p.endTime) > new Date();
                         const totalVotes = p.options.reduce((s, o) => s + o.voteCount, 0);
                         return (
                           <tr key={p.id} className="hover:bg-white/3 transition-colors">
-                            <td className="px-6 py-4 text-white/30 text-xs">{i + 1}</td>
+                            <td className="px-6 py-4 text-white/30 text-xs">{pagePolls * 15 + i + 1}</td>
                             <td className="px-6 py-4 max-w-xs">
                               <p className="text-white font-medium truncate" title={p.title}>{p.title}</p>
                               <p className="text-white/30 text-xs mt-0.5">{new Date(p.createdAt).toLocaleDateString()}</p>
@@ -468,33 +575,29 @@ const AdminPanel = () => {
                           </tr>
                         );
                       })}
-                      {filteredPolls.length === 0 && (
+                      {polls.length === 0 && (
                         <tr><td colSpan={7} className="px-6 py-16 text-center text-white/30">No polls found.</td></tr>
                       )}
                     </tbody>
                   </table>
                 </div>
               )}
+              {!loading && <Pagination page={pagePolls} totalPages={totalPagesPolls} onPageChange={(p) => { setPagePolls(p); fetchPolls(p); }} />}
             </div>
           )}
 
           {/* PAYMENTS TAB */}
           {tab === 'PAYMENTS' && (() => {
-            const filteredPayments = payments.filter(p =>
-              p.username.toLowerCase().includes(search.toLowerCase()) ||
-              p.email.toLowerCase().includes(search.toLowerCase()) ||
-              p.txnRef.toLowerCase().includes(search.toLowerCase())
-            );
             const totalRevenue = payments.filter(p => p.status === 'SUCCESS').reduce((s, p) => s + p.amount, 0);
             return (
               <div className="space-y-6 animate-fade-in-up">
                 {/* Revenue summary cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Transactions', value: payments.length, color: '#6366f1', icon: <CreditCard size={18}/> },
-                    { label: 'Successful', value: payments.filter(p => p.status === 'SUCCESS').length, color: '#10b981', icon: <CheckCircle2 size={18}/> },
-                    { label: 'Failed', value: payments.filter(p => p.status === 'FAILED').length, color: '#ef4444', icon: <XCircle size={18}/> },
-                    { label: 'Revenue (VND)', value: totalRevenue.toLocaleString('vi-VN'), color: '#f59e0b', icon: <TrendingUp size={18}/> },
+                    { label: 'Page Transactions', value: payments.length, color: '#6366f1', icon: <CreditCard size={18}/> },
+                    { label: 'Page Successful', value: payments.filter(p => p.status === 'SUCCESS').length, color: '#10b981', icon: <CheckCircle2 size={18}/> },
+                    { label: 'Page Failed', value: payments.filter(p => p.status === 'FAILED').length, color: '#ef4444', icon: <XCircle size={18}/> },
+                    { label: 'Page Revenue (VND)', value: totalRevenue.toLocaleString('vi-VN'), color: '#f59e0b', icon: <TrendingUp size={18}/> },
                   ].map((s, i) => (
                     <div key={i} className="rounded-2xl p-4 border border-white/10 flex items-center gap-4"
                       style={{ background: 'rgba(255,255,255,0.04)' }}>
@@ -524,9 +627,11 @@ const AdminPanel = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {filteredPayments.map((p, i) => (
+                          {payments.length === 0 ? (
+                            <tr><td colSpan={7} className="px-6 py-16 text-center text-white/30">No transactions found.</td></tr>
+                          ) : payments.map((p, i) => (
                             <tr key={p.id} className="hover:bg-white/3 transition-colors">
-                              <td className="px-5 py-3.5 text-white/30 text-xs">{i + 1}</td>
+                              <td className="px-5 py-3.5 text-white/30 text-xs">{pagePayments * 20 + i + 1}</td>
                               <td className="px-5 py-3.5">
                                 <span className="font-mono text-xs text-purple-300/80 bg-purple-500/10 px-2 py-1 rounded-lg border border-purple-500/20">
                                   {p.txnRef}
@@ -572,9 +677,6 @@ const AdminPanel = () => {
                               </td>
                             </tr>
                           ))}
-                          {filteredPayments.length === 0 && (
-                            <tr><td colSpan={7} className="px-6 py-16 text-center text-white/30">No transactions found.</td></tr>
-                          )}
                         </tbody>
                       </table>
                     </div>
@@ -604,6 +706,15 @@ const AdminPanel = () => {
                 ))}
               </div>
 
+              <div className="flex items-center justify-between mt-8 mb-4">
+                <h3 className="text-white font-bold text-lg font-heading">Category List</h3>
+                <button onClick={() => setCategoryModal({ isOpen: true, isEdit: false, data: { sortOrder: categories.length } })}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)' }}>
+                  <Plus size={16} /> New Category
+                </button>
+              </div>
+
               {/* Categories grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {categories.map((cat) => (
@@ -620,6 +731,20 @@ const AdminPanel = () => {
                         </span>
                       )}
                     </div>
+
+                    {/* Hover Actions */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <button onClick={() => setCategoryModal({ isOpen: true, isEdit: true, data: { ...cat } })}
+                        className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors backdrop-blur-md border border-white/10"
+                        title="Edit">
+                        <Edit3 size={14} />
+                      </button>
+                      <button onClick={() => handleDeleteCategory(cat)}
+                        className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-red-200 transition-colors backdrop-blur-md border border-red-500/20"
+                        title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -635,6 +760,82 @@ const AdminPanel = () => {
         }`} style={{ backdropFilter: 'blur(20px)' }}>
           {toast.msg}
           <button onClick={() => setToast(null)}><X size={14} className="opacity-60 hover:opacity-100" /></button>
+        </div>
+      )}
+
+      {/* Category Modal */}
+      {categoryModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+          <div className="rounded-2xl w-full max-w-md border border-white/15 overflow-hidden flex flex-col animate-modal-enter"
+            style={{ background: 'rgba(15,12,35,0.98)' }}>
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+              <h3 className="text-white font-bold text-lg font-heading">
+                {categoryModal.isEdit ? 'Edit Category' : 'Create Category'}
+              </h3>
+              <button onClick={() => setCategoryModal({ isOpen: false, isEdit: false, data: {} })} className="text-white/50 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+              <div>
+                <label className="block text-white/60 text-xs font-semibold mb-1.5">Name <span className="text-red-400">*</span></label>
+                <input type="text" value={categoryModal.data.name || ''} 
+                  onChange={e => setCategoryModal(prev => ({ ...prev, data: { ...prev.data, name: e.target.value } }))}
+                  placeholder="e.g. Technology"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder-white/30 border border-white/10 focus:outline-none focus:border-purple-500/50 bg-white/5" />
+              </div>
+              
+              <div>
+                <label className="block text-white/60 text-xs font-semibold mb-1.5">Slug (Optional - auto-generated)</label>
+                <input type="text" value={categoryModal.data.slug || ''} 
+                  onChange={e => setCategoryModal(prev => ({ ...prev, data: { ...prev.data, slug: e.target.value } }))}
+                  placeholder="e.g. technology"
+                  className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder-white/30 border border-white/10 focus:outline-none focus:border-purple-500/50 bg-white/5" />
+                <p className="text-[10px] text-white/30 mt-1">Leave empty to auto-generate from Name.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/60 text-xs font-semibold mb-1.5 flex items-center gap-1">Icon (Emoji) <Smile size={12} /></label>
+                  <input type="text" value={categoryModal.data.icon || ''} 
+                    onChange={e => setCategoryModal(prev => ({ ...prev, data: { ...prev.data, icon: e.target.value } }))}
+                    placeholder="e.g. 💻"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder-white/30 border border-white/10 focus:outline-none focus:border-purple-500/50 bg-white/5" />
+                </div>
+                <div>
+                  <label className="block text-white/60 text-xs font-semibold mb-1.5 flex items-center gap-1">Sort Order <Activity size={12} /></label>
+                  <input type="number" value={categoryModal.data.sortOrder ?? 0} 
+                    onChange={e => setCategoryModal(prev => ({ ...prev, data: { ...prev.data, sortOrder: parseInt(e.target.value) || 0 } }))}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm text-white placeholder-white/30 border border-white/10 focus:outline-none focus:border-purple-500/50 bg-white/5" />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-white/60 text-xs font-semibold mb-2">Quick Icons</label>
+                <div className="flex flex-wrap gap-2">
+                  {['💻', '🎮', '⚽', '📚', '🎬', '💼', '🍔', '🎨', '🔥', '📊'].map(emoji => (
+                    <button key={emoji} onClick={() => setCategoryModal(prev => ({ ...prev, data: { ...prev.data, icon: emoji } }))}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-base flex items-center justify-center transition-all">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-white/10 flex gap-3 bg-white/5">
+              <button onClick={() => setCategoryModal({ isOpen: false, isEdit: false, data: {} })}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/15 hover:bg-white/5 transition-all">
+                Cancel
+              </button>
+              <button onClick={handleSaveCategory}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition-all shadow-lg flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)' }}>
+                <Save size={16} /> Save Category
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

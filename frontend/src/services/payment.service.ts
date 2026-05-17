@@ -22,8 +22,8 @@ export const paymentService = {
     const response = await api.get('/payments/history', { params: { page, size } });
     return response.data.data;
   },
-  getAllPayments: async (page = 0, size = 100): Promise<PageResponse<AdminPaymentHistory>> => {
-    const response = await api.get('/payments/admin/all', { params: { page, size } });
+  getAllPayments: async (page = 0, size = 100, search?: string): Promise<PageResponse<AdminPaymentHistory>> => {
+    const response = await api.get('/payments/admin/all', { params: { page, size, search } });
     return response.data.data;
   },
 };

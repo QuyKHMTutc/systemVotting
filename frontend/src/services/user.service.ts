@@ -12,8 +12,8 @@ export interface UserDTO {
 export type UserPageResponse = PageResponse<UserDTO>;
 
 export const userService = {
-    getAllUsers: async (page = 0, size = 100): Promise<UserPageResponse> => {
-        const response = await api.get('/users', { params: { page, size } });
+    getAllUsers: async (page = 0, size = 100, search?: string): Promise<UserPageResponse> => {
+        const response = await api.get('/users', { params: { page, size, search } });
         return response.data.data;
     },
 

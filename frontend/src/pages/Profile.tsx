@@ -6,7 +6,8 @@ import type { Poll } from '../services/poll.service';
 import { PollCard } from '../components/PollCard';
 import {
   ListPlus, CheckSquare, PenLine, MessageSquare,
-  CreditCard, Crown, Zap, ArrowLeft, ChevronLeft, ChevronRight
+  CreditCard, Crown, Zap, ArrowLeft, ChevronLeft, ChevronRight,
+  MoreVertical, Trash2
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -42,8 +43,8 @@ export const Profile = () => {
   const [loadingMore, setLoadingMore] = useState<'created' | 'voted' | 'comments' | 'payments' | null>(null);
 
   const PAGE_SIZE = {
-    created: 6,
-    voted: 6,
+    created: 12,
+    voted: 12,
     comments: 20,
     payments: 10,
   } as const;
@@ -61,6 +62,33 @@ export const Profile = () => {
       setCreatedTotal((n) => Math.max(0, n - 1));
     } catch (err: any) {
       alert(err.response?.data?.message || t('profile.deleteFail'));
+    }
+  };
+
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (openMenuId === null) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.profile-comment-menu-container')) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openMenuId]);
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!window.confirm(t('pollDetail.deleteConfirm', 'Bạn có chắc chắn muốn xóa bình luận này không?'))) return;
+    try {
+      await commentService.deleteComment(commentId);
+      setMyComments(prev => prev.filter(c => c.id !== commentId));
+      setCommentsTotal(prev => Math.max(0, prev - 1));
+      setOpenMenuId(null);
+    } catch (err: any) {
+      console.error('Failed to delete comment:', err);
+      alert('Failed to delete comment');
     }
   };
 
@@ -127,7 +155,7 @@ export const Profile = () => {
         setPaymentsTotal(res.totalElements);
         setPayments(res.content);
       }
-      
+
       // Scroll to top of tab content smoothly
       window.scrollTo({ top: 300, behavior: 'smooth' });
     } catch {
@@ -142,7 +170,7 @@ export const Profile = () => {
     if (totalPages <= 1) return null;
     return (
       <div className="flex justify-center items-center gap-4 mt-8">
-        <button 
+        <button
           disabled={currentPage === 0 || loadingMore === tab}
           onClick={() => handlePageChange(tab, currentPage - 1)}
           className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/40 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
@@ -152,7 +180,7 @@ export const Profile = () => {
         <span className="text-sm font-semibold text-slate-600 dark:text-white/60">
           Trang {currentPage + 1} / {totalPages}
         </span>
-        <button 
+        <button
           disabled={currentPage >= totalPages - 1 || loadingMore === tab}
           onClick={() => handlePageChange(tab, currentPage + 1)}
           className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/40 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
@@ -196,10 +224,10 @@ export const Profile = () => {
   const planMeta = planUpper === 'PLUS'
     ? { label: 'PLUS', gradient: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-500/40', icon: <Crown className="w-3.5 h-3.5" />, pill: 'bg-amber-500/10 border-amber-400/40 text-amber-600 dark:text-amber-300' }
     : planUpper === 'PRO'
-    ? { label: 'PRO', gradient: 'from-rose-500 to-pink-600', shadow: 'shadow-rose-500/40', icon: <Crown className="w-4 h-4" />, pill: 'bg-rose-500/10 border-rose-400/40 text-rose-600 dark:text-rose-300' }
-    : planUpper === 'GO'
-    ? { label: 'GO', gradient: 'from-violet-500 to-indigo-600', shadow: 'shadow-violet-500/40', icon: <Zap className="w-3.5 h-3.5" />, pill: 'bg-violet-500/10 border-violet-400/40 text-violet-600 dark:text-violet-300' }
-    : null;
+      ? { label: 'PRO', gradient: 'from-rose-500 to-pink-600', shadow: 'shadow-rose-500/40', icon: <Crown className="w-4 h-4" />, pill: 'bg-rose-500/10 border-rose-400/40 text-rose-600 dark:text-rose-300' }
+      : planUpper === 'GO'
+        ? { label: 'GO', gradient: 'from-violet-500 to-indigo-600', shadow: 'shadow-violet-500/40', icon: <Zap className="w-3.5 h-3.5" />, pill: 'bg-violet-500/10 border-violet-400/40 text-violet-600 dark:text-violet-300' }
+        : null;
 
   const expDate = user?.plan && user.plan !== 'FREE' ? (user as any).planExpirationDate : null;
   const daysLeft = expDate ? Math.ceil((new Date(expDate).getTime() - Date.now()) / 86400000) : null;
@@ -350,8 +378,8 @@ export const Profile = () => {
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key as any)}
                     className={`flex-none flex items-center gap-2 py-4 px-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-all duration-200 ${active
-                        ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
-                        : 'border-transparent text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white/70 hover:border-slate-300 dark:hover:border-white/20'
+                      ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
+                      : 'border-transparent text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white/70 hover:border-slate-300 dark:hover:border-white/20'
                       }`}
                   >
                     <span className={active ? 'text-indigo-500' : 'text-slate-400 dark:text-white/30'}>{tab.icon}</span>
@@ -435,6 +463,28 @@ export const Profile = () => {
                                 <button onClick={() => navigate(`/poll/${c.pollId}`)} className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 truncate max-w-[200px]">{c.pollTitle}</button>
                               </>
                             )}
+                            
+                            <div className="ml-auto relative profile-comment-menu-container">
+                              <button
+                                onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}
+                                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-white/80 dark:hover:bg-white/10 transition-colors"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                              
+                              {openMenuId === c.id && (
+                                <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-white/10 py-1 z-50">
+                                  <button
+                                    onClick={() => handleDeleteComment(c.id)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Xóa
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
                           </div>
                           <p className="text-slate-600 dark:text-white/60 text-sm leading-relaxed">{c.content}</p>
                         </div>

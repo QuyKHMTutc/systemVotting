@@ -61,4 +61,8 @@ export const commentService = {
         const response = await api.get(`/comments/identity-status?pollId=${pollId}`);
         return response.data.data;
     },
+
+    deleteComment: async (commentId: number): Promise<void> => {
+        await api.delete(`/comments/${commentId}`);
+    },
 };

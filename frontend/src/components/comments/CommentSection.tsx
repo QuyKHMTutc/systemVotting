@@ -61,9 +61,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
             const caught = err as Error | { response?: { data?: { message?: string } } };
             const msg =
                 typeof caught === 'object' &&
-                caught !== null &&
-                'response' in caught &&
-                caught.response?.data?.message
+                    caught !== null &&
+                    'response' in caught &&
+                    caught.response?.data?.message
                     ? caught.response.data.message
                     : 'Failed to post comment';
             setError(msg);
@@ -85,6 +85,22 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
             setHasMore(data.page.currentPage + 1 < data.page.totalPages);
         } catch (err) {
             console.error('Failed to post reply:', err);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: number) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) return;
+        try {
+            await commentService.deleteComment(commentId);
+            // After successful deletion, refresh the comment list
+            const data = await commentService.getCommentsByPollId(pollId, 0, PAGE_SIZE);
+            setComments(data.page.content);
+            setPage(0);
+            setTotalAllComments(data.totalAllComments);
+            setHasMore(data.page.currentPage + 1 < data.page.totalPages);
+        } catch (err) {
+            console.error('Failed to delete comment:', err);
+            alert('Failed to delete comment');
         }
     };
 
@@ -119,11 +135,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
                     placeholder="Write a comment..."
                     avatarUrl={
                         user?.avatarUrl &&
-                        (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob'))
+                            (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob'))
                             ? user.avatarUrl
                             : user?.avatarUrl
-                              ? `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`
-                              : undefined
+                                ? `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`
+                                : undefined
                     }
                     username={user?.username}
                 />
@@ -140,10 +156,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
                     </div>
                 ) : (
                     <>
-                        <CommentList 
-                            comments={comments} 
-                            onReplySubmit={handleReplySubmit} 
+                        <CommentList
+                            comments={comments}
+                            onReplySubmit={handleReplySubmit}
                             judgeIds={judgeIds}
+                            onDelete={handleDeleteComment}
                         />
                         {hasMore && (
                             <div className="flex justify-center pt-2">

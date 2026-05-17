@@ -19,4 +19,18 @@ export const categoryService = {
         const response = await api.get(`/categories/${slug}`);
         return response.data.data;
     },
+
+    createCategory: async (category: Partial<Category>): Promise<Category> => {
+        const response = await api.post('/categories', category);
+        return response.data.data;
+    },
+
+    updateCategory: async (id: number, category: Partial<Category>): Promise<Category> => {
+        const response = await api.put(`/categories/${id}`, category);
+        return response.data.data;
+    },
+
+    deleteCategory: async (id: number): Promise<void> => {
+        await api.delete(`/categories/${id}`);
+    },
 };

@@ -57,13 +57,16 @@ const CreatePoll = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (options.some(opt => opt.trim() === '')) { setError(t('createPoll.errorEmptyOptions')); return; }
+        if (!selectedCategoryId) { setError('Vui lòng chọn danh mục cho cuộc bình chọn.'); return; }
+        if (tags.length === 0) { setError('Vui lòng thêm ít nhất một thẻ (tag).'); return; }
+
         setLoading(true); setError('');
         try {
             const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
             await pollService.createPoll({
                 title: question,
                 description: description.trim() || undefined,
-                tags: tags.length > 0 ? tags : ['General'],
+                tags: tags,
                 isAnonymous,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime,
@@ -145,7 +148,7 @@ const CreatePoll = () => {
 
                         {/* Category */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-1">{t('createPoll.category')}</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-1">{t('createPoll.category')} <span className="text-rose-500">*</span></label>
                             <p className="text-xs text-slate-400 dark:text-white/40 mb-3">{t('createPoll.categoryDesc')}</p>
                             {categories.length === 0 ? (
                                 <div className="flex flex-wrap gap-2">
@@ -177,7 +180,7 @@ const CreatePoll = () => {
 
                         {/* Tags */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-3">{t('createPoll.tags')}</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-3">{t('createPoll.tags')} <span className="text-rose-500">*</span></label>
                             <div className="flex flex-wrap gap-2 mb-3">
                                 {tags.map(tag => (
                                     <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 text-white text-sm font-medium shadow-sm">

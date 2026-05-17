@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Comment } from '../../services/comment.service';
-import { CornerDownRight, ThumbsUp, User } from 'lucide-react';
+import { CornerDownRight, ThumbsUp, User, MoreVertical, Trash2 } from 'lucide-react';
 import CommentInput from './CommentInput';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ interface CommentItemProps {
   lockedIsAnonymous?: boolean;
   highlightCommentId?: number | null;
   judgeIds?: number[];
+  onDelete?: (commentId: number) => void;
 }
 
 function getRelativeTime(dateString: string, t: TFunction): string {
@@ -41,6 +42,7 @@ export default function CommentItem({
   lockedIsAnonymous,
   highlightCommentId,
   judgeIds = [],
+  onDelete,
 }: CommentItemProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -49,6 +51,20 @@ export default function CommentItem({
   const [likeCount, setLikeCount] = useState(0);
   const commentRef = useRef<HTMLDivElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(highlightCommentId === comment.id);
+  const [showMenu, setShowMenu] = useState(false);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.comment-menu-container')) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showMenu]);
 
   useEffect(() => {
     if (highlightCommentId === comment.id) {
@@ -57,11 +73,11 @@ export default function CommentItem({
         setIsReplying(true);
         commentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300); // small delay to let parent expand and render
-      
+
       const fadeOutTimer = setTimeout(() => {
-          setIsHighlighted(false);
+        setIsHighlighted(false);
       }, 3000);
-      
+
       return () => clearTimeout(fadeOutTimer);
     }
   }, [highlightCommentId, comment.id]);
@@ -81,15 +97,15 @@ export default function CommentItem({
   };
 
   return (
-    <div 
-        ref={commentRef} 
-        className={`relative flex gap-3 py-3 mt-1 group rounded-xl -mx-2 px-2 transition-all duration-1000 ${isHighlighted ? 'bg-indigo-50 dark:bg-indigo-500/20 ring-2 ring-indigo-500/30 shadow-md' : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
+    <div
+      ref={commentRef}
+      className={`relative flex gap-3 py-3 mt-1 group rounded-xl -mx-2 px-2 transition-all duration-1000 ${isHighlighted ? 'bg-indigo-50 dark:bg-indigo-500/20 ring-2 ring-indigo-500/30 shadow-md' : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'}`}
     >
       {/* Branch curve for this specific reply */}
       {isReply && (
         <div className="absolute top-[-16px] left-[-22px] w-[30px] h-[36px] border-l-2 border-b-2 border-slate-200 dark:border-white/10 rounded-bl-xl pointer-events-none" />
       )}
-      
+
       {/* Avatar column */}
       <div className="shrink-0 relative z-10">
         {comment.isAnonymous ? (
@@ -122,6 +138,32 @@ export default function CommentItem({
           )}
           <span className="text-slate-400 dark:text-white/40 text-xs">·</span>
           <span className="text-slate-500 dark:text-white/50 text-xs">{timeAgo}</span>
+          
+          {user && comment.userId === user.id && (
+            <div className="ml-auto relative comment-menu-container">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-white/80 dark:hover:bg-white/10 transition-colors"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-white/10 py-1 z-50">
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onDelete?.(comment.id);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Xóa
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -141,9 +183,8 @@ export default function CommentItem({
         <div className="flex items-center gap-4 mt-2">
           <button
             onClick={handleLikeClick}
-            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-              liked ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80'
-            }`}
+            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${liked ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80'
+              }`}
           >
             <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
             {likeCount > 0 ? likeCount : t('pollDetail.like')}
@@ -189,42 +230,43 @@ export default function CommentItem({
           <div className="mt-2 relative">
             {/* The main vertical stem for all replies, left-aligned to the parent avatar's center */}
             {(showReplies || comment.replies.length > 0) && (
-                <div className="absolute top-[-26px] bottom-[20px] left-[-34px] w-[2px] bg-slate-200 dark:bg-white/10 pointer-events-none" />
+              <div className="absolute top-[-26px] bottom-[20px] left-[-34px] w-[2px] bg-slate-200 dark:bg-white/10 pointer-events-none" />
             )}
-            
+
             <div className="pl-8 space-y-0 relative">
-            {showReplies ? (
-              <>
-                {comment.replies.map((r) => (
-                  <CommentItem
-                    key={r.id}
-                    comment={r}
-                    onReplySubmit={onReplySubmit}
-                    expandedReplies={expandedReplies}
-                    toggleReply={toggleReply}
-                    identityLocked={identityLocked}
-                    lockedIsAnonymous={lockedIsAnonymous}
-                    highlightCommentId={highlightCommentId}
-                    judgeIds={judgeIds}
-                  />
-                ))}
+              {showReplies ? (
+                <>
+                  {comment.replies.map((r) => (
+                    <CommentItem
+                      key={r.id}
+                      comment={r}
+                      onReplySubmit={onReplySubmit}
+                      expandedReplies={expandedReplies}
+                      toggleReply={toggleReply}
+                      identityLocked={identityLocked}
+                      lockedIsAnonymous={lockedIsAnonymous}
+                      highlightCommentId={highlightCommentId}
+                      judgeIds={judgeIds}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                  <button
+                    onClick={() => toggleReply(comment.id, false)}
+                    className="flex items-center gap-2 mt-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                  >
+                    <CornerDownRight className="w-4 h-4" />
+                    {t('pollDetail.hideReplies')}
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={() => toggleReply(comment.id, false)}
-                  className="flex items-center gap-2 mt-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                  onClick={() => toggleReply(comment.id, true)}
+                  className="flex items-center gap-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                 >
                   <CornerDownRight className="w-4 h-4" />
-                  {t('pollDetail.hideReplies')}
+                  {comment.replies.length === 1 ? t('pollDetail.viewReply', { count: 1 }) : t('pollDetail.viewReplies', { count: comment.replies.length })}
                 </button>
-              </>
-            ) : (
-              <button
-                onClick={() => toggleReply(comment.id, true)}
-                className="flex items-center gap-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-              >
-                <CornerDownRight className="w-4 h-4" />
-                {comment.replies.length === 1 ? t('pollDetail.viewReply', { count: 1 }) : t('pollDetail.viewReplies', { count: comment.replies.length })}
-              </button>
-            )}
+              )}
             </div>
           </div>
         )}

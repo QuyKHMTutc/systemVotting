@@ -6,6 +6,7 @@ export interface CommunityStats {
     totalComments: number;
     activePolls: number;
     totalUsers: number;
+    totalRevenue: number;
 }
 
 export const statsService = {

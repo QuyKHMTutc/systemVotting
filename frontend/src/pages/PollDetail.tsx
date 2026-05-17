@@ -193,6 +193,23 @@ const PollDetail = () => {
     }
   };
 
+  const handleDeleteComment = async (commentId: number) => {
+    if (!poll) return;
+    if (!window.confirm(t('pollDetail.deleteConfirm', 'Bạn có chắc chắn muốn xóa bình luận này không?'))) return;
+    try {
+      await commentService.deleteComment(commentId);
+      // Reload comments
+      const data = await commentService.getCommentsByPollId(poll.id, 0, COMMENT_PAGE_SIZE);
+      setComments(data.page.content);
+      setCommentPage(0);
+      setTotalAllComments(data.totalAllComments);
+      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
+    } catch (err: any) {
+      console.error('Failed to delete comment:', err);
+      alert('Failed to delete comment');
+    }
+  };
+
   const checkVoteStatus = async (pollId: number) => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -686,6 +703,7 @@ const PollDetail = () => {
                       lockedIsAnonymous={lockedIsAnonymous}
                       highlightCommentId={highlightCommentId}
                       judgeIds={poll.judgeIds || []}
+                      onDelete={handleDeleteComment}
                     />
                     {hasMoreComments && (
                       <div className="flex justify-center pt-4">

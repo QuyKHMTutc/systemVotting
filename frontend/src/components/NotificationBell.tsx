@@ -143,17 +143,23 @@ export default function NotificationBell() {
 
     return (
         <div className="relative flex items-center" ref={dropdownRef}>
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="cursor-pointer relative p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            >
+            <div className="relative group flex items-center">
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="cursor-pointer relative p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#0a051d]">
                         {unreadCount}
                     </span>
                 )}
-            </button>
+                </button>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
+                    {t('notification.title') || "Thông báo"}
+                </div>
+            </div>
 
             {/* Dropdown Panel */}
             <div className={`absolute top-full right-0 mt-3 w-80 sm:w-96 rounded-2xl bg-white dark:bg-[#242526] border border-slate-200/50 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.6)] transform origin-top-right transition-all duration-200 z-[60] ${isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>

@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useGlobalWebSocket } from '../contexts/WebSocketContext';
 
-export type PollEventPayload = 
+export type PollEventPayload =
   | { type: 'CREATED'; poll: any }
   | { type: 'DELETED'; pollId: number }
   | { type: 'VOTED'; pollId: number; options: { optionId: number; text: string; voteCount: number }[] }
-  | { type: 'COMMENT_ADDED'; pollId: number };
+  | { type: 'COMMENT_ADDED'; pollId: number }
+  | { type: 'COMMENT_DELETED'; pollId: number; commentId: number };
 
 interface PollEventsWebSocketOptions {
   onEvent: (payload: PollEventPayload) => void;

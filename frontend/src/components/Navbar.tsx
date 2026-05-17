@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link, NavLink, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search } from 'lucide-react';
+import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search, Plus } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UpgradeModal from './payment/UpgradeModal';
 
@@ -139,20 +139,41 @@ const Navbar = () => {
                             </span>
                         </button>
                     )}
-                    <Link to="/create-poll" className="hidden sm:inline-flex px-5 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl text-sm transition-all shadow-[0_4px_20px_rgba(236,72,153,0.4)] hover:shadow-[0_6px_30px_rgba(236,72,153,0.65)] hover:-translate-y-0.5 active:scale-[0.98] border border-white/10 whitespace-nowrap">
-                        {t('navbar.createPoll')}
-                    </Link>
+                    {/* Create Poll */}
+                    <div className="relative group items-center hidden sm:flex">
+                        <Link
+                            to="/create-poll"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl text-sm transition-all shadow-[0_4px_20px_rgba(236,72,153,0.4)] hover:shadow-[0_6px_30px_rgba(236,72,153,0.65)] hover:-translate-y-0.5 active:scale-[0.98] border border-white/10 whitespace-nowrap"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {i18n.language.startsWith('vi') ? 'Tạo' : 'Create'}
+                        </Link>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
+                            {t('navbar.createPoll')}
+                        </div>
+                    </div>
+
                     {/* Theme Switcher */}
-                    <button
-                        onClick={toggleTheme}
-                        className="cursor-pointer p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                        aria-label="Toggle theme"
-                    >
-                        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </button>
+                    <div className="relative group flex items-center">
+                        <button
+                            onClick={toggleTheme}
+                            className="cursor-pointer p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                            aria-label="Toggle theme"
+                        >
+                            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        </button>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
+                            {i18n.language.startsWith('vi')
+                                ? (theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối')
+                                : (theme === 'dark' ? 'Light Mode' : 'Dark Mode')
+                            }
+                        </div>
+                    </div>
 
                     {/* Language Switcher */}
-                    <div className="relative">
+                    <div className="relative group">
                         <select
                             value={i18n.language.startsWith('vi') ? 'vi' : 'en'}
                             onChange={(e) => i18n.changeLanguage(e.target.value)}
@@ -164,6 +185,10 @@ const Navbar = () => {
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500 dark:text-white/50">
                             <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
                         </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
+                            {i18n.language.startsWith('vi') ? 'Đổi ngôn ngữ' : 'Change Language'}
+                        </div>
                     </div>
 
                     {user ? (
@@ -171,10 +196,11 @@ const Navbar = () => {
                             <NotificationBell />
                             <div className="h-6 w-px bg-slate-300 dark:bg-white/20 mx-1"></div>
                             <div className="text-slate-800 dark:text-white flex items-center gap-4 relative" ref={dropdownRef}>
-                                <button
+                                <div className="relative group flex items-center">
+                                    <button
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                     className="cursor-pointer flex items-center gap-2 sm:gap-3 hover:bg-slate-200/50 dark:hover:bg-white/5 pr-2 sm:pr-3 p-1.5 rounded-full sm:rounded-xl transition-colors text-left"
-                                    aria-label={t('navbar.viewProfile')}
+                                    aria-label="Account"
                                     aria-expanded={isDropdownOpen}
                                 >
                                     <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-2 ring-indigo-500/30 overflow-hidden bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/20">
@@ -185,7 +211,12 @@ const Navbar = () => {
                                         )}
                                     </div>
                                     <ChevronDown className={`hidden sm:block w-4 h-4 text-slate-500 dark:text-white/50 transition-transform duration-300 ml-1 ${isDropdownOpen ? 'rotate-180 text-slate-800 dark:text-white' : ''}`} />
-                                </button>
+                                    </button>
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+                                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
+                                        {i18n.language.startsWith('vi') ? 'Tài khoản' : 'Account'}
+                                    </div>
+                                </div>
 
                                 {/* Dropdown Menu */}
                                 <div className={`absolute top-full right-0 mt-3 w-60 rounded-2xl bg-white/90 dark:bg-[#13102b]/95 backdrop-blur-2xl border border-slate-200/60 dark:border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.15),0_4px_20px_rgba(99,102,241,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6),0_4px_20px_rgba(99,102,241,0.2)] transform origin-top-right transition-all duration-200 z-50 ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
@@ -230,7 +261,7 @@ const Navbar = () => {
                                             <div className="w-8 h-8 rounded-full bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 shrink-0">
                                                 <CreditCard className="w-4 h-4" />
                                             </div>
-                                            Lịch sử thanh toán
+                                            {t('profile.paymentHistory')}
                                         </Link>
 
                                         <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent my-1.5 mx-2"></div>
