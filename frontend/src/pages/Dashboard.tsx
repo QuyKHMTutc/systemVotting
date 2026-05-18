@@ -253,7 +253,7 @@ const Dashboard = () => {
             <div className="absolute -right-4 top-2 z-20 group">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border-2 border-slate-300 dark:border-white/30 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-400 dark:hover:border-violet-400/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
               >
                 <Menu className={`w-4 h-4 transition-transform duration-300 ${!sidebarOpen ? '' : ''}`} />
               </button>
@@ -357,7 +357,7 @@ const Dashboard = () => {
           </main>
 
           {/* RIGHT SIDEBAR */}
-          <aside className="sticky top-2 pt-2 h-[calc(100vh-100px)] hidden xl:flex xl:flex-col w-[296px] shrink-0 ml-2 pl-4 border-l border-slate-300 dark:border-white/20 overflow-y-auto hover-scrollbar">
+          <aside className="sticky top-2 pt-2 h-[calc(100vh-100px)] hidden xl:flex xl:flex-col w-[296px] shrink-0 ml-2 pl-4 overflow-y-auto hover-scrollbar">
             <ExploreRightSidebar
               topCreators={topCreators}
               popularTags={popularTags}

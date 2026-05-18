@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Poll } from '../../services/poll.service';
 import {
   Users, MessageCircle, Share2, Check, Lock,
-  Trash2, MoreVertical, Scale, Clock,
+  Trash2, MoreVertical, Scale, Clock, LogIn,
 } from 'lucide-react';
 import { useState } from 'react';
 import { timeAgo } from '../../utils/date';
@@ -58,6 +58,7 @@ function timeRemaining(endTime: string): string | null {
 export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete, showDeleteButton = false }: ExplorePollCardProps) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isCreator = !!user && Number(user.id) === Number(poll.creator.id);
   const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
@@ -318,8 +319,22 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
               <span>{t('pollDetail.commentsLabel')}</span>
             </span>
 
-            {/* End time badge — pushed right */}
-            <div className="ml-auto">
+            {/* Join button — inline, pushed right */}
+            <div className="ml-auto flex items-center gap-2">
+              {isActive && !hasVoted && !isCreator && (
+                <button
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); navigate(`/poll/${poll.id}`); }}
+                  className="inline-flex items-center justify-center px-3.5 py-1 rounded-full text-[11.5px] font-bold tracking-wide
+                    bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600
+                    text-white shadow-[0_2px_10px_-2px_rgba(168,85,247,0.4)] hover:shadow-[0_4px_12px_-2px_rgba(168,85,247,0.6)]
+                    border border-white/10
+                    transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]"
+                >
+                  {i18n.language.startsWith('vi') ? 'Tham gia' : 'Join'}
+                </button>
+              )}
+
+              {/* End time badge */}
               {isActive && remaining ? (() => {
                 const diff = new Date(poll.endTime).getTime() - Date.now();
                 const isUrgent  = diff < 3_600_000;

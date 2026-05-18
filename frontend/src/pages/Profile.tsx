@@ -404,10 +404,15 @@ export const Profile = () => {
           {activeTab === 'created' && (
             createdPolls.length > 0
               ? <>
-                <div className="flex flex-col space-y-4 max-w-3xl mx-auto w-full">
+                <div className="flex flex-col gap-3 w-full">
                   {createdPolls.map((poll, i) => (
-                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
-                      <ExplorePollCard poll={poll} onDelete={handleDeletePoll} showDeleteButton />
+                    <div key={poll.id} className="animate-fade-in-up w-full" style={{ animationDelay: `${i * 40}ms` }}>
+                      <ExplorePollCard
+                        poll={poll}
+                        commentCount={poll.commentCount}
+                        onDelete={handleDeletePoll}
+                        showDeleteButton
+                      />
                     </div>
                   ))}
                 </div>
@@ -420,10 +425,14 @@ export const Profile = () => {
           {activeTab === 'voted' && (
             votedPolls.length > 0
               ? <>
-                <div className="flex flex-col space-y-4 max-w-3xl mx-auto w-full">
+                <div className="flex flex-col gap-3 w-full">
                   {votedPolls.map((poll, i) => (
-                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
-                      <ExplorePollCard poll={poll} hasVoted={true} />
+                    <div key={poll.id} className="animate-fade-in-up w-full" style={{ animationDelay: `${i * 40}ms` }}>
+                      <ExplorePollCard
+                        poll={poll}
+                        hasVoted
+                        commentCount={poll.commentCount}
+                      />
                     </div>
                   ))}
                 </div>
