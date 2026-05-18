@@ -491,6 +491,9 @@ public class PollServiceImpl implements PollService {
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
+                    if (poll.getCategory() != null) {
+                        dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+                    }
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -515,7 +518,13 @@ public class PollServiceImpl implements PollService {
         Map<Long, Integer> commentCountMap = getCommentCountsForPolls(pollIds);
 
         List<PollResponseDTO> dtos = candidatePolls.stream()
-                .map(pollMapper::toDto)
+                .map(poll -> {
+                    PollResponseDTO dto = pollMapper.toDto(poll);
+                    if (poll.getCategory() != null) {
+                        dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+                    }
+                    return dto;
+                })
                 .collect(Collectors.toList());
 
         enrichPollListWithRedisData(dtos);
@@ -555,6 +564,9 @@ public class PollServiceImpl implements PollService {
                 .map(poll -> {
                     PollResponseDTO dto = pollMapper.toDto(poll);
                     dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
+                    if (poll.getCategory() != null) {
+                        dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+                    }
                     return dto;
                 })
                 .collect(Collectors.toList());
