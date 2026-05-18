@@ -60,10 +60,10 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
   };
 
   const statItems = [
-    { icon: BarChart3,     value: communityStats.totalPolls, label: t('dashboard.statsPolls'),    color: 'text-violet-400',  bg: 'bg-violet-500/10' },
-    { icon: Users,         value: communityStats.votes,      label: t('dashboard.statsVotes'),    color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' },
-    { icon: MessageCircle, value: communityStats.comments,   label: t('dashboard.statsComments'), color: 'text-cyan-400',    bg: 'bg-cyan-500/10' },
-    { icon: Flame,         value: communityStats.active,     label: t('dashboard.statsActive'),   color: 'text-orange-400',  bg: 'bg-orange-500/10' },
+    { icon: BarChart3, value: communityStats.totalPolls, label: t('dashboard.statsPolls'), color: 'text-violet-400', bg: 'bg-violet-500/10' },
+    { icon: Users, value: communityStats.votes, label: t('dashboard.statsVotes'), color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' },
+    { icon: MessageCircle, value: communityStats.comments, label: t('dashboard.statsComments'), color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+    { icon: Flame, value: communityStats.active, label: t('dashboard.statsActive'), color: 'text-orange-400', bg: 'bg-orange-500/10' },
   ];
 
   return (

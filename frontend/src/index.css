@@ -210,20 +210,46 @@ h1, h2, h3, h4, h5, h6, .font-heading,
 /* Thin scrollbar for sidebars */
 .thin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(139,92,246,0.25) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 .thin-scrollbar::-webkit-scrollbar {
-  width: 3px;
+  width: 4px;
 }
 .thin-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(139,92,246,0.3);
+  background: var(--scrollbar-thumb);
   border-radius: 999px;
 }
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(139,92,246,0.5);
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Hover scrollbar for sidebars (hidden unless hovered) */
+.hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.hover-scrollbar:hover {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+.hover-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  background: transparent;
+}
+.hover-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+.hover-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Custom scrollbar for comments */
@@ -231,7 +257,7 @@ h1, h2, h3, h4, h5, h6, .font-heading,
   width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: 6px;
 }
 

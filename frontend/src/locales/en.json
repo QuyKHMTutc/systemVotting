@@ -2,6 +2,7 @@
   "navbar": {
     "home": "Home",
     "explore": "Explore",
+    "create": "Create",
     "createPoll": "Create a poll",
     "login": "Sign In",
     "logout": "Log Out",
@@ -11,7 +12,10 @@
     "editProfile": "Edit Profile",
     "myPolls": "My Polls",
     "myComments": "My Comments",
-    "myVotes": "My Votes"
+    "myVotes": "My Votes",
+    "changePassword": "Change Password",
+    "upgradeBtn": "Upgrade",
+    "currentPlan": "{{plan}} Plan"
   },
   "home": {
     "heroTitle1": "Create a poll",
@@ -104,7 +108,9 @@
     "communityStats": "Community Stats",
     "statsLive": "Live updates",
     "seeMore": "See more",
-    "viewProfile": "View profile"
+    "viewProfile": "View profile",
+    "collapseSidebar": "Collapse navigation",
+    "openSidebar": "Open navigation"
   },
   "pollDetail": {
     "active": "Active",
@@ -124,6 +130,14 @@
     "backToDashboard": "Back to Dashboard",
     "votes": "votes",
     "share": "Share",
+    "delete": "Delete",
+    "otherOptions": "+{{count}} other options",
+    "votesLabel": "votes",
+    "commentsLabel": "comments",
+    "authorLabel": "Author",
+    "privateLabel": "Private",
+    "judgeWeightShort": "Judge {{judge}}% - Audience {{audience}}%",
+    "viewLive": "View Live",
     "linkCopied": "Link copied!",
     "commentAs": "Comment as {{username}}",
     "useRealProfile": "Use your real profile",
@@ -324,6 +338,23 @@
     "noTransactions": "No transactions yet",
     "noTransactionsDesc": "You haven't made any payment transactions yet."
   },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "Protect your account",
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter your current password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter a new password",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Re-enter your new password",
+    "errorMismatch": "New password and confirmation do not match",
+    "errorMinLength": "New password must be at least 6 characters",
+    "errorFailed": "An error occurred while changing your password",
+    "success": "Password changed successfully!",
+    "cancel": "Cancel",
+    "submit": "Change Password",
+    "submitting": "Changing..."
+  },
   "termsPage": {
     "title": "Terms of Service",
     "lastUpdated": "Last updated: March 2025",
@@ -405,9 +436,14 @@
     "option": "Option",
     "votes": "votes",
     "liveResults": "Live Results",
-    "realTime": "Real-time Updates",
-    "totalVotes": "Total votes",
-    "totalOptions": "Total options",
-    "close": "Close live view"
+    "realTime": "REAL-TIME",
+    "totalVotes": "Total Votes",
+    "totalOptions": "Total Options",
+    "close": "Close",
+    "weightPoints": "weighted points",
+    "judges": "Judges",
+    "audience": "Audience",
+    "weightDesc": "weight {{weight}}%",
+    "votesLower": "votes"
   }
 }

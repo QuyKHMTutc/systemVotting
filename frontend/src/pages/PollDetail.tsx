@@ -470,7 +470,7 @@ const PollDetail = () => {
                   className="flex items-center gap-2 group px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-semibold rounded-xl border border-red-500/30 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] shrink-0"
                 >
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                  <span className="text-sm">Xem Live</span>
+                  <span className="text-sm">{t('pollDetail.viewLive')}</span>
                 </button>
               </div>
             </div>

@@ -241,14 +241,14 @@ const Dashboard = () => {
     <div className="h-screen overflow-hidden flex flex-col bg-slate-50 dark:bg-[#0b0a18] transition-colors">
       <Navbar />
 
-      <div className="flex flex-1 min-h-0 pl-4 pr-4">
-        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm">{error}</div>}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden thin-scrollbar w-full">
+        <div className="flex flex-col min-h-full max-w-[1700px] mx-auto px-4 xl:px-8 pb-4">
+          {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm shrink-0">{error}</div>}
 
-        <div className="flex flex-1 min-h-0 w-full">
+          <div className="flex flex-1 w-full items-start">
 
-          {/* LEFT SIDEBAR */}
-          <aside className={`relative hidden xl:flex xl:flex-col shrink-0 mr-4 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-[220px]' : 'w-4'
-            }`}>
+            {/* LEFT SIDEBAR */}
+            <aside className={`sticky top-2 pt-2 h-[calc(100vh-100px)] z-40 hidden xl:flex xl:flex-col shrink-0 transition-all duration-300 ease-in-out border-r border-slate-300 dark:border-white/20 ${sidebarOpen ? 'w-[240px] pr-4 mr-4' : 'w-0 pr-0 mr-6'}`}>
             {/* Collapse toggle (absolute on the right edge) */}
             <div className="absolute -right-4 top-2 z-20 group">
               <button
@@ -259,11 +259,11 @@ const Dashboard = () => {
               </button>
               <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
                 <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-y-4 border-r-4 border-transparent border-r-[#1e1e2d]"></div>
-                {sidebarOpen ? 'Thu gọn menu điều hướng' : 'Mở menu điều hướng'}
+                {sidebarOpen ? t('dashboard.collapseSidebar') : t('dashboard.openSidebar')}
               </div>
             </div>
 
-            <div className={`flex-1 overflow-y-auto overflow-x-hidden thin-scrollbar transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible'}`}>
+            <div className={`flex-1 overflow-y-auto overflow-x-hidden hover-scrollbar transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible'}`}>
               <ExploreSidebar
                 filterTag={filterTag}
                 filterCategory={filterCategory}
@@ -279,9 +279,7 @@ const Dashboard = () => {
           </aside>
 
           {/* MAIN CONTENT */}
-          <main className="flex-1 min-w-0 overflow-y-auto pb-8 pr-2 flex flex-col items-center"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(139,92,246,0.3) transparent' }}
-          >
+          <main className="flex-1 min-w-0 flex flex-col items-center pt-4">
             <div className="w-full max-w-5xl space-y-6 transition-all duration-300">
               {/* Hero trending */}
               <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
@@ -324,9 +322,9 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-3">
                     {polls.map((poll, idx) => (
-                      <div key={poll.id} className="animate-fade-in-up h-full" style={{ animationDelay: `${idx * 50}ms` }}>
+                      <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 40}ms` }}>
                         <ExplorePollCard
                           poll={poll}
                           hasVoted={votedPollIds.includes(poll.id)}
@@ -359,7 +357,7 @@ const Dashboard = () => {
           </main>
 
           {/* RIGHT SIDEBAR */}
-          <aside className="hidden xl:flex xl:flex-col w-[280px] shrink-0 ml-4 overflow-y-auto thin-scrollbar pb-8">
+          <aside className="sticky top-2 pt-2 h-[calc(100vh-100px)] hidden xl:flex xl:flex-col w-[296px] shrink-0 ml-2 pl-4 border-l border-slate-300 dark:border-white/20 overflow-y-auto hover-scrollbar">
             <ExploreRightSidebar
               topCreators={topCreators}
               popularTags={popularTags}
@@ -374,6 +372,7 @@ const Dashboard = () => {
           </aside>
         </div>
       </div>
+    </div>
     </div>
   );
 };

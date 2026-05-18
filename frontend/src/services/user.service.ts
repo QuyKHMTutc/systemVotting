@@ -19,5 +19,9 @@ export const userService = {
 
     toggleLock: async (id: number): Promise<void> => {
         await api.put(`/users/${id}/toggle-lock`);
+    },
+
+    changePassword: async (data: any): Promise<void> => {
+        await api.put('/users/me/password', data);
     }
 };

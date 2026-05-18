@@ -2,6 +2,7 @@
   "navbar": {
     "home": "Trang chủ",
     "explore": "Khám phá",
+    "create": "Tạo",
     "createPoll": "Tạo cuộc thăm dò ý kiến",
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
@@ -11,7 +12,10 @@
     "editProfile": "Chỉnh sửa hồ sơ",
     "myPolls": "Bài đăng của tôi",
     "myComments": "Bình luận của tôi",
-    "myVotes": "Lượt vote của tôi"
+    "myVotes": "Lượt vote của tôi",
+    "changePassword": "Đổi mật khẩu",
+    "upgradeBtn": "Nâng cấp",
+    "currentPlan": "Gói {{plan}}"
   },
   "home": {
     "heroTitle1": "Tạo cuộc thăm dò ý kiến",
@@ -104,7 +108,9 @@
     "communityStats": "Thống kê cộng đồng",
     "statsLive": "Cập nhật thực tế",
     "seeMore": "Xem thêm",
-    "viewProfile": "Xem hồ sơ"
+    "viewProfile": "Xem hồ sơ",
+    "collapseSidebar": "Thu gọn menu điều hướng",
+    "openSidebar": "Mở menu điều hướng"
   },
   "pollDetail": {
     "active": "Đang diễn ra",
@@ -124,6 +130,14 @@
     "backToDashboard": "Quay lại Trang chủ",
     "votes": "phiếu",
     "share": "Chia sẻ",
+    "delete": "Xóa",
+    "otherOptions": "+{{count}} lựa chọn khác",
+    "votesLabel": "người bình chọn",
+    "commentsLabel": "bình luận",
+    "authorLabel": "Tác giả",
+    "privateLabel": "Riêng tư",
+    "judgeWeightShort": "GK {{judge}}% - KG {{audience}}%",
+    "viewLive": "Xem Live",
     "linkCopied": "Đã sao chép liên kết!",
     "commentAs": "Bình luận với tư cách {{username}}",
     "useRealProfile": "Sử dụng hồ sơ gốc trần",
@@ -262,7 +276,7 @@
     "cancel": "Hủy",
     "creating": "Đang tạo...",
     "submitBtn": "Xác nhận",
-    "privacyPrivate": "🔒 Riêng tư (Private)",
+    "privacyPrivate": "🔒 Riêng tư",
     "privacyPrivateDesc": "Chỉ những người được mời qua email mới có thể xem và bình chọn",
     "invitedUsersList": "Danh sách người được mời",
     "judgesEnable": "⚖️ Bình chọn có Hội đồng Giám khảo",
@@ -324,6 +338,23 @@
     "failed": "Thất bại",
     "noTransactions": "Chưa có giao dịch",
     "noTransactionsDesc": "Bạn chưa thực hiện giao dịch thanh toán gói nào."
+  },
+  "changePassword": {
+    "title": "Đổi mật khẩu",
+    "subtitle": "Bảo vệ tài khoản của bạn",
+    "currentPassword": "Mật khẩu hiện tại",
+    "currentPasswordPlaceholder": "Nhập mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "newPasswordPlaceholder": "Nhập mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "confirmPasswordPlaceholder": "Nhập lại mật khẩu mới",
+    "errorMismatch": "Mật khẩu mới và xác nhận không khớp",
+    "errorMinLength": "Mật khẩu mới phải có ít nhất 6 ký tự",
+    "errorFailed": "Có lỗi xảy ra khi đổi mật khẩu",
+    "success": "Đổi mật khẩu thành công!",
+    "cancel": "Hủy",
+    "submit": "Đổi mật khẩu",
+    "submitting": "Đang đổi..."
   },
   "termsPage": {
     "title": "Điều khoản dịch vụ",
@@ -405,10 +436,15 @@
   "liveChart": {
     "option": "Lựa chọn",
     "votes": "phiếu",
-    "liveResults": "Live Results",
-    "realTime": "Real-time Updates",
+    "liveResults": "Kết quả trực tiếp",
+    "realTime": "Thời gian thực",
     "totalVotes": "Tổng số vote",
     "totalOptions": "Số lượng option",
-    "close": "Đóng live view"
+    "close": "Đóng",
+    "weightPoints": "điểm trọng số",
+    "judges": "Giám khảo",
+    "audience": "Khán giả",
+    "weightDesc": "trọng số {{weight}}%",
+    "votesLower": "phiếu"
   }
 }

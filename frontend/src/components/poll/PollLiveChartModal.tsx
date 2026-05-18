@@ -51,22 +51,22 @@ const CustomTooltip = ({ active, payload }: any) => {
                 style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 {d.percentage}
               </span>
-              <span className="text-sm font-medium text-slate-500 dark:text-white/50 mb-1">điểm trọng số</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-white/50 mb-1">{t('liveChart.weightPoints')}</span>
             </div>
             <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-white/5">
               <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm" style={{ background: 'linear-gradient(90deg,#f59e0b,#f97316)' }} />
-                  <span className="text-amber-600 dark:text-amber-400 font-medium">⚖️ Giám khảo</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">⚖️ {t('liveChart.judges')}</span>
                 </span>
-                <span className="text-slate-600 dark:text-white/60 font-semibold">{d.judgeCount} phiếu ({d.judgeVotesPct}%)</span>
+                <span className="text-slate-600 dark:text-white/60 font-semibold">{d.judgeCount} {t('liveChart.votesLower')} ({d.judgeVotesPct}%)</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm" style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)' }} />
-                  <span className="text-indigo-600 dark:text-indigo-400 font-medium">👥 Khán giả</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-medium">👥 {t('liveChart.audience')}</span>
                 </span>
-                <span className="text-slate-600 dark:text-white/60 font-semibold">{d.audienceCount} phiếu ({d.audienceVotesPct}%)</span>
+                <span className="text-slate-600 dark:text-white/60 font-semibold">{d.audienceCount} {t('liveChart.votesLower')} ({d.audienceVotesPct}%)</span>
               </div>
             </div>
           </>
@@ -217,18 +217,18 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
                 <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-4 flex flex-col justify-center overflow-hidden transition-colors">
                   <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1 text-sm font-semibold">
                     <span>⚖️</span>
-                    Giám khảo
+                    {t('liveChart.judges')}
                   </div>
                   <div className="text-3xl font-black text-amber-700 dark:text-amber-300">{totalJudgeVotes}</div>
-                  <div className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-0.5">trọng số {judgeWeight}%</div>
+                  <div className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-0.5">{t('liveChart.weightDesc', { weight: judgeWeight })}</div>
                 </div>
                 <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-center overflow-hidden transition-colors">
                   <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1 text-sm font-semibold">
                     <span>👥</span>
-                    Khán giả
+                    {t('liveChart.audience')}
                   </div>
                   <div className="text-3xl font-black text-indigo-700 dark:text-indigo-300">{totalAudienceVotes}</div>
-                  <div className="text-xs text-indigo-600/70 dark:text-indigo-400/60 mt-0.5">trọng số {audienceWeight}%</div>
+                  <div className="text-xs text-indigo-600/70 dark:text-indigo-400/60 mt-0.5">{t('liveChart.weightDesc', { weight: audienceWeight })}</div>
                 </div>
               </>
             )}

@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { pollService } from '../services/poll.service';
 import { commentService, type Comment } from '../services/comment.service';
 import type { Poll } from '../services/poll.service';
-import { PollCard } from '../components/PollCard';
+import { ExplorePollCard } from '../components/explore/ExplorePollCard';
 import {
   ListPlus, CheckSquare, PenLine, MessageSquare,
   CreditCard, Crown, Zap, ArrowLeft, ChevronLeft, ChevronRight,
@@ -352,11 +352,10 @@ export const Profile = () => {
               </div>
             </div>
 
-            {/* Edit button — top-right on desktop */}
-            <div className="sm:pb-6 shrink-0 self-start sm:self-end">
+            <div className="sm:pb-6 shrink-0 self-start sm:self-end flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setIsProfileModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
                   bg-slate-900 dark:bg-white text-white dark:text-slate-900
                   hover:bg-slate-700 dark:hover:bg-slate-100
                   shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
@@ -405,12 +404,10 @@ export const Profile = () => {
           {activeTab === 'created' && (
             createdPolls.length > 0
               ? <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="flex flex-col space-y-4 max-w-3xl mx-auto w-full">
                   {createdPolls.map((poll, i) => (
-                    <div key={poll.id} className="animate-fade-in-up h-full" style={{ animationDelay: `${i * 35}ms` }}>
-                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl h-full">
-                        <PollCard poll={poll} onDelete={handleDeletePoll} showDeleteButton />
-                      </div>
+                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
+                      <ExplorePollCard poll={poll} onDelete={handleDeletePoll} showDeleteButton />
                     </div>
                   ))}
                 </div>
@@ -423,12 +420,10 @@ export const Profile = () => {
           {activeTab === 'voted' && (
             votedPolls.length > 0
               ? <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="flex flex-col space-y-4 max-w-3xl mx-auto w-full">
                   {votedPolls.map((poll, i) => (
-                    <div key={poll.id} className="animate-fade-in-up h-full" style={{ animationDelay: `${i * 35}ms` }}>
-                      <div className="transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl h-full">
-                        <PollCard poll={poll} hasVoted={true} />
-                      </div>
+                    <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 35}ms` }}>
+                      <ExplorePollCard poll={poll} hasVoted={true} />
                     </div>
                   ))}
                 </div>
@@ -479,7 +474,7 @@ export const Profile = () => {
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                   >
                                     <Trash2 className="w-4 h-4" />
-                                    Xóa
+                                    {t('pollDetail.delete')}
                                   </button>
                                 </div>
                               )}

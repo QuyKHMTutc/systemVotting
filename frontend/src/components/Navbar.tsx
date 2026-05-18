@@ -3,9 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link, NavLink, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search, Plus } from 'lucide-react';
+import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search, Plus, SquarePlus, KeyRound } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UpgradeModal from './payment/UpgradeModal';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -13,6 +14,7 @@ const Navbar = () => {
     const { t, i18n } = useTranslation();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(() => typeof window !== 'undefined' ? window.scrollY > 20 : false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -135,7 +137,7 @@ const Navbar = () => {
                         >
                             <Crown className="w-5 h-5 text-amber-500" />
                             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400">
-                                {user.plan && user.plan !== 'FREE' ? `Gói ${user.plan}` : 'Nâng cấp'}
+                                {user.plan && user.plan !== 'FREE' ? t('navbar.currentPlan', { plan: user.plan }) : t('navbar.upgradeBtn')}
                             </span>
                         </button>
                     )}
@@ -143,10 +145,10 @@ const Navbar = () => {
                     <div className="relative group items-center hidden sm:flex">
                         <Link
                             to="/create-poll"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold rounded-xl text-sm transition-all shadow-[0_4px_20px_rgba(236,72,153,0.4)] hover:shadow-[0_6px_30px_rgba(236,72,153,0.65)] hover:-translate-y-0.5 active:scale-[0.98] border border-white/10 whitespace-nowrap"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-200/80 hover:bg-slate-300/80 dark:bg-white/10 dark:hover:bg-white/15 text-slate-900 dark:text-white font-bold rounded-full text-sm transition-all active:scale-[0.98] whitespace-nowrap"
                         >
-                            <Plus className="w-4 h-4" />
-                            {i18n.language.startsWith('vi') ? 'Tạo' : 'Create'}
+                            <SquarePlus className="w-5 h-5" strokeWidth={2.5} />
+                            {t('navbar.create')}
                         </Link>
                         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
                             <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
@@ -198,19 +200,22 @@ const Navbar = () => {
                             <div className="text-slate-800 dark:text-white flex items-center gap-4 relative" ref={dropdownRef}>
                                 <div className="relative group flex items-center">
                                     <button
-                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    className="cursor-pointer flex items-center gap-2 sm:gap-3 hover:bg-slate-200/50 dark:hover:bg-white/5 pr-2 sm:pr-3 p-1.5 rounded-full sm:rounded-xl transition-colors text-left"
-                                    aria-label="Account"
-                                    aria-expanded={isDropdownOpen}
-                                >
-                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-2 ring-indigo-500/30 overflow-hidden bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/20">
-                                        {user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? (
-                                            <img src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} alt={user.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} />
-                                        ) : (
-                                            <span className="text-sm font-bold text-indigo-500 dark:text-indigo-300">{user?.username?.charAt(0).toUpperCase()}</span>
-                                        )}
-                                    </div>
-                                    <ChevronDown className={`hidden sm:block w-4 h-4 text-slate-500 dark:text-white/50 transition-transform duration-300 ml-1 ${isDropdownOpen ? 'rotate-180 text-slate-800 dark:text-white' : ''}`} />
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="relative cursor-pointer rounded-full hover:opacity-85 transition-opacity outline-none"
+                                        aria-label="Account"
+                                        aria-expanded={isDropdownOpen}
+                                    >
+                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 dark:bg-white/10 flex items-center justify-center border border-slate-200/50 dark:border-white/5">
+                                            {user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? (
+                                                <img src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} alt={user.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} />
+                                            ) : (
+                                                <span className="text-[15px] font-bold text-slate-500 dark:text-slate-300">{user?.username?.charAt(0).toUpperCase()}</span>
+                                            )}
+                                        </div>
+                                        {/* Facebook-style chevron badge */}
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-slate-200 dark:bg-slate-600 border-[1.5px] border-white dark:border-[#0a0818] flex items-center justify-center shadow-sm">
+                                            <ChevronDown className="w-[10px] h-[10px] text-slate-700 dark:text-slate-200" strokeWidth={3} />
+                                        </div>
                                     </button>
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
                                         <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
@@ -266,6 +271,13 @@ const Navbar = () => {
 
                                         <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent my-1.5 mx-2"></div>
 
+                                        <button onClick={() => { setIsDropdownOpen(false); setIsChangePasswordOpen(true); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all text-left">
+                                            <div className="w-8 h-8 rounded-full bg-rose-500/10 dark:bg-rose-500/20 flex items-center justify-center text-rose-500 dark:text-rose-400 shrink-0">
+                                                <KeyRound className="w-4 h-4" />
+                                            </div>
+                                            {t('navbar.changePassword')}
+                                        </button>
+
                                         <button onClick={() => { logout(); setIsDropdownOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all text-left">
                                             <div className="w-8 h-8 rounded-full bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center text-red-500 shrink-0">
                                                 <LogOut className="w-4 h-4" />
@@ -292,6 +304,10 @@ const Navbar = () => {
                 isOpen={isUpgradeModalOpen && !!user}
                 onClose={() => setIsUpgradeModalOpen(false)}
                 currentPlan={user?.plan || 'FREE'}
+            />
+            <ChangePasswordModal
+                isOpen={isChangePasswordOpen}
+                onClose={() => setIsChangePasswordOpen(false)}
             />
         </nav>
     );
