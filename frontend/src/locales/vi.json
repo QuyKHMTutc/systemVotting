@@ -113,6 +113,15 @@
     "openSidebar": "Mở menu điều hướng"
   },
   "pollDetail": {
+    "adminRole": "Quản trị viên",
+    "memberRole": "Thành viên cộng đồng",
+    "totalVotesText": "Tổng số phiếu",
+    "commentsCountText": "Số bình luận",
+    "statusText": "Trạng thái",
+    "viewMyProfile": "Trang cá nhân của tôi",
+    "creatorTitle": "Người tạo bình chọn",
+    "statisticsTitle": "Trạng thái bình chọn",
+    "trendingPollsTitle": "Bình chọn nổi bật khác",
     "active": "Đang diễn ra",
     "ended": "Đã kết thúc",
     "voters": "người bình chọn",

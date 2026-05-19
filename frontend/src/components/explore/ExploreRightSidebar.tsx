@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Hash, Trophy, PenSquare, BarChart3, Users, MessageCircle, Flame, TrendingUp, Search } from 'lucide-react';
+import { Trophy, PenSquare, BarChart3, Users, MessageCircle, Flame, TrendingUp, Search } from 'lucide-react';
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;

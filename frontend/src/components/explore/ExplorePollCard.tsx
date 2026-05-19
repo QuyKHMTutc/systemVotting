@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { Poll } from '../../services/poll.service';
 import {
   Users, MessageCircle, Share2, Check, Lock,
-  Trash2, MoreVertical, Scale, Clock, LogIn,
+  Trash2, MoreVertical, Scale, Clock,
 } from 'lucide-react';
 import { useState } from 'react';
 import { timeAgo } from '../../utils/date';

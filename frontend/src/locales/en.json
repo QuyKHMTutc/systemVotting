@@ -113,6 +113,15 @@
     "openSidebar": "Open navigation"
   },
   "pollDetail": {
+    "adminRole": "Administrator",
+    "memberRole": "Community Member",
+    "totalVotesText": "Total Votes",
+    "commentsCountText": "Comments Count",
+    "statusText": "Status",
+    "viewMyProfile": "My Profile",
+    "creatorTitle": "Poll Creator",
+    "statisticsTitle": "Poll Statistics",
+    "trendingPollsTitle": "Other Trending Polls",
     "active": "Active",
     "ended": "Ended",
     "voters": "voters",

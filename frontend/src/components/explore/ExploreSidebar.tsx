@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Compass, TrendingUp, Sparkles, Flame, Clock, Crown as CrownIcon, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Compass, TrendingUp, Sparkles, Clock, Crown as CrownIcon, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { categoryService, type Category } from '../../services/category.service';
 import { pollService } from '../../services/poll.service';
 
@@ -12,7 +12,7 @@ interface ExploreSidebarProps {
     onResetExplore: () => void;
     onScrollToTrending: () => void;
     onScrollToPollGrid: () => void;
-    onSetFilterStatus: (s: 'ALL' | 'ACTIVE' | 'ENDED') => void;
+    onSetFilterStatus: (s: string) => void;
     onSetFilterTag: (tag: string) => void;
     onSetFilterCategory: (slug: string) => void;
 }
@@ -21,7 +21,6 @@ export function ExploreSidebar({
     filterTag,
     filterCategory,
     filterStatus,
-    onResetExplore,
     onScrollToTrending,
     onScrollToPollGrid,
     onSetFilterStatus,

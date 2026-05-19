@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import type { Poll, PollPageResponse } from '../services/poll.service';
@@ -10,30 +10,44 @@ import { TrendingHeroCarousel } from '../components/explore/TrendingHeroCarousel
 import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import { ExploreRightSidebar } from '../components/explore/ExploreRightSidebar';
 import { ExplorePollCard } from '../components/explore/ExplorePollCard';
-import { Flame, Hash, Menu, Search } from 'lucide-react';
+import { Flame, Menu } from 'lucide-react';
 
-function formatCompact(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
-  return String(n);
+
+interface DashboardCache {
+  polls: Poll[];
+  pollPage: PollPageResponse | null;
+  page: number;
+  hasMore: boolean;
+  scrollY: number;
+  trendingPolls: Poll[];
+  filterStatus: string;
+  filterTag: string;
+  filterCategory: string;
+  searchQuery: string;
+  timestamp: number;
 }
 
+const CACHE_KEY = 'explore_scroll_cache';
+
+function saveDashboardCache(cache: DashboardCache) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.error('Failed to save dashboard cache', e);
+  }
+}
+
+function loadDashboardCache(): DashboardCache | null {
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+  return null;
+}
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const [pollPage, setPollPage] = useState<PollPageResponse | null>(null);
-  const [trendingPolls, setTrendingPolls] = useState<Poll[]>([]);
-  const [trendingLoading, setTrendingLoading] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [votedPollIds, setVotedPollIds] = useState<number[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useAuth();
-
-  const [page, setPage] = useState(0);
-  const [polls, setPolls] = useState<Poll[]>([]);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const filterStatus = (searchParams.get('filter') as 'ALL' | 'ACTIVE' | 'ENDED' | 'TRENDING' | 'NEWEST') || 'NEWEST';
@@ -41,7 +55,90 @@ const Dashboard = () => {
   const filterCategory = searchParams.get('category') || '';
   const searchQuery = searchParams.get('q') || '';
 
-  const setFilterStatus = (s: 'ALL' | 'ACTIVE' | 'ENDED' | 'TRENDING' | 'NEWEST') =>
+  // Load from sessionStorage once on mount evaluation
+  const initialCache = useRef(loadDashboardCache()).current;
+
+  const shouldRestore = useRef(
+    initialCache !== null &&
+    initialCache.filterStatus === filterStatus &&
+    initialCache.filterTag === filterTag &&
+    initialCache.filterCategory === filterCategory &&
+    initialCache.searchQuery === searchQuery &&
+    Date.now() - initialCache.timestamp < 1000 * 60 * 15 // 15 mins cache
+  ).current;
+
+  const [pollPage, setPollPage] = useState<PollPageResponse | null>(() => shouldRestore ? initialCache!.pollPage : null);
+  const [trendingPolls, setTrendingPolls] = useState<Poll[]>(() => shouldRestore ? initialCache!.trendingPolls : []);
+  const [trendingLoading, setTrendingLoading] = useState(() => !shouldRestore);
+  const [loading, setLoading] = useState(() => !shouldRestore);
+  const [error, setError] = useState('');
+  const [votedPollIds, setVotedPollIds] = useState<number[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const [page, setPage] = useState(() => shouldRestore ? initialCache!.page : 0);
+  const [polls, setPolls] = useState<Poll[]>(() => shouldRestore ? initialCache!.polls : []);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(() => shouldRestore ? initialCache!.hasMore : false);
+
+  const prevPageRef = useRef(page);
+  const prevFiltersRef = useRef({ searchQuery, filterTag, filterStatus, filterCategory });
+
+  // Save cache on unmount
+  const stateRef = useRef({ polls, pollPage, page, hasMore, trendingPolls, filterStatus, filterTag, filterCategory, searchQuery, scrollY: shouldRestore ? initialCache!.scrollY : 0 });
+  useEffect(() => {
+    stateRef.current = { ...stateRef.current, polls, pollPage, page, hasMore, trendingPolls, filterStatus, filterTag, filterCategory, searchQuery };
+  });
+
+  // Synchronous scroll restoration before browser paint
+  useLayoutEffect(() => {
+    if (shouldRestore && initialCache?.scrollY) {
+      window.scrollTo({ top: initialCache.scrollY, behavior: 'instant' });
+    }
+  }, []);
+
+  useEffect(() => {
+    let scrollTimeout: ReturnType<typeof setTimeout>;
+    const handleScroll = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        stateRef.current.scrollY = window.scrollY;
+        // Continuously save to cache to prevent losing scroll position on unmount jumps
+        saveDashboardCache({
+          ...stateRef.current,
+          scrollY: window.scrollY,
+          timestamp: Date.now()
+        });
+      }, 100);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    if (shouldRestore && initialCache?.scrollY) {
+      const targetY = initialCache.scrollY;
+      let attempts = 0;
+      
+      // Robust scroll loop: try scrolling multiple times as images/DOM might be rendering
+      const tryScroll = () => {
+        window.scrollTo({ top: targetY, behavior: 'instant' });
+        attempts++;
+        if (attempts < 20 && Math.abs(window.scrollY - targetY) > 5) {
+           setTimeout(tryScroll, 100);
+        }
+      };
+      
+      requestAnimationFrame(tryScroll);
+    }
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+      // We don't save here because the debounce already saved the last valid scroll!
+      // This mathematically prevents route-transition scroll-to-zero jumps from being saved.
+    };
+  }, []);
+
+
+
+  const setFilterStatus = (s: string) =>
     setSearchParams({ filter: s, tag: filterTag, ...(filterCategory ? { category: filterCategory } : {}), ...(searchQuery ? { q: searchQuery } : {}) }, { replace: true });
   const setFilterTag = (tag: string) =>
     setSearchParams({ filter: filterStatus, tag: tag || 'ALL', ...(searchQuery ? { q: searchQuery } : {}) }, { replace: true });
@@ -66,6 +163,7 @@ const Dashboard = () => {
   }, [user?.id]);
 
   useEffect(() => {
+    if (shouldRestore && initialCache!.trendingPolls.length > 0) return;
     let cancelled = false;
     setTrendingLoading(true);
     pollService.getTrendingPolls(8)
@@ -73,12 +171,27 @@ const Dashboard = () => {
       .catch(() => { if (!cancelled) setTrendingPolls([]); })
       .finally(() => { if (!cancelled) setTrendingLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [shouldRestore]);
 
   // Reset and fetch page 0 when filters change
   useEffect(() => {
+    const filtersChanged = 
+      prevFiltersRef.current.searchQuery !== searchQuery ||
+      prevFiltersRef.current.filterTag !== filterTag ||
+      prevFiltersRef.current.filterStatus !== filterStatus ||
+      prevFiltersRef.current.filterCategory !== filterCategory;
+    
+    prevFiltersRef.current = { searchQuery, filterTag, filterStatus, filterCategory };
+
+    // Skip fetch if this is a mount/remount and we are restoring from cache
+    if (!filtersChanged && shouldRestore) {
+      return;
+    }
+
     if (filterStatus === 'TRENDING') return; // Handled by trendingPolls locally
+
     setPage(0);
+    setLoading(true);
     const timer = setTimeout(() => {
       const backendStatus = filterStatus === 'NEWEST' ? 'ACTIVE' : filterStatus;
       const backendSortBy = filterStatus === 'NEWEST' ? 'createdAt' : filterStatus === 'ACTIVE' ? 'endTime' : 'createdAt';
@@ -86,16 +199,17 @@ const Dashboard = () => {
       fetchPolls(0, searchQuery, filterTag, backendStatus, backendSortBy, backendDirection, filterCategory, false);
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, filterTag, filterStatus, filterCategory]);
+  }, [searchQuery, filterTag, filterStatus, filterCategory, shouldRestore]);
 
   // Fetch page when page state increments (> 0)
   useEffect(() => {
-    if (page > 0) {
+    if (page > 0 && page > prevPageRef.current) {
       const backendStatus = filterStatus === 'NEWEST' ? 'ACTIVE' : filterStatus;
       const backendSortBy = filterStatus === 'NEWEST' ? 'createdAt' : filterStatus === 'ACTIVE' ? 'endTime' : 'createdAt';
       const backendDirection = filterStatus === 'NEWEST' ? 'desc' : filterStatus === 'ACTIVE' ? 'asc' : 'desc';
       fetchPolls(page, searchQuery, filterTag, backendStatus, backendSortBy, backendDirection, filterCategory, true);
     }
+    prevPageRef.current = page;
   }, [page]);
 
   const patchPoll = (list: Poll[], id: number, fn: (p: Poll) => Poll) => list.map((p) => (p.id === id ? fn(p) : p));
@@ -363,7 +477,7 @@ const Dashboard = () => {
                   ) : (
                     <div className="flex flex-col gap-3">
                       {trendingPolls.map((poll, idx) => (
-                        <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 40}ms` }}>
+                        <div key={poll.id} className={shouldRestore && idx < initialCache!.trendingPolls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.trendingPolls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
                           <ExplorePollCard
                             poll={poll}
                             hasVoted={votedPollIds.includes(poll.id)}
@@ -401,7 +515,7 @@ const Dashboard = () => {
                   <>
                     <div className="flex flex-col gap-3">
                       {polls.map((poll, idx) => (
-                        <div key={poll.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 40}ms` }}>
+                        <div key={poll.id} className={shouldRestore && idx < initialCache!.polls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.polls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
                           <ExplorePollCard
                             poll={poll}
                             hasVoted={votedPollIds.includes(poll.id)}

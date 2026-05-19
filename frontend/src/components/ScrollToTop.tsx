@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigationType } from 'react-router-dom';
 
 export default function ScrollToTop() {
   const [isVisible, setIsVisible] = useState(false);
   const location = useLocation();
+  const navType = useNavigationType();
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -19,10 +20,15 @@ export default function ScrollToTop() {
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
-  // Tuỳ chỉnh quan trọng: Khi chuyển trang (từ Khám phá về Trang chủ), tự động kéo cuộn lên trên cùng
+  // Tuỳ chỉnh quan trọng: Khi chuyển trang, tự động kéo cuộn lên trên cùng (ngoại trừ khi nhấn nút quay lại)
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    if (navType !== 'POP') {
+      const timer = setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, navType]);
 
   const scrollToTop = () => {
     window.scrollTo({

@@ -4,7 +4,7 @@ import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import { Check, X, Users, MessageCircle, BarChart3, Menu, ArrowLeft } from 'lucide-react';
+import { Check, Users, MessageCircle, BarChart3, Menu, ArrowLeft } from 'lucide-react';
 import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import PostActions from '../components/post/PostActions';
 import CommentList from '../components/comments/CommentList';
@@ -337,8 +337,8 @@ const PollDetail = () => {
     const fetchTrending = async () => {
       try {
         const response = await pollService.getTrendingPolls(5);
-        if (response.data) {
-          const filtered = response.data.filter((p: Poll) => p.id !== Number(id)).slice(0, 3);
+        if (response) {
+          const filtered = response.filter((p: Poll) => p.id !== Number(id)).slice(0, 3);
           setTrendingPolls(filtered);
         }
       } catch (err) {
@@ -823,7 +823,7 @@ const PollDetail = () => {
               <div className="flex-1 min-h-0 overflow-y-auto hover-scrollbar pr-2 pt-1 space-y-6">
 
                 <div className="p-5 rounded-2xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 shadow-sm">
-                  <h3 className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">
                     {t('pollDetail.creatorTitle', 'Người tạo bình chọn')}
                   </h3>
                   <div className="flex items-center gap-3">
@@ -844,7 +844,7 @@ const PollDetail = () => {
                         {poll.creator.username}
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-white/40 mt-1">
-                        {poll.creator.role === 'ADMIN' ? 'Administrator' : 'Community Member'}
+                        {(poll.creator as any).role === 'ADMIN' ? t('pollDetail.adminRole', 'Administrator') : t('pollDetail.memberRole', 'Community Member')}
                       </p>
                     </div>
                   </div>
@@ -859,7 +859,7 @@ const PollDetail = () => {
                 </div>
 
                 <div className="p-5 rounded-2xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 shadow-sm">
-                  <h3 className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">
                     {t('pollDetail.statisticsTitle', 'Trạng thái bình chọn')}
                   </h3>
                   <div className="space-y-3">
@@ -882,7 +882,7 @@ const PollDetail = () => {
 
                 {trendingPolls.length > 0 && (
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider px-1">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white px-1 mb-2">
                       {t('pollDetail.trendingPollsTitle', 'Bình chọn nổi bật khác')}
                     </h3>
                     <div className="space-y-3">

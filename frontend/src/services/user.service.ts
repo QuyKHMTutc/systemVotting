@@ -7,6 +7,9 @@ export interface UserDTO {
     email: string;
     role: string;
     locked: boolean;
+    createdAt?: string;
+    avatarUrl?: string;
+    plan?: string;
 }
 
 export type UserPageResponse = PageResponse<UserDTO>;
