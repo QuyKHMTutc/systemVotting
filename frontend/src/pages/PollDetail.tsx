@@ -416,48 +416,48 @@ const PollDetail = () => {
   const handleResetExplore = () => navigate('/explore');
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-slate-50 dark:bg-[#0b0a18] transition-colors">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0b0a18] transition-colors">
       <Navbar />
 
-      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col custom-scrollbar">
-        <div className="flex flex-col flex-1 max-w-[1700px] mx-auto px-4 xl:px-8 pb-4 w-full">
-          {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm shrink-0 mt-2">{error}</div>}
+      <div className="flex-1 w-full max-w-[1700px] mx-auto px-4 xl:px-8 pb-4 relative">
+        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm shrink-0 mt-2">{error}</div>}
 
-          <div className="flex flex-1 w-full items-start">
+        {/* LEFT SIDEBAR */}
+        <aside
+          className={`fixed z-[60] hidden xl:flex xl:flex-col top-[4.75rem] bottom-0 border-r border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-[#0b0a18] transition-[width] duration-300 ease-in-out overflow-visible ${sidebarOpen ? 'w-[240px]' : 'w-0'}`}
+          style={{ left: `max(1rem, calc((100vw - min(1700px, 100vw)) / 2 + 2rem))` }}
+        >
+          <div className="absolute -right-4 top-2 z-20 group">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border-2 border-slate-300 dark:border-white/30 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-400 dark:hover:border-violet-400/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+            >
+              <Menu className="w-4 h-4 transition-transform duration-300" />
+            </button>
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+              <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-y-4 border-r-4 border-transparent border-r-[#1e1e2d]"></div>
+              {sidebarOpen ? t('dashboard.collapseSidebar') : t('dashboard.openSidebar')}
+            </div>
+          </div>
 
-            {/* LEFT SIDEBAR */}
-            <aside className={`sticky top-4 h-[calc(100vh-120px)] z-[60] hidden xl:flex xl:flex-col shrink-0 transition-all duration-300 ease-in-out border-r border-slate-300 dark:border-white/20 ${sidebarOpen ? 'w-[240px] mr-4' : 'w-0 mr-6'}`}>
-              <div className="absolute -right-4 top-2 z-20 group">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border-2 border-slate-300 dark:border-white/30 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-400 dark:hover:border-violet-400/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
-                >
-                  <Menu className="w-4 h-4" />
-                </button>
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
-                  <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-y-4 border-r-4 border-transparent border-r-[#1e1e2d]"></div>
-                  {sidebarOpen ? t('dashboard.collapseSidebar') : t('dashboard.openSidebar')}
-                </div>
-              </div>
+          <div className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 pt-1 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible pointer-events-none'}`}>
+            <ExploreSidebar
+              filterTag={exploreState.filterTag}
+              filterCategory={exploreState.filterCategory}
+              filterStatus={exploreState.filterStatus}
+              onResetExplore={handleResetExplore}
+              onScrollToTrending={() => { }}
+              onScrollToPollGrid={() => { }}
+              onSetFilterStatus={handleSetFilterStatus}
+              onSetFilterTag={handleSetFilterTag}
+              onSetFilterCategory={handleSetFilterCategory}
+            />
+          </div>
+        </aside>
 
-              <div className={`flex-1 overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible'}`}>
-                <ExploreSidebar
-                  filterTag={exploreState.filterTag}
-                  filterCategory={exploreState.filterCategory}
-                  filterStatus={exploreState.filterStatus}
-                  onResetExplore={handleResetExplore}
-                  onScrollToTrending={() => { }}
-                  onScrollToPollGrid={() => { }}
-                  onSetFilterStatus={handleSetFilterStatus}
-                  onSetFilterTag={handleSetFilterTag}
-                  onSetFilterCategory={handleSetFilterCategory}
-                />
-              </div>
-            </aside>
-
-            {/* MAIN CONTENT AREA */}
-            <main className="flex-grow min-w-0 pt-2 lg:px-4 flex justify-center">
-              <div className="flex items-start gap-4 w-full max-w-[820px]">
+        {/* MAIN CONTENT AREA */}
+        <main className={`min-w-0 flex flex-col items-center pt-2 lg:px-4 xl:mr-[calc(296px+0.5rem)] ${sidebarOpen ? 'xl:ml-[calc(240px+1rem)]' : 'xl:ml-6'}`}>
+          <div className="flex items-start gap-4 w-full max-w-[820px]">
 
                 {/* Back Button (Left side) */}
                 <div className="hidden md:flex pt-0 sticky top-4 z-50">
@@ -817,8 +817,10 @@ const PollDetail = () => {
             </main>
 
             {/* RIGHT SIDEBAR */}
-            <aside className="sticky top-4 h-[calc(100vh-120px)] hidden xl:flex xl:flex-col w-[296px] shrink-0 ml-4 pl-4 border-l border-slate-300 dark:border-white/20">
-              <div className="flex-1 overflow-y-auto hover-scrollbar pr-2 space-y-6">
+            <aside className="fixed z-[50] hidden xl:flex xl:flex-col top-[4.75rem] bottom-0 w-[296px] border-l border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-[#0b0a18] pl-4"
+              style={{ right: `max(1rem, calc((100vw - min(1700px, 100vw)) / 2 + 2rem))` }}
+            >
+              <div className="flex-1 min-h-0 overflow-y-auto hover-scrollbar pr-2 pt-1 space-y-6">
 
                 <div className="p-5 rounded-2xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 shadow-sm">
                   <h3 className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider mb-4">
@@ -909,9 +911,6 @@ const PollDetail = () => {
 
               </div>
             </aside>
-
-          </div>
-        </div>
       </div>
 
       {poll && (

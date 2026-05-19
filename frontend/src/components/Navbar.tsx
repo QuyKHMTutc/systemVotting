@@ -57,7 +57,7 @@ const Navbar = () => {
     }, [isUpgradeModalOpen]);
 
     return (
-        <nav className={`sticky top-0 z-50 py-3 sm:py-4 mb-2 transition-all duration-300 bg-slate-50 dark:bg-[#0b0a18] ${isScrolled
+        <nav className={`sticky top-0 z-[100] py-3 sm:py-4 mb-2 transition-all duration-300 bg-slate-50 dark:bg-[#0b0a18] ${isScrolled
             ? 'shadow-sm border-b border-slate-200 dark:border-white/10'
             : 'border-b border-transparent'
             }`}>
