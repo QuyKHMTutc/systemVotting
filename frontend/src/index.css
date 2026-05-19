@@ -17,8 +17,8 @@
   --glass-highlight: rgba(255, 255, 255, 0.8);
   --glass-shadow: 0 10px 40px -10px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.4) inset;
 
-  --text-main: #0f172a;
-  --text-muted: #475569;
+  --text-main: #020617;
+  --text-muted: #334155;
 
   --scrollbar-track: rgba(0,0,0,0.03);
   --scrollbar-thumb: rgba(0,0,0,0.2);
@@ -37,8 +37,8 @@
   --glass-highlight: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 10px 40px -10px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05) inset;
 
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-main: #ffffff;
+  --text-muted: #cbd5e1;
 
   --scrollbar-track: rgba(255,255,255,0.02);
   --scrollbar-thumb: rgba(255,255,255,0.15);
@@ -235,7 +235,7 @@ h1, h2, h3, h4, h5, h6, .font-heading,
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 .hover-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 2px;
   background: transparent;
 }
 .hover-scrollbar::-webkit-scrollbar-track {
@@ -252,13 +252,23 @@ h1, h2, h3, h4, h5, h6, .font-heading,
   background: var(--scrollbar-thumb-hover);
 }
 
-/* Custom scrollbar for comments */
+/* Custom scrollbar for main page content — flush with viewport right edge */
+.custom-scrollbar {
+  scrollbar-gutter: stable;
+}
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin-right: 0;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Animated gradient border for PLUS plan */

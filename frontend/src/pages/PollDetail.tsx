@@ -4,7 +4,8 @@ import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import { Check, X, Users, MessageCircle, BarChart3 } from 'lucide-react';
+import { Check, X, Users, MessageCircle, BarChart3, Menu, ArrowLeft } from 'lucide-react';
+import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import PostActions from '../components/post/PostActions';
 import CommentList from '../components/comments/CommentList';
 import CommentInput from '../components/comments/CommentInput';
@@ -33,6 +34,19 @@ const PollDetail = () => {
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
+  const [exploreState, setExploreState] = useState({ filterStatus: 'NEWEST', filterTag: 'ALL', filterCategory: '' });
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('exploreState') || '{}');
+      setExploreState({
+        filterStatus: saved.filterStatus || 'NEWEST',
+        filterTag: saved.filterTag || 'ALL',
+        filterCategory: saved.filterCategory || ''
+      });
+    } catch (e) { }
+  }, []);
+
   const [showComments, setShowComments] = useState(false);
   const [barAnimated, setBarAnimated] = useState(false);
 
@@ -43,6 +57,8 @@ const PollDetail = () => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [trendingPolls, setTrendingPolls] = useState<Poll[]>([]);
 
   const [identityLocked, setIdentityLocked] = useState(false);
   const [lockedIsAnonymous, setLockedIsAnonymous] = useState(false);
@@ -317,6 +333,21 @@ const PollDetail = () => {
     setBarAnimated(false);
   }, [hasVoted, poll]);
 
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const response = await pollService.getTrendingPolls(5);
+        if (response.data) {
+          const filtered = response.data.filter((p: Poll) => p.id !== Number(id)).slice(0, 3);
+          setTrendingPolls(filtered);
+        }
+      } catch (err) {
+        console.error('Failed to fetch trending polls:', err);
+      }
+    };
+    fetchTrending();
+  }, [id]);
+
   if (loading) {
     return (
       <div className="min-h-screen pb-12">
@@ -379,370 +410,509 @@ const PollDetail = () => {
   // but must NOT reveal results to users who haven't voted yet.
   const showResults = hasVoted || !isActive || isCreator;
 
+  const handleSetFilterStatus = (status: string) => navigate(`/explore?filter=${status}`);
+  const handleSetFilterTag = (tag: string) => navigate(`/explore?tag=${tag}`);
+  const handleSetFilterCategory = (category: string) => navigate(`/explore?category=${category}`);
+  const handleResetExplore = () => navigate('/explore');
+
   return (
-    <div className="min-h-screen pb-12">
+    <div className="h-screen overflow-hidden flex flex-col bg-slate-50 dark:bg-[#0b0a18] transition-colors">
       <Navbar />
 
-      <main className="max-w-[720px] mx-auto px-4 sm:px-6 relative">
-        <button
-          onClick={() => navigate(-1)}
-          className="absolute -top-2 right-0 z-20 p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-full text-slate-600 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm dark:shadow-none"
-          title="Back"
-        >
-          <X className="w-5 h-5" />
-        </button>
+      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col custom-scrollbar">
+        <div className="flex flex-col flex-1 max-w-[1700px] mx-auto px-4 xl:px-8 pb-4 w-full">
+          {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm shrink-0 mt-2">{error}</div>}
 
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 animate-modal-enter shadow-2xl shadow-slate-200/50 dark:shadow-black/30 bg-white/80 dark:bg-transparent">
-          {/* Header */}
-          <div className="p-6 sm:p-8 pb-6 border-b border-slate-200 dark:border-white/10">
-            {/* Top Row: Category on left, Status on right */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                {/* Category Badge */}
-                {poll.category && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/30">
-                    {poll.category.icon && <span>{poll.category.icon}</span>}
-                    {poll.category.name}
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex items-center">
-                {/* Status Badge */}
-                <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${isActive
-                      ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
-                      : 'bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
-                    }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 dark:bg-emerald-400 animate-pulse' : 'bg-rose-500 dark:bg-rose-400'}`} />
-                  {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
-                </span>
-              </div>
-            </div>
+          <div className="flex flex-1 w-full items-start">
 
-            {/* Title */}
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">{poll.title}</h1>
-            
-            {/* Description */}
-            {poll.description?.trim() && (
-              <p className="text-slate-600 dark:text-white/60 text-[15px] mb-4 leading-relaxed">
-                {poll.description}
-              </p>
-            )}
-
-            {/* Tags (moved below description) */}
-            {poll.tags && poll.tags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 mb-5">
-                {poll.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getTagPillClass(tag)}`}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
-                  {poll.creator.avatarUrl && poll.creator.avatarUrl !== 'null' && poll.creator.avatarUrl.trim() !== '' ? (
-                    <img
-                      src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
-                      alt={poll.creator.username}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
-                    />
-                  ) : (
-                    <span>{poll.creator.username.charAt(0).toUpperCase()}</span>
-                  )}
-                </div>
-                <div>
-                  <span className="text-slate-800 dark:text-white/90 font-medium block">{poll.creator.username}</span>
-                  <span className="text-slate-500 dark:text-white/50 text-sm">{timeAgo(poll.createdAt)} · {endsIn(poll.endTime)}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
+            {/* LEFT SIDEBAR */}
+            <aside className={`sticky top-4 h-[calc(100vh-120px)] z-[60] hidden xl:flex xl:flex-col shrink-0 transition-all duration-300 ease-in-out border-r border-slate-300 dark:border-white/20 ${sidebarOpen ? 'w-[240px] mr-4' : 'w-0 mr-6'}`}>
+              <div className="absolute -right-4 top-2 z-20 group">
                 <button
-                  onClick={() => setIsLiveChartOpen(true)}
-                  className="flex items-center gap-2 group px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-semibold rounded-xl border border-red-500/30 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] shrink-0"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border-2 border-slate-300 dark:border-white/30 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-400 dark:hover:border-violet-400/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
                 >
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                  <span className="text-sm">{t('pollDetail.viewLive')}</span>
+                  <Menu className="w-4 h-4" />
                 </button>
-              </div>
-            </div>
-
-            {/* Stats row */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-white/60 mt-5 pt-4 border-t border-slate-200 dark:border-white/5">
-              <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
-                <span className="text-slate-800 dark:text-white font-semibold">{totalVotes}</span> {t('pollDetail.voters')}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <MessageCircle className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
-                <span className="text-slate-800 dark:text-white font-semibold">
-                  {totalAllComments || poll?.commentCount || 0}
-                </span>{' '}
-                {t('pollDetail.comments')}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
-                <span className="text-slate-800 dark:text-white font-semibold">{poll.options.length}</span> {t('pollDetail.options')}
-              </span>
-              {hasWeightedVoting && (
-                <div className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold"
-                  style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(234,88,12,0.1))', border: '1px solid rgba(245,158,11,0.35)' }}>
-                  <span style={{ fontSize: '13px' }}>⚖️</span>
-                  <span className="text-amber-600 dark:text-amber-400">GK {judgeWeight}%</span>
-                  <span className="text-slate-400 dark:text-white/30 mx-0.5">vs</span>
-                  <span className="text-indigo-600 dark:text-indigo-400">KG {audienceWeight}%</span>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+                  <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-y-4 border-r-4 border-transparent border-r-[#1e1e2d]"></div>
+                  {sidebarOpen ? t('dashboard.collapseSidebar') : t('dashboard.openSidebar')}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Error */}
-          {error && (
-            <div className="mx-6 sm:mx-8 mb-4 p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-sm">
-              {error}
-            </div>
-          )}
+              <div className={`flex-1 overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible'}`}>
+                <ExploreSidebar
+                  filterTag={exploreState.filterTag}
+                  filterCategory={exploreState.filterCategory}
+                  filterStatus={exploreState.filterStatus}
+                  onResetExplore={handleResetExplore}
+                  onScrollToTrending={() => { }}
+                  onScrollToPollGrid={() => { }}
+                  onSetFilterStatus={handleSetFilterStatus}
+                  onSetFilterTag={handleSetFilterTag}
+                  onSetFilterCategory={handleSetFilterCategory}
+                />
+              </div>
+            </aside>
 
-          {/* Vote Options */}
-          <div className="px-6 sm:px-8 py-6 space-y-3">
-            {poll.options.map((option) => {
-              const weightedScore = getWeightedScore(option);
-              const rawPercentage = totalVotes > 0 ? Math.round((option.voteCount / totalVotes) * 100) : 0;
-              const displayPct = Math.round(weightedScore);
-              const isSelected = selectedOption === option.id;
-              const judgeVotesPct = totalJudgeVotes > 0 ? Math.round(((option.judgeCount ?? 0) / totalJudgeVotes) * 100) : 0;
-              const audienceVotesPct = totalAudienceVotes > 0 ? Math.round(((option.audienceCount ?? 0) / totalAudienceVotes) * 100) : 0;
-              const judgeContrib = Math.round((judgeVotesPct / 100) * judgeWeight);
-              const audienceContrib = Math.round((audienceVotesPct / 100) * audienceWeight);
+            {/* MAIN CONTENT AREA */}
+            <main className="flex-grow min-w-0 pt-2 lg:px-4 flex justify-center">
+              <div className="flex items-start gap-4 w-full max-w-[820px]">
 
-              const canSelect = isActive && !hasVoted && !isCreator;
+                {/* Back Button (Left side) */}
+                <div className="hidden md:flex pt-0 sticky top-4 z-50">
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="group w-11 h-11 flex items-center justify-center bg-white dark:bg-[#13112a] hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 rounded-full text-slate-600 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm relative shrink-0"
+                  >
+                    <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
+                      <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-y-4 border-r-4 border-transparent border-r-[#1e1e2d]"></div>
+                      {t('pollDetail.back', 'Quay lại')}
+                    </div>
+                  </button>
+                </div>
 
-              return (
-                <div
-                  key={option.id}
-                  onClick={() => canSelect && setSelectedOption(option.id)}
-                  className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${canSelect
-                      ? 'cursor-pointer hover:shadow-md dark:hover:shadow-black/30'
-                      : 'cursor-default'
-                    } ${isSelected
-                      ? 'border-indigo-500 ring-1 ring-indigo-500 dark:ring-0'
-                      : 'border-slate-200 dark:border-white/10'
-                    }`}
-                  style={isSelected
-                    ? { background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.05))' }
-                    : undefined
-                  }
-                >
-                  {/* Main row */}
-                  <div className="relative flex items-center gap-3 px-4 py-3.5">
-                    {/* Selection radio */}
-                    {canSelect && (
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-white/30'
-                        }`}>
-                        {isSelected && (
-                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    )}
+                <div className="flex-1 min-w-0 space-y-4">
 
-                    {/* Option text */}
-                    <span className="flex-1 text-slate-800 dark:text-white font-medium truncate">{option.text}</span>
-
-                    {/* Score badge */}
-                    {showResults && (
-                      <div className="shrink-0 text-right">
-                        {hasWeightedVoting ? (
-                          <div className="flex flex-col items-end">
-                            <span className="text-xl font-black leading-none"
-                              style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                              {displayPct}%
-                            </span>
-                            <span className="text-[10px] text-slate-400 dark:text-white/30 mt-0.5">trọng số</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-end">
-                            <span className="text-lg font-bold text-slate-800 dark:text-white">{rawPercentage}%</span>
-                            <span className="text-[10px] text-slate-400 dark:text-white/30">{option.voteCount} phiếu</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                  {/* Mobile Back Button (Visible only on smaller screens) */}
+                  <div className="md:hidden flex items-center mb-1">
+                    <button
+                      onClick={() => navigate(-1)}
+                      className="group flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#13112a] hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-white/80 hover:text-slate-900 dark:hover:text-white font-semibold text-sm transition-all shadow-sm"
+                    >
+                      <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                      {t('pollDetail.back', 'Quay lại')}
+                    </button>
                   </div>
 
-                  {/* Progress bars */}
-                  {showResults && !hasWeightedVoting && (
-                    <div className="h-1 mx-4 mb-3 rounded-full overflow-hidden bg-slate-100 dark:bg-white/5">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-700 ease-out"
-                        style={{ width: barAnimated ? `${rawPercentage}%` : '0%' }}
-                      />
-                    </div>
-                  )}
+                  <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 animate-modal-enter shadow-2xl shadow-slate-200/50 dark:shadow-black/30 bg-white/80 dark:bg-transparent">
+                    {/* Header */}
+                    <div className="p-6 sm:p-8 pb-6 border-b border-slate-200 dark:border-white/10">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          {poll.category && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/30">
+                              {poll.category.icon && <span>{poll.category.icon}</span>}
+                              {poll.category.name}
+                            </span>
+                          )}
+                        </div>
 
-                  {/* Weighted split bar */}
-                  {showResults && hasWeightedVoting && (
-                    <div className="px-4 pb-4 space-y-2">
-                      {/* Combined stacked bar */}
-                      <div className="relative h-5 rounded-lg overflow-hidden bg-slate-100 dark:bg-white/5 flex">
-                        {/* Judge segment */}
-                        <div
-                          className="h-full transition-all duration-700 ease-out relative group/judge"
-                          style={{
-                            width: barAnimated ? `${judgeContrib}%` : '0%',
-                            background: 'linear-gradient(90deg, #f59e0b, #f97316)',
-                            minWidth: judgeContrib > 0 && barAnimated ? '2px' : '0'
-                          }}
-                        />
-                        {/* Audience segment */}
-                        <div
-                          className="h-full transition-all duration-700 ease-out"
-                          style={{
-                            width: barAnimated ? `${audienceContrib}%` : '0%',
-                            background: 'linear-gradient(90deg, #6366f1, #a855f7)',
-                            transitionDelay: '150ms'
-                          }}
-                        />
-                      </div>
-
-                      {/* Legend row */}
-                      <div className="flex items-center justify-between text-[11px]">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1">
-                            <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#f59e0b,#f97316)' }} />
-                            <span className="text-amber-600 dark:text-amber-400 font-medium">⚖️ GK</span>
-                            <span className="text-slate-500 dark:text-white/40">{judgeVotesPct}% trong nhóm</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)' }} />
-                            <span className="text-indigo-600 dark:text-indigo-400 font-medium">👥 KG</span>
-                            <span className="text-slate-500 dark:text-white/40">{audienceVotesPct}% trong nhóm</span>
+                        <div className="flex items-center">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${isActive
+                              ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
+                              : 'bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
+                              }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 dark:bg-emerald-400 animate-pulse' : 'bg-rose-500 dark:bg-rose-400'}`} />
+                            {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
                           </span>
                         </div>
-                        <span className="text-slate-400 dark:text-white/25">
-                          {option.judgeCount ?? 0} + {option.audienceCount ?? 0} phiếu
+                      </div>
+
+                      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">{poll.title}</h1>
+
+                      {poll.description?.trim() && (
+                        <p className="text-slate-600 dark:text-white/60 text-[15px] mb-4 leading-relaxed">
+                          {poll.description}
+                        </p>
+                      )}
+
+                      {poll.tags && poll.tags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 mb-5">
+                          {poll.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getTagPillClass(tag)}`}
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
+                            {poll.creator.avatarUrl && poll.creator.avatarUrl !== 'null' && poll.creator.avatarUrl.trim() !== '' ? (
+                              <img
+                                src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
+                                alt={poll.creator.username}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                              />
+                            ) : (
+                              <span>{poll.creator.username.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-slate-800 dark:text-white/90 font-medium block">{poll.creator.username}</span>
+                            <span className="text-slate-500 dark:text-white/50 text-sm">{timeAgo(poll.createdAt)} · {endsIn(poll.endTime)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setIsLiveChartOpen(true)}
+                            className="flex items-center gap-2 group px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-semibold rounded-xl border border-red-500/30 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] shrink-0"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                            <span className="text-sm">{t('pollDetail.viewLive')}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-white/60 mt-5 pt-4 border-t border-slate-200 dark:border-white/5">
+                        <span className="flex items-center gap-1.5">
+                          <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
+                          <span className="text-slate-800 dark:text-white font-semibold">{totalVotes}</span> {t('pollDetail.voters')}
                         </span>
+                        <span className="flex items-center gap-1.5">
+                          <MessageCircle className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
+                          <span className="text-slate-800 dark:text-white font-semibold">
+                            {totalAllComments || poll?.commentCount || 0}
+                          </span>{' '}
+                          {t('pollDetail.comments')}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <BarChart3 className="w-4 h-4 text-indigo-500 dark:text-indigo-400/80" />
+                          <span className="text-slate-800 dark:text-white font-semibold">{poll.options.length}</span> {t('pollDetail.options')}
+                        </span>
+                        {hasWeightedVoting && (
+                          <div className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold"
+                            style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(234,88,12,0.1))', border: '1px solid rgba(245,158,11,0.35)' }}>
+                            <span style={{ fontSize: '13px' }}>⚖️</span>
+                            <span className="text-amber-600 dark:text-amber-400">GK {judgeWeight}%</span>
+                            <span className="text-slate-400 dark:text-white/30 mx-0.5">vs</span>
+                            <span className="text-indigo-600 dark:text-indigo-400">KG {audienceWeight}%</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
 
-          {/* Vote Button / Status */}
-          {/* Vote Button / Status */}
-          <div className="px-6 sm:px-8 py-6 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-slate-600 dark:text-white/70 text-sm">
-              {t('pollDetail.totalVotes')} <span className="text-slate-900 dark:text-white font-semibold">{totalVotes}</span>
-            </div>
-
-            {/* Creator cannot vote in their own poll */}
-            {isCreator ? (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border"
-                style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.3)' }}>
-                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span className="text-indigo-500 dark:text-indigo-400 font-medium text-sm">{t('pollDetail.creatorView')}</span>
-              </div>
-            ) : (
-              <>
-                {isActive && !hasVoted && (
-                  <button
-                    onClick={handleVote}
-                    disabled={(user && !selectedOption) || voting}
-                    className={`w-full sm:w-auto px-8 py-3.5 font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:!shadow-none ${!user ? 'bg-[#00c853] hover:bg-[#00e676] text-white' : 'btn-primary text-white disabled:!bg-gray-600'}`}
-                  >
-                    {voting ? t('pollDetail.submitVote') + '...' : !user ? t('pollDetail.loginToVote') : t('pollDetail.submitVote')}
-                  </button>
-                )}
-                {hasVoted && (
-                  <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/30">
-                    <Check className="w-5 h-5" />
-                    <span className="font-medium">{t('pollDetail.youVoted')}</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Post Actions */}
-          <PostActions
-            commentsCount={totalAllComments || poll?.commentCount || 0}
-            onCommentClick={() => setShowComments(!showComments)}
-            onShareClick={handleShare}
-            hasCopied={copied}
-          />
-
-          {/* Comments */}
-          {showComments && (
-            <div className="border-t border-slate-200 dark:border-white/10 flex flex-col bg-slate-50 dark:bg-black/20">
-              <div className="flex-1 overflow-y-auto custom-scrollbar max-h-[480px] p-4 sm:p-6">
-                {loadingComments && comments.length === 0 ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent" />
-                  </div>
-                ) : comments.length === 0 ? (
-                  <p className="text-center text-slate-500 dark:text-white/50 py-8">{t('pollDetail.noComments')}</p>
-                ) : (
-                  <>
-                    <CommentList
-                      comments={comments}
-                      onReplySubmit={handleReplySubmit}
-                      identityLocked={identityLocked}
-                      lockedIsAnonymous={lockedIsAnonymous}
-                      highlightCommentId={highlightCommentId}
-                      judgeIds={poll.judgeIds || []}
-                      onDelete={handleDeleteComment}
-                    />
-                    {hasMoreComments && (
-                      <div className="flex justify-center pt-4">
-                        <button
-                          type="button"
-                          onClick={() => void loadMoreComments()}
-                          disabled={loadingComments}
-                          className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-800 dark:text-white text-sm disabled:opacity-50"
-                        >
-                          {loadingComments ? '…' : t('pollDetail.loadMoreComments')}
-                        </button>
+                    {error && (
+                      <div className="mx-6 sm:mx-8 mb-4 p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-sm">
+                        {error}
                       </div>
                     )}
-                  </>
-                )}
-              </div>
-              <div className="shrink-0 p-4 sm:p-6 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-transparent">
-                {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
-                {!user ? (
-                  <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
-                    <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
-                      {t('pollDetail.loginToComment')}
-                    </Link>
+
+                    <div className="px-6 sm:px-8 py-6 space-y-3">
+                      {poll.options.map((option) => {
+                        const weightedScore = getWeightedScore(option);
+                        const rawPercentage = totalVotes > 0 ? Math.round((option.voteCount / totalVotes) * 100) : 0;
+                        const displayPct = Math.round(weightedScore);
+                        const isSelected = selectedOption === option.id;
+                        const judgeVotesPct = totalJudgeVotes > 0 ? Math.round(((option.judgeCount ?? 0) / totalJudgeVotes) * 100) : 0;
+                        const audienceVotesPct = totalAudienceVotes > 0 ? Math.round(((option.audienceCount ?? 0) / totalAudienceVotes) * 100) : 0;
+                        const judgeContrib = Math.round((judgeVotesPct / 100) * judgeWeight);
+                        const audienceContrib = Math.round((audienceVotesPct / 100) * audienceWeight);
+
+                        const canSelect = isActive && !hasVoted && !isCreator;
+
+                        return (
+                          <div
+                            key={option.id}
+                            onClick={() => canSelect && setSelectedOption(option.id)}
+                            className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${canSelect
+                              ? 'cursor-pointer hover:shadow-md dark:hover:shadow-black/30'
+                              : 'cursor-default'
+                              } ${isSelected
+                                ? 'border-indigo-500 ring-1 ring-indigo-500 dark:ring-0'
+                                : 'border-slate-200 dark:border-white/10'
+                              }`}
+                            style={isSelected
+                              ? { background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.05))' }
+                              : undefined
+                            }
+                          >
+                            <div className="relative flex items-center gap-3 px-4 py-3.5">
+                              {canSelect && (
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-white/30'
+                                  }`}>
+                                  {isSelected && (
+                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </div>
+                              )}
+
+                              <span className="flex-1 text-slate-800 dark:text-white font-medium truncate">{option.text}</span>
+
+                              {showResults && (
+                                <div className="shrink-0 text-right">
+                                  {hasWeightedVoting ? (
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-xl font-black leading-none"
+                                        style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                        {displayPct}%
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 dark:text-white/30 mt-0.5">trọng số</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-lg font-bold text-slate-800 dark:text-white">{rawPercentage}%</span>
+                                      <span className="text-[10px] text-slate-400 dark:text-white/30">{option.voteCount} phiếu</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {showResults && !hasWeightedVoting && (
+                              <div className="h-1 mx-4 mb-3 rounded-full overflow-hidden bg-slate-100 dark:bg-white/5">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-700 ease-out"
+                                  style={{ width: barAnimated ? `${rawPercentage}%` : '0%' }}
+                                />
+                              </div>
+                            )}
+
+                            {showResults && hasWeightedVoting && (
+                              <div className="px-4 pb-4 space-y-2">
+                                <div className="relative h-5 rounded-lg overflow-hidden bg-slate-100 dark:bg-white/5 flex">
+                                  <div
+                                    className="h-full transition-all duration-700 ease-out relative group/judge"
+                                    style={{
+                                      width: barAnimated ? `${judgeContrib}%` : '0%',
+                                      background: 'linear-gradient(90deg, #f59e0b, #f97316)',
+                                      minWidth: judgeContrib > 0 && barAnimated ? '2px' : '0'
+                                    }}
+                                  />
+                                  <div
+                                    className="h-full transition-all duration-700 ease-out"
+                                    style={{
+                                      width: barAnimated ? `${audienceContrib}%` : '0%',
+                                      background: 'linear-gradient(90deg, #6366f1, #a855f7)',
+                                      transitionDelay: '150ms'
+                                    }}
+                                  />
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <div className="flex items-center gap-3">
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#f59e0b,#f97316)' }} />
+                                      <span className="text-amber-600 dark:text-amber-400 font-medium">⚖️ GK</span>
+                                      <span className="text-slate-500 dark:text-white/40">{judgeVotesPct}% trong nhóm</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)' }} />
+                                      <span className="text-indigo-600 dark:text-indigo-400 font-medium">👥 KG</span>
+                                      <span className="text-slate-500 dark:text-white/40">{audienceVotesPct}% trong nhóm</span>
+                                    </span>
+                                  </div>
+                                  <span className="text-slate-400 dark:text-white/25">
+                                    {option.judgeCount ?? 0} + {option.audienceCount ?? 0} phiếu
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="px-6 sm:px-8 py-6 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+                      <div className="text-slate-600 dark:text-white/70 text-sm">
+                        {t('pollDetail.totalVotes')} <span className="text-slate-900 dark:text-white font-semibold">{totalVotes}</span>
+                      </div>
+
+                      {isCreator ? (
+                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border"
+                          style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.3)' }}>
+                          <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="text-indigo-500 dark:text-indigo-400 font-medium text-sm">{t('pollDetail.creatorView')}</span>
+                        </div>
+                      ) : (
+                        <>
+                          {isActive && !hasVoted && (
+                            <button
+                              onClick={handleVote}
+                              disabled={(user && !selectedOption) || voting}
+                              className={`w-full sm:w-auto px-8 py-3.5 font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:!shadow-none ${!user ? 'bg-[#00c853] hover:bg-[#00e676] text-white' : 'btn-primary text-white disabled:!bg-gray-600'}`}
+                            >
+                              {voting ? t('pollDetail.submitVote') + '...' : !user ? t('pollDetail.loginToVote') : t('pollDetail.submitVote')}
+                            </button>
+                          )}
+                          {hasVoted && (
+                            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/30">
+                              <Check className="w-5 h-5" />
+                              <span className="font-medium">{t('pollDetail.youVoted')}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <PostActions
+                      commentsCount={totalAllComments || poll?.commentCount || 0}
+                      onCommentClick={() => setShowComments(!showComments)}
+                      onShareClick={handleShare}
+                      hasCopied={copied}
+                    />
+
+                    {showComments && (
+                      <div className="border-t border-slate-200 dark:border-white/10 flex flex-col bg-slate-50 dark:bg-black/20">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar max-h-[480px] p-4 sm:p-6">
+                          {loadingComments && comments.length === 0 ? (
+                            <div className="flex justify-center py-8">
+                              <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent" />
+                            </div>
+                          ) : comments.length === 0 ? (
+                            <p className="text-center text-slate-500 dark:text-white/50 py-8">{t('pollDetail.noComments')}</p>
+                          ) : (
+                            <>
+                              <CommentList
+                                comments={comments}
+                                onReplySubmit={handleReplySubmit}
+                                identityLocked={identityLocked}
+                                lockedIsAnonymous={lockedIsAnonymous}
+                                highlightCommentId={highlightCommentId}
+                                judgeIds={poll.judgeIds || []}
+                                onDelete={handleDeleteComment}
+                              />
+                              {hasMoreComments && (
+                                <div className="flex justify-center pt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => void loadMoreComments()}
+                                    disabled={loadingComments}
+                                    className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-800 dark:text-white text-sm disabled:opacity-50"
+                                  >
+                                    {loadingComments ? '…' : t('pollDetail.loadMoreComments')}
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <div className="shrink-0 p-4 sm:p-6 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-transparent">
+                          {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
+                          {!user ? (
+                            <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+                              <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
+                                {t('pollDetail.loginToComment')}
+                              </Link>
+                            </div>
+                          ) : (
+                            <CommentInput
+                              onSubmit={handleCommentSubmit}
+                              placeholder={t('pollDetail.writeComment')}
+                              avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
+                              username={user?.username}
+                              identityLocked={identityLocked}
+                              lockedIsAnonymous={lockedIsAnonymous}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <CommentInput
-                    onSubmit={handleCommentSubmit}
-                    placeholder={t('pollDetail.writeComment')}
-                    avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
-                    username={user?.username}
-                    identityLocked={identityLocked}
-                    lockedIsAnonymous={lockedIsAnonymous}
-                  />
-                )}
+                </div>
               </div>
-            </div>
-          )}
+            </main>
+
+            {/* RIGHT SIDEBAR */}
+            <aside className="sticky top-4 h-[calc(100vh-120px)] hidden xl:flex xl:flex-col w-[296px] shrink-0 ml-4 pl-4 border-l border-slate-300 dark:border-white/20">
+              <div className="flex-1 overflow-y-auto hover-scrollbar pr-2 space-y-6">
+
+                <div className="p-5 rounded-2xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider mb-4">
+                    {t('pollDetail.creatorTitle', 'Người tạo bình chọn')}
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold ring-2 ring-white/10 shadow-md overflow-hidden shrink-0">
+                      {poll.creator.avatarUrl && poll.creator.avatarUrl !== 'null' && poll.creator.avatarUrl.trim() !== '' ? (
+                        <img
+                          src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
+                          alt={poll.creator.username}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                        />
+                      ) : (
+                        <span>{poll.creator.username.charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white text-base leading-tight">
+                        {poll.creator.username}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-white/40 mt-1">
+                        {poll.creator.role === 'ADMIN' ? 'Administrator' : 'Community Member'}
+                      </p>
+                    </div>
+                  </div>
+                  {user?.id === poll.creator.id && (
+                    <button
+                      onClick={() => navigate('/profile')}
+                      className="w-full mt-4 py-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white text-sm font-semibold rounded-xl transition-all"
+                    >
+                      {t('pollDetail.viewMyProfile', 'Trang cá nhân của tôi')}
+                    </button>
+                  )}
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/10 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider mb-4">
+                    {t('pollDetail.statisticsTitle', 'Trạng thái bình chọn')}
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500 dark:text-white/50">{t('pollDetail.totalVotesText', 'Tổng số phiếu')}:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{totalVotes}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500 dark:text-white/50">{t('pollDetail.commentsCountText', 'Số bình luận')}:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{totalAllComments || poll?.commentCount || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500 dark:text-white/50">{t('pollDetail.statusText', 'Trạng thái')}:</span>
+                      <span className={`font-bold ${isActive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {isActive ? t('pollDetail.active') : t('pollDetail.ended')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {trendingPolls.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-wider px-1">
+                      {t('pollDetail.trendingPollsTitle', 'Bình chọn nổi bật khác')}
+                    </h3>
+                    <div className="space-y-3">
+                      {trendingPolls.map((tp) => (
+                        <div
+                          key={tp.id}
+                          onClick={() => navigate(`/poll/${tp.id}`)}
+                          className="p-3 rounded-xl bg-white dark:bg-[#13112a] border border-slate-200 dark:border-white/[0.05] hover:border-violet-500/50 dark:hover:border-violet-500/50 hover:bg-slate-50 dark:hover:bg-white/[0.03] cursor-pointer transition-all shadow-sm"
+                        >
+                          <h4 className="text-sm font-semibold text-slate-950 dark:text-white line-clamp-2 leading-snug mb-2">
+                            {tp.title}
+                          </h4>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-white/40">
+                            <span className="truncate max-w-[120px] font-medium text-slate-600 dark:text-white/50">
+                              @{tp.creator.username}
+                            </span>
+                            <span>
+                              {tp.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0)} phiếu
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </aside>
+
+          </div>
         </div>
-      </main>
+      </div>
 
       {poll && (
         <PollLiveChartModal

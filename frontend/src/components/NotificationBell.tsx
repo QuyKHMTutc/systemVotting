@@ -38,7 +38,7 @@ export default function NotificationBell() {
 
     useEffect(() => {
         if (!client || !client.connected) return;
-        
+
         // Lắng nghe socket
         const subscription = client.subscribe('/user/queue/notifications', (message: IMessage) => {
             if (message.body) {
@@ -47,7 +47,7 @@ export default function NotificationBell() {
                 setUnreadCount(prev => prev + 1);
             }
         });
-        
+
         return () => {
             subscription.unsubscribe();
         };
@@ -89,8 +89,8 @@ export default function NotificationBell() {
             const currentPath = `/poll/${notif.relatedPollId}`;
             if (notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY') {
                 const search = notif.relatedCommentId ? `?commentId=${notif.relatedCommentId}` : '';
-                if (window.location.pathname === currentPath && 
-                    window.location.hash === '#comments' && 
+                if (window.location.pathname === currentPath &&
+                    window.location.hash === '#comments' &&
                     window.location.search === search) {
                     window.dispatchEvent(new HashChangeEvent("hashchange"));
                 } else {
@@ -120,7 +120,7 @@ export default function NotificationBell() {
 
     const filteredNotifications = notifications.filter(n => filter === 'ALL' || !n.isRead);
     const visibleNotifications = filteredNotifications.slice(0, visibleCount);
-    
+
     const todayNotifications = visibleNotifications.filter(n => isToday(n.createdAt));
     const earlierNotifications = visibleNotifications.filter(n => !isToday(n.createdAt));
 
@@ -148,12 +148,12 @@ export default function NotificationBell() {
                     onClick={() => setIsOpen(!isOpen)}
                     className="cursor-pointer relative p-2.5 rounded-xl bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300/50 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-colors border border-slate-300 dark:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                 >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#0a051d]">
-                        {unreadCount}
-                    </span>
-                )}
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#0a051d]">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                    )}
                 </button>
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 bg-[#1e1e2d] text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[70] pointer-events-none">
                     <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-x-4 border-b-4 border-transparent border-b-[#1e1e2d]"></div>
@@ -168,35 +168,35 @@ export default function NotificationBell() {
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('notification.title')}</h3>
                         <div className="flex items-center gap-2 relative">
-                             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="cursor-pointer p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-white/60 transition-colors">
-                                 <MoreHorizontal className="w-5 h-5" />
-                             </button>
-                             {isMenuOpen && (
-                                 <>
-                                     <div className="fixed inset-0 z-[65]" onClick={() => setIsMenuOpen(false)}></div>
-                                     <div className="absolute top-10 right-0 w-60 bg-white dark:bg-[#303031] border border-slate-200/50 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.15)] rounded-lg overflow-hidden z-[70] py-2">
-                                        <button 
+                            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="cursor-pointer p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-white/60 transition-colors">
+                                <MoreHorizontal className="w-5 h-5" />
+                            </button>
+                            {isMenuOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-[65]" onClick={() => setIsMenuOpen(false)}></div>
+                                    <div className="absolute top-10 right-0 w-60 bg-white dark:bg-[#303031] border border-slate-200/50 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.15)] rounded-lg overflow-hidden z-[70] py-2">
+                                        <button
                                             onClick={() => { handleMarkAllRead(); setIsMenuOpen(false); }}
                                             className="cursor-pointer w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 dark:text-white/90 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-3"
                                         >
                                             <div className="w-6 flex justify-center"><Check className="w-5 h-5" /></div>
                                             {t('notification.markAllRead')}
                                         </button>
-                                     </div>
-                                 </>
-                             )}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
-                    
+
                     {/* Filters */}
                     <div className="flex items-center gap-2 mb-2">
-                        <button 
+                        <button
                             onClick={() => setFilter('ALL')}
                             className={`cursor-pointer px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'ALL' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
                         >
                             {t('notification.filterAll')}
                         </button>
-                        <button 
+                        <button
                             onClick={() => setFilter('UNREAD')}
                             className={`cursor-pointer px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === 'UNREAD' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-white/80'}`}
                         >
@@ -233,10 +233,10 @@ export default function NotificationBell() {
                                     ))}
                                 </div>
                             )}
-                            
+
                             {/* Nút xem thêm */}
                             {filteredNotifications.length > visibleCount && (
-                                <button 
+                                <button
                                     onClick={(e) => { e.stopPropagation(); setVisibleCount(prev => prev + 10); }}
                                     className="cursor-pointer mt-2 mx-2 p-2 rounded-lg text-sm font-semibold text-blue-600 dark:text-blue-400 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors text-center"
                                 >
@@ -268,7 +268,7 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
                 </div>
                 {renderBadge(notif.type)}
             </div>
-            
+
             <div className="flex-1 min-w-0 pr-4">
                 <p className="text-[14px] text-slate-800 dark:text-white leading-[1.3]">
                     <span className="font-semibold mr-1">{notif.actorName}</span>
@@ -287,7 +287,7 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
                     {formatTime(notif.createdAt)}
                 </p>
             </div>
-            
+
             {!notif.isRead && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-blue-500"></div>
             )}

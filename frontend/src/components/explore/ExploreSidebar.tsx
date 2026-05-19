@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Compass, TrendingUp, Sparkles, Flame, Clock, Crown as CrownIcon, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { categoryService, type Category } from '../../services/category.service';
+import { pollService } from '../../services/poll.service';
 
 interface ExploreSidebarProps {
     filterTag: string;
@@ -29,18 +30,46 @@ export function ExploreSidebar({
 }: ExploreSidebarProps) {
     const { t } = useTranslation();
     const [categories, setCategories] = useState<Category[]>([]);
+    const [stats, setStats] = useState({ total: 0, active: 0, ended: 0, trending: 0 });
     const [isExploreExpanded, setIsExploreExpanded] = useState(true);
     const [isCategoryExpanded, setIsCategoryExpanded] = useState(true);
+    const [activeTab, setActiveTab] = useState<'TRENDING' | 'NEWEST' | 'ACTIVE' | 'ENDED' | 'ALL'>(
+        filterStatus === 'ACTIVE' ? 'ACTIVE' :
+        filterStatus === 'ENDED' ? 'ENDED' : 
+        filterStatus === 'TRENDING' ? 'TRENDING' : 
+        filterStatus === 'ALL' ? 'ALL' : 'NEWEST'
+    );
+
+    useEffect(() => {
+        if (filterStatus === 'ACTIVE') setActiveTab('ACTIVE');
+        else if (filterStatus === 'ENDED') setActiveTab('ENDED');
+        else if (filterStatus === 'TRENDING') setActiveTab('TRENDING');
+        else if (filterStatus === 'ALL') setActiveTab('ALL');
+        else setActiveTab('NEWEST');
+    }, [filterStatus]);
 
     useEffect(() => {
         categoryService.getAllCategories().then(setCategories).catch(() => {});
+        Promise.all([
+            pollService.getAllPolls(0, 1, '', 'ALL', 'ALL'),
+            pollService.getAllPolls(0, 1, '', 'ALL', 'ACTIVE'),
+            pollService.getAllPolls(0, 1, '', 'ALL', 'ENDED'),
+            pollService.getTrendingPolls(50)
+        ]).then(([totalRes, activeRes, endedRes, trendingRes]) => {
+            setStats({
+                total: totalRes.totalElements || 0,
+                active: activeRes.totalElements || 0,
+                ended: endedRes.totalElements || 0,
+                trending: trendingRes.length || 0
+            });
+        }).catch(() => {});
     }, []);
 
     const navItems = [
-        { label: t('dashboard.sidebarTrending') || 'Trending', Icon: TrendingUp, onClick: onScrollToTrending },
-        { label: t('dashboard.sidebarNewest') || 'Mới nhất', Icon: Sparkles, onClick: () => { onResetExplore(); setTimeout(onScrollToPollGrid, 100); } },
-        { label: t('dashboard.sidebarOngoing') || 'Đang diễn ra', Icon: Clock, onClick: () => onSetFilterStatus('ACTIVE'), isActiveStatus: filterStatus === 'ACTIVE' },
-        { label: t('dashboard.sidebarEnded') || 'Đã kết thúc', Icon: CheckCircle2, onClick: () => onSetFilterStatus('ENDED'), isActiveStatus: filterStatus === 'ENDED' },
+        { label: t('dashboard.sidebarTrending') || 'Trending', Icon: TrendingUp, count: stats.trending, onClick: () => { setActiveTab('TRENDING'); onSetFilterStatus('TRENDING'); onScrollToTrending(); }, isActiveStatus: activeTab === 'TRENDING' },
+        { label: t('dashboard.sidebarNewest') || 'Mới nhất', Icon: Sparkles, count: stats.active, onClick: () => { setActiveTab('NEWEST'); onSetFilterStatus('NEWEST'); setTimeout(onScrollToPollGrid, 100); }, isActiveStatus: activeTab === 'NEWEST' },
+        { label: t('dashboard.sidebarOngoing') || 'Đang diễn ra', Icon: Clock, count: stats.active, onClick: () => { setActiveTab('ACTIVE'); onSetFilterStatus('ACTIVE'); }, isActiveStatus: activeTab === 'ACTIVE' },
+        { label: t('dashboard.sidebarEnded') || 'Đã kết thúc', Icon: CheckCircle2, count: stats.ended, onClick: () => { setActiveTab('ENDED'); onSetFilterStatus('ENDED'); }, isActiveStatus: activeTab === 'ENDED' },
     ];
 
     const isAllActive = !filterCategory && filterTag === 'ALL';
@@ -53,7 +82,7 @@ export function ExploreSidebar({
                     onClick={() => setIsExploreExpanded(!isExploreExpanded)}
                     className="cursor-pointer w-full flex items-center justify-between mb-3 px-2 group"
                 >
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/30 group-hover:text-slate-600 dark:group-hover:text-white/50 transition-colors">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
                         {t('navbar.explore') || 'KHÁM PHÁ'}
                     </p>
                     {isExploreExpanded ? (
@@ -65,9 +94,8 @@ export function ExploreSidebar({
 
                 {isExploreExpanded && (
                     <nav className="space-y-0.5">
-                        {navItems.map(({ label, Icon, onClick, isActiveStatus }) => {
-                            // If it's a status filter, highlight it when active. 
-                            // Otherwise, we just use hover states since Trending/Newest are scrolls/resets.
+                        {navItems.map((item) => {
+                            const { label, Icon, onClick, isActiveStatus, count } = item;
                             const isActive = isActiveStatus || false;
                             return (
                                 <button key={label} type="button" onClick={onClick}
@@ -75,7 +103,12 @@ export function ExploreSidebar({
                                         ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 font-bold border border-violet-500/20'
                                         : 'text-slate-600 dark:text-white/55 hover:text-slate-900 dark:hover:text-white/90 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold'}`}>
                                     <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-white/40'}`} />
-                                    {label}
+                                    <span className="flex-1 text-left">{label}</span>
+                                    {count > 0 && (
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isActive ? 'bg-violet-200 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/40'}`}>
+                                            {count}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -89,7 +122,7 @@ export function ExploreSidebar({
                     onClick={() => setIsCategoryExpanded(!isCategoryExpanded)}
                     className="cursor-pointer w-full flex items-center justify-between mb-3 px-2 group"
                 >
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/30 group-hover:text-slate-600 dark:group-hover:text-white/50 transition-colors">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
                         {t('dashboard.categoriesTitle')}
                     </p>
                     {isCategoryExpanded ? (
@@ -101,13 +134,18 @@ export function ExploreSidebar({
 
                 {isCategoryExpanded && (
                     <>
-                        {/* ALL */}
+                        {/* ALL Categories */}
                         <button type="button" onClick={() => { onSetFilterCategory(''); onSetFilterTag('ALL'); }}
                             className={`cursor-pointer w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all mb-0.5 ${isAllActive
                                 ? 'bg-violet-500/10 border border-violet-500/20 text-violet-700 dark:text-violet-300 font-semibold'
                                 : 'text-slate-600 dark:text-white/55 hover:text-slate-900 dark:hover:text-white/90 hover:bg-slate-100 dark:hover:bg-white/5 font-medium'}`}>
                             <Compass className={`w-4 h-4 shrink-0 ${isAllActive ? 'text-violet-500' : 'text-slate-400 dark:text-white/35'}`} />
-                            {t('dashboard.catAll')}
+                            <span className="flex-1 text-left">{t('dashboard.catAll')}</span>
+                            {stats.total > 0 && (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isAllActive ? 'bg-violet-200 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/40'}`}>
+                                    {stats.total}
+                                </span>
+                            )}
                         </button>
 
                         <div className="space-y-0.5">

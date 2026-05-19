@@ -44,12 +44,14 @@ interface ExploreRightSidebarProps {
   communityStats: CommunityStats;
 }
 
-const RANK_COLORS = ['text-amber-400', 'text-slate-400', 'text-orange-700', 'text-white/40', 'text-white/40'];
-const RANK_ICONS = ['🥇', '🥈', '🥉', '4', '5'];
+const RANK_COLORS = ['text-amber-400', 'text-slate-400', 'text-orange-700'];
+const RANK_ICONS = ['🥇', '🥈', '🥉'];
 
 export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, communityStats }: ExploreRightSidebarProps) {
   const { t } = useTranslation();
   const [customTag, setCustomTag] = useState('');
+  const [showAllCreators, setShowAllCreators] = useState(false);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const handleTagSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,16 +107,21 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
             <Trophy className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('dashboard.topCreators')}</h3>
           </div>
-          <button className="cursor-pointer text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors">
-            {t('dashboard.seeAll')}
-          </button>
+          {topCreators.length > 3 && (
+            <button 
+              onClick={() => setShowAllCreators(!showAllCreators)}
+              className="cursor-pointer text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
+            >
+              {showAllCreators ? 'Thu gọn' : t('dashboard.seeAll')}
+            </button>
+          )}
         </div>
 
         <div className="space-y-3">
           {topCreators.length === 0 ? (
             <p className="text-sm text-slate-400 dark:text-white/35 text-center py-4">{t('dashboard.topCreatorsEmpty')}</p>
           ) : (
-            topCreators.map((c, i) => (
+            (showAllCreators ? topCreators : topCreators.slice(0, 3)).map((c, i) => (
               <div key={c.id} className="flex items-center gap-3 group">
                 <span className={`text-sm font-bold w-5 text-center shrink-0 ${RANK_COLORS[i] ?? 'text-slate-400 dark:text-white/30'}`}>
                   {RANK_ICONS[i] ?? i + 1}
@@ -166,7 +173,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
           {popularTags.length === 0 ? (
             <p className="text-sm text-slate-400 dark:text-white/35 text-center py-4">{t('dashboard.popularTagsEmpty')}</p>
           ) : (
-            popularTags.map((tg) => (
+            (showAllTags ? popularTags : popularTags.slice(0, 5)).map((tg) => (
               <button
                 key={tg.display}
                 type="button"
@@ -182,9 +189,14 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
               </button>
             ))
           )}
-          <button className="cursor-pointer w-full text-center text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium py-1.5 transition-colors">
-            {t('dashboard.seeAll')} →
-          </button>
+          {popularTags.length > 5 && (
+            <button 
+              onClick={() => setShowAllTags(!showAllTags)}
+              className="cursor-pointer w-full text-center text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium py-1.5 transition-colors"
+            >
+              {showAllTags ? 'Thu gọn' : `${t('dashboard.seeAll')} →`}
+            </button>
+          )}
         </div>
       </div>
 
