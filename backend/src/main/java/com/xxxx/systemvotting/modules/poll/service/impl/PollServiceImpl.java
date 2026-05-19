@@ -406,7 +406,7 @@ public class PollServiceImpl implements PollService {
     @Transactional(readOnly = true)
     public PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, String categorySlug, int page, int size, String sortBy, String direction) {
         String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
-        Sort sort = direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(safeSortBy).ascending()
+        Sort sort = direction != null && direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(safeSortBy).ascending()
                 : Sort.by(safeSortBy).descending();
         sort = sort.and(Sort.by("id").descending());
         
@@ -506,8 +506,8 @@ public class PollServiceImpl implements PollService {
     @Transactional(readOnly = true)
     public List<PollResponseDTO> getTrendingPolls(int limit) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime since = now.minusDays(14);
-        Pageable pageable = PageRequest.of(0, 50); // Fetch top 50 recent active polls
+        LocalDateTime since = now.minusDays(30); // Gravity handles older polls, expanded to 30 days for sparse data
+        Pageable pageable = PageRequest.of(0, 200); // Fetch top 200 recent active polls for scoring
         List<Poll> candidatePolls = pollRepository.findRecentPublicActivePolls(now, since, pageable);
 
         if (candidatePolls.isEmpty()) {
@@ -529,7 +529,7 @@ public class PollServiceImpl implements PollService {
 
         enrichPollListWithRedisData(dtos);
 
-        // Compute trending score and sort
+        // Compute trending score using Gravity Decay Formula
         return dtos.stream()
                 .map(dto -> {
                     int comments = commentCountMap.getOrDefault(dto.getId(), 0);
@@ -540,10 +540,14 @@ public class PollServiceImpl implements PollService {
                         totalVotes = dto.getOptions().stream().mapToInt(o -> o.voteCount() != null ? o.voteCount() : 0).sum();
                     }
                     
-                    int score = (totalVotes * 2) + (comments * 3);
+                    long ageInHours = java.time.Duration.between(dto.getCreatedAt(), now).toHours();
+                    double decayDenominator = Math.pow(Math.max(ageInHours, 0) + 2.0, 1.5);
+                    double score = ((totalVotes * 2.0) + (comments * 3.0)) / decayDenominator;
+                    
                     return new java.util.AbstractMap.SimpleEntry<>(dto, score);
                 })
-                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue())) // Descending
+                .filter(entry -> entry.getValue() > 0.0) // Only polls with at least 1 vote or comment
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue())) // Descending
                 .limit(limit)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
