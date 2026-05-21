@@ -457,7 +457,7 @@ const PollDetail = () => {
 
         {/* MAIN CONTENT AREA */}
         <main className={`min-w-0 flex flex-col items-center pt-2 lg:px-4 xl:mr-[calc(296px+0.5rem)] ${sidebarOpen ? 'xl:ml-[calc(240px+1rem)]' : 'xl:ml-6'}`}>
-          <div className="flex items-start gap-4 w-full max-w-[820px]">
+          <div className="flex items-start gap-4 w-full max-w-[960px]">
 
                 {/* Back Button (Left side) */}
                 <div className="hidden md:flex pt-0 sticky top-4 z-50">
