@@ -25,12 +25,14 @@ import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
+import com.xxxx.systemvotting.modules.comment.repository.CommentLikeRepository;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
 import com.xxxx.systemvotting.modules.poll.entity.PollMember;
 import com.xxxx.systemvotting.modules.poll.enums.PollRole;
 import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import com.xxxx.systemvotting.modules.poll.repository.PollMemberRepository;
 import com.xxxx.systemvotting.modules.notification.service.AsyncNotificationService;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -67,6 +69,7 @@ public class PollServiceImpl implements PollService {
     private final CategoryServiceImpl categoryServiceImpl;
     private final PollMapper pollMapper;
     private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
     // StringRedisTemplate for pipeline operations — uses StringRedisSerializer so raw connection
     // byte[] results are correctly returned without JSON deserialization interference
@@ -76,6 +79,7 @@ public class PollServiceImpl implements PollService {
     private final PollDetailsCacheLoader pollDetailsCacheLoader;
     private final PollMemberRepository pollMemberRepository;
     private final AsyncNotificationService asyncNotificationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private Map<Long, Integer> getCommentCountsForPolls(List<Long> pollIds) {
         Map<Long, Integer> commentCountMap = new HashMap<>();
@@ -114,22 +118,26 @@ public class PollServiceImpl implements PollService {
                 .map(option -> {
                     Object audienceVal = redisMap.get(option.id().toString() + ":AUDIENCE");
                     Object judgeVal = redisMap.get(option.id().toString() + ":JUDGE");
-                    
+
                     int audienceCount = audienceVal != null ? Integer.parseInt(audienceVal.toString()) : 0;
                     int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal.toString()) : 0;
-                    
+                    int redisTotal = audienceCount + judgeCount;
+
+                    // Use max(DB baseline, Redis total) so we never show a count lower than
+                    // what VoteEventConsumer already flushed to DB.
+                    int dbVoteCount = option.voteCount() != null ? option.voteCount() : 0;
+                    int finalVoteCount = Math.max(dbVoteCount, redisTotal);
+
                     return new OptionResponseDTO(
-                            option.id(), 
-                            option.text(), 
-                            audienceCount + judgeCount,
+                            option.id(),
+                            option.text(),
+                            finalVoteCount,
                             audienceCount,
                             judgeCount
                     );
                 })
                 .collect(Collectors.toList());
 
-        // PollResponseDTO is also a record — cannot set fields, so we need to work around:
-        // the mapper will rebuild with enriched options (handled at call site in getPollById)
         dto.getOptions().clear();
         dto.getOptions().addAll(enriched);
     }
@@ -191,11 +199,17 @@ public class PollServiceImpl implements PollService {
 
                         int audienceCount = audienceVal != null ? Integer.parseInt(audienceVal) : 0;
                         int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal) : 0;
+                        int redisTotal = audienceCount + judgeCount;
+
+                        // Use max(DB baseline, Redis total): if Redis pipeline returned partial/stale
+                        // data (e.g. after a restart), the DB count is the safe floor.
+                        int dbVoteCount = option.voteCount() != null ? option.voteCount() : 0;
+                        int finalVoteCount = Math.max(dbVoteCount, redisTotal);
 
                         return new OptionResponseDTO(
                                 option.id(),
                                 option.text(),
-                                audienceCount + judgeCount,
+                                finalVoteCount,
                                 audienceCount,
                                 judgeCount
                         );
@@ -277,7 +291,12 @@ public class PollServiceImpl implements PollService {
             if (requestDTO.judgeIds().size() > maxJudges) {
                 throw new AppException(ErrorCode.INVALID_REQUEST);
             }
-            poll.setJudgeWeight(PlanPollLimits.judgeWeight(creator.getPlan()));
+            
+            int weight = requestDTO.judgeWeight() != null ? requestDTO.judgeWeight() : PlanPollLimits.judgeWeight(creator.getPlan());
+            if (weight < 1 || weight > 99) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            poll.setJudgeWeight(weight);
         } else {
             poll.setJudgeWeight(0);
         }
@@ -292,9 +311,17 @@ public class PollServiceImpl implements PollService {
         if (visibility == PollVisibility.PRIVATE
                 && requestDTO.invitedEmails() != null
                 && !requestDTO.invitedEmails().isEmpty()) {
+            
+            int maxInvites = PlanPollLimits.maxInvites(creator.getPlan());
+            if (requestDTO.invitedEmails().size() > maxInvites) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            
             poll.setInvitedEmails(new java.util.ArrayList<>(requestDTO.invitedEmails()));
+        } else if (visibility == PollVisibility.PRIVATE) {
+            poll.setInvitedEmails(new java.util.ArrayList<>());
         }
-
+        
         Poll savedPoll = pollRepository.save(poll);
 
         // Save PollMembers (Judges) and send notifications
@@ -311,10 +338,15 @@ public class PollServiceImpl implements PollService {
 
                     // Send notification to judge
                     int weightPct = savedPoll.getJudgeWeight();
+                    String actorName = savedPoll.isAnonymous() 
+                            ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId()) 
+                            : creator.getUsername();
+                    String actorAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
+                    
                     asyncNotificationService.createNotificationAsync(
                             judge.getId(),
-                            creator.getUsername(),
-                            creator.getAvatarUrl(),
+                            actorName,
+                            actorAvatar,
                             "JUDGE_INVITATION",
                             String.format("đã mời bạn làm Giám khảo (trọng số %d%%) cho cuộc bình chọn: %s", 
                                     weightPct, savedPoll.getTitle()),
@@ -335,12 +367,27 @@ public class PollServiceImpl implements PollService {
         }
 
         // Broadcast new poll to dashboard — ONLY for PUBLIC polls
-        // Private polls must NOT appear in the public feed
         if (visibility == PollVisibility.PUBLIC) {
             Map<String, Object> payload = new HashMap<>();
             payload.put("type", "CREATED");
             payload.put("poll", dto);
             realTimeService.broadcast("/topic/polls/events", payload);
+        } else if (visibility == PollVisibility.PRIVATE) {
+            // For PRIVATE polls, only broadcast to the specific invited users
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("type", "CREATED");
+            payload.put("poll", dto);
+            if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
+                List<String> emails = savedPoll.getInvitedEmails();
+                List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
+                for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
+                    messagingTemplate.convertAndSendToUser(
+                            invitedUser.getId().toString(),
+                            "/queue/polls/events",
+                            payload
+                    );
+                }
+            }
         }
 
         // Send PRIVATE_POLL_INVITATION notifications to invited users who have accounts
@@ -352,10 +399,15 @@ public class PollServiceImpl implements PollService {
                     userRepository.findByEmailIn(emails);
 
             for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
+                String inviterName = savedPoll.isAnonymous()
+                        ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId())
+                        : creator.getUsername();
+                String inviterAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
+
                 asyncNotificationService.createNotificationAsync(
                         invitedUser.getId(),
-                        creator.getUsername(),
-                        creator.getAvatarUrl(),
+                        inviterName,
+                        inviterAvatar,
                         "PRIVATE_POLL_INVITATION",
                         String.format("đã mời bạn tham gia cuộc bình chọn riêng tư: \"%s\"", savedPoll.getTitle()),
                         savedPoll.getId(),
@@ -462,6 +514,7 @@ public class PollServiceImpl implements PollService {
 
         // Delete votes and comments before poll (FK constraints)
         poll.getOptions().forEach(option -> voteRepository.deleteByOptionId(option.getId()));
+        commentLikeRepository.deleteByCommentPollId(poll.getId());
         commentRepository.deleteByPoll_Id(poll.getId());
 
         pollRepository.delete(poll);

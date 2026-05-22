@@ -31,7 +31,7 @@ public record PollCreateRequestDTO(
 
     @Schema(description = "Chế độ ẩn danh", example = "false")
     @JsonProperty("isAnonymous")
-    boolean isAnonymous,
+    Boolean anonymous,
 
     @Schema(description = "Thời gian bắt đầu (ISO-8601)", example = "2024-03-20T10:00:00")
     @FutureOrPresent(message = "Start time cannot be in the past")
@@ -48,6 +48,9 @@ public record PollCreateRequestDTO(
 
     @Schema(description = "Danh sách User ID làm giám khảo", example = "[1, 2, 3]")
     List<Long> judgeIds,
+
+    @Schema(description = "Trọng số giám khảo tự chọn (từ 1 đến 99)", example = "50")
+    Integer judgeWeight,
 
     @Schema(description = "Quyền riêng tư của cuộc bình chọn", example = "PUBLIC", allowableValues = {"PUBLIC", "PRIVATE"})
     PollVisibility visibility,

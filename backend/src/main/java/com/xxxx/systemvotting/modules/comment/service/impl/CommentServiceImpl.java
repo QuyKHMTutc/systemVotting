@@ -8,8 +8,11 @@ import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentThreadResponse;
 import com.xxxx.systemvotting.modules.comment.entity.Comment;
+import com.xxxx.systemvotting.modules.comment.entity.CommentLike;
+import com.xxxx.systemvotting.modules.comment.repository.CommentLikeRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.modules.comment.service.CommentService;
+import com.xxxx.systemvotting.modules.notification.service.AsyncNotificationService;
 import com.xxxx.systemvotting.modules.notification.service.NotificationService;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
@@ -34,11 +37,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -56,6 +61,8 @@ public class CommentServiceImpl implements CommentService {
     private final AiModerationService aiModerationService;
     private final NotificationService notificationService;
     private final CommentCacheInvalidator commentCacheInvalidator;
+    private final CommentLikeRepository commentLikeRepository;
+    private final AsyncNotificationService asyncNotificationService;
 
     @Override
     @Transactional
@@ -115,7 +122,13 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = commentBuilder.build();
         comment = commentRepository.save(comment);
 
-        String actorName = comment.isAnonymous() ? null : currentUser.getUsername();
+        Map<Long, String> anonymousDisplayNames = comment.isAnonymous()
+                ? buildGlobalAnonymousLabelMap(poll.getId())
+                : Map.of();
+
+        String actorName = comment.isAnonymous() 
+                ? anonymousDisplayNames.getOrDefault(currentUser.getId(), "Người dùng ẩn danh") 
+                : currentUser.getUsername();
         String actorAvatar = comment.isAnonymous() ? null : currentUser.getAvatarUrl();
         String shortMessage = request.content().length() > 50 ? request.content().substring(0, 47) + "..." : request.content();
 
@@ -153,17 +166,18 @@ public class CommentServiceImpl implements CommentService {
             voteStatus = "Đã vote: " + voteOpt.get().getOption().getText();
         }
 
-        Map<Long, String> anonymousDisplayNames = comment.isAnonymous()
-                ? buildGlobalAnonymousLabelMap(poll.getId())
-                : Map.of();
+        // anonymousDisplayNames was already calculated above
 
-        CommentResponseDTO responseDTO = mapToDTO(comment, voteStatus, anonymousDisplayNames);
+        CommentResponseDTO responseDTO = mapToDTO(comment, voteStatus, anonymousDisplayNames, 0L, false, true);
 
         realTimeService.broadcast("/topic/polls/" + poll.getId() + "/comments", responseDTO);
 
+        // Count fresh comment total so the Explore page cards show the correct number
+        long freshCommentCount = commentRepository.countByPollId(poll.getId());
         Map<String, Object> eventPayload = new HashMap<>();
         eventPayload.put("type", "COMMENT_ADDED");
         eventPayload.put("pollId", poll.getId());
+        eventPayload.put("commentCount", freshCommentCount);
         realTimeService.broadcast("/topic/polls/events", eventPayload);
 
         commentCacheInvalidator.evictAllPagesForPoll(poll.getId());
@@ -173,8 +187,8 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "comments", key = "#pollId + ':' + #page + ':' + #size")
-    public CommentThreadResponse getCommentsByPollId(Long pollId, int page, int size) {
+    @Cacheable(value = "comments", key = "#pollId + ':' + #page + ':' + #size + ':' + (#currentUserId != null ? #currentUserId : 'anon')")
+    public CommentThreadResponse getCommentsByPollId(Long pollId, int page, int size, Long currentUserId) {
         pollRepository.findById(pollId).orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
@@ -199,8 +213,23 @@ public class CommentServiceImpl implements CommentService {
         Map<Long, String> userVoteMap = buildUserVoteLabelMap(pollId);
         Map<Long, String> anonymousLabels = buildGlobalAnonymousLabelMap(pollId);
 
+        // Bulk-load like counts for all comments
+        List<Long> allCommentIds = combined.stream().map(Comment::getId).toList();
+        Map<Long, Long> likeCountMap = new HashMap<>();
+        for (Object[] row : commentLikeRepository.countByCommentIdIn(allCommentIds)) {
+            likeCountMap.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+        }
+
+        // Bulk-load user likes
+         Set<Long> userLikedIds = new HashSet<>();
+        if (currentUserId != null && !allCommentIds.isEmpty()) {
+            userLikedIds.addAll(commentLikeRepository.findLikedCommentIdsByUser(allCommentIds, currentUserId));
+        }
+
         List<CommentResponseDTO> flat = combined.stream()
-                .map(c -> mapToDTO(c, userVoteMap.getOrDefault(c.getUser().getId(), "Chưa vote"), anonymousLabels))
+                .map(c -> mapToDTO(c, userVoteMap.getOrDefault(c.getUser().getId(), "Chưa vote"), anonymousLabels,
+                        likeCountMap.getOrDefault(c.getId(), 0L), userLikedIds.contains(c.getId()),
+                        currentUserId != null && currentUserId.equals(c.getUser().getId())))
                 .collect(Collectors.toList());
 
         Map<Long, CommentResponseDTO> byId = flat.stream()
@@ -243,10 +272,16 @@ public class CommentServiceImpl implements CommentService {
                         (existing, replacement) -> existing
                 ));
 
+        Map<Long, Map<Long, String>> pollAnonymousNamesMap = new HashMap<>();
+        for (Long pollId : pollIds) {
+            pollAnonymousNamesMap.put(pollId, buildGlobalAnonymousLabelMap(pollId));
+        }
+
         List<CommentResponseDTO> dtos = commentPage.getContent().stream()
                 .map(comment -> {
                     String voteStatus = pollVoteMap.getOrDefault(comment.getPoll().getId(), "Chưa vote");
-                    return mapToDTO(comment, voteStatus, Map.of());
+                    Map<Long, String> anonymousDisplayNames = pollAnonymousNamesMap.getOrDefault(comment.getPoll().getId(), Map.of());
+                    return mapToDTO(comment, voteStatus, anonymousDisplayNames);
                 })
                 .collect(Collectors.toList());
         Page<CommentResponseDTO> dtoPage = new PageImpl<>(dtos, pageable, commentPage.getTotalElements());
@@ -292,19 +327,28 @@ public class CommentServiceImpl implements CommentService {
 
         // If it's a root comment, delete all its replies first
         if (comment.getParent() == null) {
+            List<Long> replyIds = commentRepository.findReplyIdsByParentId(commentId);
+            if (!replyIds.isEmpty()) {
+                commentLikeRepository.deleteByCommentIdIn(replyIds);
+            }
             commentRepository.deleteByParentId(commentId);
         }
 
+        commentLikeRepository.deleteByCommentId(commentId);
         commentRepository.delete(comment);
 
         // Invalidate cache
         commentCacheInvalidator.evictAllPagesForPoll(pollId);
+
+        // Fetch fresh comment count
+        long freshCommentCount = commentRepository.countByPollId(pollId);
 
         // Broadcast event
         Map<String, Object> eventPayload = new HashMap<>();
         eventPayload.put("type", "COMMENT_DELETED");
         eventPayload.put("pollId", pollId);
         eventPayload.put("commentId", commentId);
+        eventPayload.put("commentCount", freshCommentCount);
         realTimeService.broadcast("/topic/polls/events", eventPayload);
     }
 
@@ -317,22 +361,78 @@ public class CommentServiceImpl implements CommentService {
         }
         return userVoteMap;
     }
+    private static final String[] ANONYMOUS_NOUNS = {
+        "Cáo 🦊", "Sói 🐺", "Gấu Trúc 🐼", "Thỏ 🐰", "Hải Cẩu 🦭", "Cá Heo 🐬", "Mèo 🐱", "Cún 🐶", "Sư Tử 🦁", "Hổ 🐯",
+        "Báo 🐆", "Rái Cá 🦦", "Chim Cánh Cụt 🐧", "Sóc 🐿️", "Hươu Cao Cổ 🦒", "Ngựa Vằn 🦓", "Đà Điểu 🦩", "Cá Mập 🦈", "Bạch Tuộc 🐙", "Tê Giác 🦏",
+        "Hà Mã 🦛", "Lạc Đà 🐪", "Llama 🦙", "Khủng Long 🦖", "Koala 🐨", "Chuột Túi 🦘", "Lửng Mật 🦡", "Nhím 🦔", "Rùa 🐢", "Khỉ 🐵",
+        "Cá Voi 🐳", "Cú Tuyết 🦉", "Thiên Nga 🦢", "Ốc Sên 🐌", "Tắc Kè 🦎", "Gà Tây 🦃", "Cừu 🐑", "Dê 🐐", "Bò Sữa 🐄", "Trâu 🐃",
+        "Heo Rừng 🐗", "Hamster 🐹", "Gấu 🐻", "Khỉ Đột 🦍", "Voi 🐘", "Bồ Nông 🦤", "Cú Mèo 🦉", "Hươu 🦌", "Chuột Lang 🐹", "Chim Ưng 🦅"
+    };
+
+    private static final String[] ANONYMOUS_ADJECTIVES = {
+        "Vui Vẻ", "Lười Biếng", "Nhanh Nhẹn", "Ngơ Ngác", "Bí Ẩn", "Dũng Cảm", "Nhút Nhát", "Lém Lỉnh", "Thích Thú", "Bực Bội",
+        "Ngủ Gật", "Ngốc Nghếch", "Xinh Xắn", "Béo Mập", "Lầm Lì", "Lạc Quan", "Tò Mò", "Hoạt Bát", "Dễ Thương", "Can Đảm",
+        "Thông Minh", "Ngu Ngơ", "Xảo Quyệt", "Hóm Hỉnh", "Thân Thiện", "Lạnh Lùng", "Kiêu Ngạo", "Dịu Dàng", "Ngổ Ngáo", "Khờ Khạo",
+        "Đáng Yêu", "Bướng Bỉnh", "Trầm Tính", "Ồn Ào", "Rụt Rè", "Điềm Đạm", "Hiếu Động", "Say Sưa", "Tinh Nghịch", "Cáu Kỉnh",
+        "Buồn Bã", "Lơ Đãng", "Hay Quên", "Vội Vã", "Thảnh Thơi", "Chăm Chỉ", "Mơ Mộng", "Hào Phóng", "Lãng Mạn", "Khó Tính"
+    };
 
     /**
-     * Stable Anonymous N labels across the whole poll (matches pre-pagination behaviour).
+     * Stable Adjective + Noun labels across the whole poll.
+     * Guarantees 2500 unique names before appending cycle numbers.
      */
     private Map<Long, String> buildGlobalAnonymousLabelMap(Long pollId) {
         List<Object[]> rows = commentRepository.findAnonymousParticipantOrder(pollId);
         Map<Long, String> result = new LinkedHashMap<>();
         int i = 0;
+        int maxCombinations = ANONYMOUS_NOUNS.length * ANONYMOUS_ADJECTIVES.length;
+        
+        Poll poll = pollRepository.findById(pollId).orElse(null);
+        Long creatorId = (poll != null && poll.getCreator() != null) ? poll.getCreator().getId() : null;
+        
+        int seed = (int) (pollId % maxCombinations);
+        
         for (Object[] row : rows) {
             Long userId = ((Number) row[0]).longValue();
-            result.put(userId, "Anonymous " + (++i));
+            
+            if (creatorId != null && creatorId.equals(userId)) {
+                result.put(userId, com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(pollId));
+                continue;
+            }
+            
+            int shiftedIndex = seed + i;
+            int nounIndex = shiftedIndex % ANONYMOUS_NOUNS.length;
+            int adjIndex = (shiftedIndex / ANONYMOUS_NOUNS.length) % ANONYMOUS_ADJECTIVES.length;
+            int cycle = i / maxCombinations;
+            
+            String noun = ANONYMOUS_NOUNS[nounIndex];
+            String adj = ANONYMOUS_ADJECTIVES[adjIndex];
+            
+            // Format: "Cáo Vui Vẻ 🦊"
+            String animalName = noun.substring(0, noun.length() - 2).trim();
+            String emoji = noun.substring(noun.length() - 2).trim();
+            
+            String fullName = animalName + " " + adj + " " + emoji;
+            
+            if (cycle > 0) {
+                fullName += " (" + cycle + ")";
+            }
+            
+            result.put(userId, fullName);
+            i++;
         }
         return result;
     }
 
     private CommentResponseDTO mapToDTO(Comment comment, String voteStatus, Map<Long, String> anonymousDisplayNames) {
+        return mapToDTO(comment, voteStatus, anonymousDisplayNames, 0L, false, false);
+    }
+
+    private CommentResponseDTO mapToDTO(Comment comment, String voteStatus, Map<Long, String> anonymousDisplayNames, long likeCount, boolean likedByMe) {
+        return mapToDTO(comment, voteStatus, anonymousDisplayNames, likeCount, likedByMe, false);
+    }
+
+    private CommentResponseDTO mapToDTO(Comment comment, String voteStatus, Map<Long, String> anonymousDisplayNames, long likeCount, boolean likedByMe, boolean isOwner) {
         String displayUsername;
         if (comment.isAnonymous()) {
             displayUsername = anonymousDisplayNames.getOrDefault(
@@ -355,7 +455,58 @@ public class CommentServiceImpl implements CommentService {
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .pollId(comment.getPoll() != null ? comment.getPoll().getId() : null)
                 .pollTitle(comment.getPoll() != null ? comment.getPoll().getTitle() : null)
+                .likeCount(likeCount)
+                .likedByMe(likedByMe)
+                .isOwner(isOwner)
                 .replies(List.of())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public boolean toggleLike(Long commentId, Long userId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        boolean alreadyLiked = commentLikeRepository.existsByCommentIdAndUserId(commentId, userId);
+
+        if (alreadyLiked) {
+            commentLikeRepository.deleteByCommentIdAndUserId(commentId, userId);
+            if (comment.getPoll() != null) {
+                commentCacheInvalidator.evictAllPagesForPoll(comment.getPoll().getId());
+            }
+            return false;
+        } else {
+            CommentLike like = CommentLike.builder()
+                    .comment(comment)
+                    .user(user)
+                    .build();
+            commentLikeRepository.save(like);
+
+            if (comment.getPoll() != null) {
+                commentCacheInvalidator.evictAllPagesForPoll(comment.getPoll().getId());
+            }
+
+            // Notify the comment author (not if self-like)
+            if (!comment.getUser().getId().equals(userId)) {
+                String actorName = user.getUsername();
+                String actorAvatar = user.getAvatarUrl();
+
+                asyncNotificationService.createNotificationAsync(
+                        comment.getUser().getId(),
+                        actorName,
+                        actorAvatar,
+                        "COMMENT_LIKED",
+                        comment.getContent().length() > 80
+                                ? comment.getContent().substring(0, 80).trim() + "..."
+                                : comment.getContent(),
+                        comment.getPoll() != null ? comment.getPoll().getId() : null,
+                        comment.getId()
+                );
+            }
+            return true;
+        }
     }
 }

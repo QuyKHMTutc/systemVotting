@@ -13,9 +13,9 @@ public final class PlanPollLimits {
     public static Integer maxRooms(PlanType plan) {
         PlanType p = plan != null ? plan : PlanType.FREE;
         return switch (p) {
-            case FREE -> 5000;
-            case GO -> 5000;
-            case PLUS -> 5000;
+            case FREE -> 5;
+            case GO -> 20;
+            case PLUS -> 50;
             case PRO -> null;
         };
     }
@@ -23,10 +23,10 @@ public final class PlanPollLimits {
     public static int maxJudges(PlanType plan) {
         PlanType p = plan != null ? plan : PlanType.FREE;
         return switch (p) {
-            case FREE -> 0;
-            case GO -> 10;
-            case PLUS -> 40;
-            case PRO -> 100; // 100 giám khảo
+            case FREE -> 5;
+            case GO -> 7;
+            case PLUS -> 9;
+            case PRO -> 11;
         };
     }
 
@@ -37,6 +37,16 @@ public final class PlanPollLimits {
             case GO -> 50;
             case PLUS -> 60;
             case PRO -> 70;
+        };
+    }
+
+    public static int maxInvites(PlanType plan) {
+        PlanType p = plan != null ? plan : PlanType.FREE;
+        return switch (p) {
+            case FREE -> 100;
+            case GO -> 300;
+            case PLUS -> 1000;
+            case PRO -> 2000;
         };
     }
 }

@@ -13,7 +13,7 @@ public final class PaymentDTO {
 
     private PaymentDTO() {}  // not instantiable
 
-    public record PaymentRequest(PlanType planType) {}
+    public record PaymentRequest(PlanType planType, String bankCode) {}
 
     public record PaymentResponse(String paymentUrl) {}
 

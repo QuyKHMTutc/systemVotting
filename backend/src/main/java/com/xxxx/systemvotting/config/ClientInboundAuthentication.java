@@ -36,25 +36,27 @@ public class ClientInboundAuthentication implements ChannelInterceptor {
         if (accessor != null) {
             if(StompCommand.CONNECT.equals(accessor.getCommand())) {
                 String authorization = accessor.getFirstNativeHeader("Authorization");
-                if (authorization == null || !authorization.startsWith("Bearer ")) {
-                    throw new MessageDeliveryException("Missing token");
-                }
+                if (authorization != null && authorization.startsWith("Bearer ")) {
+                    // Token provided — validate it and set the user principal
+                    String token = authorization.replace("Bearer ", "");
+                    try {
+                        Jwt jwt = jwtDecoder.decode(token);
+                        String userId = jwt.getSubject();
+                        List<GrantedAuthority> authorities = Optional.ofNullable(jwt.getClaimAsStringList(AUTHORITIES))
+                                .orElse(Collections.emptyList())
+                                .stream()
+                                .map(SimpleGrantedAuthority::new)
+                                .collect(Collectors.toList());
 
-                String token = authorization.replace("Bearer ", "");
-                try {
-                    Jwt jwt = jwtDecoder.decode(token);
-                    String userId = jwt.getSubject();
-                    List<GrantedAuthority> authorities = Optional.ofNullable(jwt.getClaimAsStringList(AUTHORITIES))
-                            .orElse(Collections.emptyList())
-                            .stream()
-                            .map(SimpleGrantedAuthority::new)
-                            .collect(Collectors.toList());
-
-                    accessor.setUser(new UsernamePasswordAuthenticationToken(userId, null, authorities));
-                    log.info("Websocket connected - userId: {}", userId);
-                } catch (JwtException e) {
-                    log.warn("Invalid JWT: {}", e.getMessage());
-                    throw new MessageDeliveryException("Unauthorized");
+                        accessor.setUser(new UsernamePasswordAuthenticationToken(userId, null, authorities));
+                        log.info("Websocket connected - userId: {}", userId);
+                    } catch (JwtException e) {
+                        log.warn("Invalid JWT: {}", e.getMessage());
+                        throw new MessageDeliveryException("Unauthorized");
+                    }
+                } else {
+                    // No token provided — allow anonymous connection for public topics
+                    log.debug("Websocket connected anonymously (no token)");
                 }
             }
         }

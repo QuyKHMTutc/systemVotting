@@ -44,7 +44,7 @@ public class PaymentController {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         Long userId = Long.valueOf(jwt.getSubject());
-        String paymentUrl = paymentService.createPaymentUrl(userId, requestDto.planType(), request);
+        String paymentUrl = paymentService.createPaymentUrl(userId, requestDto.planType(), requestDto.bankCode(), request);
         return ApiResponse.<PaymentDTO.PaymentResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")

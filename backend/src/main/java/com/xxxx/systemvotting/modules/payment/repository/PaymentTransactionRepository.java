@@ -23,4 +23,11 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentTransaction p WHERE p.status = :status")
     long sumAmountByStatus(@org.springframework.data.repository.query.Param("status") com.xxxx.systemvotting.modules.payment.enums.TransactionStatus status);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE PaymentTransaction p SET p.status = :newStatus WHERE p.status = :oldStatus AND p.createdAt < :cutoffTime")
+    int updateStatusForOldTransactions(
+            @org.springframework.data.repository.query.Param("oldStatus") com.xxxx.systemvotting.modules.payment.enums.TransactionStatus oldStatus,
+            @org.springframework.data.repository.query.Param("newStatus") com.xxxx.systemvotting.modules.payment.enums.TransactionStatus newStatus,
+            @org.springframework.data.repository.query.Param("cutoffTime") java.time.LocalDateTime cutoffTime);
 }

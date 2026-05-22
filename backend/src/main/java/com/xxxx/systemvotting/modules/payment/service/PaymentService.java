@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -57,13 +58,13 @@ public class PaymentService {
     @Value("${vnpay.returnUrl}")
     private String vnpReturnUrl;
 
-    public String createPaymentUrl(Long userId, PlanType planType, HttpServletRequest request) {
+    public String createPaymentUrl(Long userId, PlanType planType, String bankCode, HttpServletRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return createPaymentUrlForUser(user, planType, request);
+        return createPaymentUrlForUser(user, planType, bankCode, request);
     }
 
-    public String createPaymentUrlForUser(User user, PlanType planType, HttpServletRequest request) {
+    public String createPaymentUrlForUser(User user, PlanType planType, String bankCode, HttpServletRequest request) {
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
         String orderType = "other";
@@ -73,14 +74,17 @@ public class PaymentService {
         
         String vnp_TxnRef = VnPayConfig.getRandomNumber(8);
         String vnp_IpAddr = VnPayConfig.getIpAddress(request);
-        if (vnp_IpAddr == null || vnp_IpAddr.contains(":")) {
-            vnp_IpAddr = "127.0.0.1"; // VNPay requires IPv4 format, avoid IPv6
+        if (vnp_IpAddr == null || vnp_IpAddr.contains(":") || vnp_IpAddr.contains(",")) {
+            vnp_IpAddr = "127.0.0.1"; // VNPay requires IPv4 format, avoid IPv6 and comma-separated IPs
         }
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
         vnp_Params.put("vnp_Command", vnp_Command);
         vnp_Params.put("vnp_TmnCode", vnpTmnCode);
+        if (bankCode != null && !bankCode.isEmpty()) {
+            vnp_Params.put("vnp_BankCode", bankCode);
+        }
         vnp_Params.put("vnp_Amount", String.valueOf(amountVND));
         vnp_Params.put("vnp_CurrCode", "VND");
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
@@ -141,7 +145,11 @@ public class PaymentService {
             }
         }
         
-        String vnp_SecureHash = VnPayConfig.hmacSHA512(vnpHashSecret, hashData.toString());
+        String secret = vnpHashSecret != null ? vnpHashSecret.trim() : "";
+        System.out.println("[VNPAY CREATE] Secret    : '" + secret + "'");
+        System.out.println("[VNPAY CREATE] HashData  : '" + hashData.toString() + "'");
+        String vnp_SecureHash = VnPayConfig.hmacSHA512(secret, hashData.toString());
+        System.out.println("[VNPAY CREATE] Hash      : " + vnp_SecureHash);
         query.append("&vnp_SecureHash=").append(vnp_SecureHash);
         
         return vnpPayUrl + "?" + query.toString();
@@ -158,25 +166,26 @@ public class PaymentService {
         List<String> fieldNames = new ArrayList<>(callbackParams.keySet());
         Collections.sort(fieldNames);
         StringBuilder hashData = new StringBuilder();
-        Iterator<String> itr = fieldNames.iterator();
-        while (itr.hasNext()) {
-            String fieldName = itr.next();
+        boolean firstField = true;
+        for (String fieldName : fieldNames) {
             String fieldValue = callbackParams.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                try {
-                    hashData.append(fieldName);
-                    hashData.append('=');
-                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    if (itr.hasNext()) {
-                        hashData.append('&');
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+            if (fieldValue != null && !fieldValue.isEmpty()) {
+                if (!firstField) {
+                    hashData.append('&');
                 }
+                // VNPay spec: hash is built from raw decoded values, NOT re-encoded
+                hashData.append(fieldName).append('=').append(fieldValue);
+                firstField = false;
             }
         }
 
-        String signValue = VnPayConfig.hmacSHA512(vnpHashSecret, hashData.toString());
+        String secret = vnpHashSecret != null ? vnpHashSecret.trim() : "";
+        System.out.println("[VNPAY IPN] Secret      : '" + secret + "'");
+        System.out.println("[VNPAY IPN] HashData    : '" + hashData.toString() + "'");
+        System.out.println("[VNPAY IPN] Received    : " + vnp_SecureHash);
+        String signValue = VnPayConfig.hmacSHA512(secret, hashData.toString());
+        System.out.println("[VNPAY IPN] Computed    : " + signValue);
+        System.out.println("[VNPAY IPN] Match       : " + signValue.equals(vnp_SecureHash));
         if (vnp_SecureHash == null || !signValue.equals(vnp_SecureHash)) {
             return -1; // Invalid signature
         }
@@ -298,5 +307,16 @@ public class PaymentService {
         LocalDateTime base = currentExpiration != null && currentExpiration.isAfter(now) ? currentExpiration : now;
         //return base.plusDays(PLAN_DURATION_DAYS);
         return base.plusMinutes(PLAN_DURATION_MINUTES);
+    }
+
+    @Scheduled(fixedRate = 60000) // Run every 60 seconds
+    @Transactional
+    public void cleanupExpiredTransactions() {
+        // VNPay expires in 15 minutes. We allow 20 minutes to be safe.
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(20);
+        int updated = paymentTransactionRepository.updateStatusForOldTransactions(TransactionStatus.PENDING, TransactionStatus.FAILED, cutoff);
+        if (updated > 0) {
+            System.out.println("[PaymentService] Cleaned up " + updated + " expired PENDING transactions.");
+        }
     }
 }

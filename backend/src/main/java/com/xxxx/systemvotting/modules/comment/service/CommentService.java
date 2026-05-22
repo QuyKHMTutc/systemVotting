@@ -8,11 +8,16 @@ import com.xxxx.systemvotting.modules.comment.dto.response.CommentThreadResponse
 public interface CommentService {
     CommentResponseDTO createComment(CommentRequestDTO request, Long userId);
 
-    CommentThreadResponse getCommentsByPollId(Long pollId, int page, int size);
+    CommentThreadResponse getCommentsByPollId(Long pollId, int page, int size, Long currentUserId);
 
     PageResponse<CommentResponseDTO> getMyComments(Long userId, int page, int size);
 
     com.xxxx.systemvotting.modules.comment.dto.response.IdentityStatusDTO getIdentityStatus(Long pollId, Long userId);
 
     void deleteComment(Long commentId, Long userId);
+
+    /**
+     * Toggle like on a comment. Returns true if liked, false if unliked.
+     */
+    boolean toggleLike(Long commentId, Long userId);
 }

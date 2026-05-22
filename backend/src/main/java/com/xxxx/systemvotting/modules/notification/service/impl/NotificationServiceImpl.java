@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,14 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
+    /**
+     * Types that use cooldown deduplication to prevent spam notifications.
+     * e.g. COMMENT_LIKED: if userA likes then unlikes then likes comment 5 within 30 min, only 1 notification sent.
+     */
+    private static final java.util.Set<String> COOLDOWN_TYPES = java.util.Set.of("COMMENT_LIKED");
+    private static final Duration COOLDOWN_DURATION = Duration.ofMinutes(30);
 
     @Override
     @Transactional
@@ -43,6 +52,16 @@ public class NotificationServiceImpl implements NotificationService {
         if (recipient == null) {
             log.debug("Skip notification for missing recipientId={}", recipientId);
             return;
+        }
+
+        // --- Cooldown deduplication for spammable notification types ---
+        if (COOLDOWN_TYPES.contains(type) && relatedCommentId != null) {
+            String cooldownKey = "notif:cooldown:" + type + ":" + actorName + ":" + relatedCommentId;
+            Boolean isNew = stringRedisTemplate.opsForValue().setIfAbsent(cooldownKey, "1", COOLDOWN_DURATION);
+            if (!Boolean.TRUE.equals(isNew)) {
+                log.debug("Skipping duplicate {} notification for commentId={} by actor={} (cooldown active)", type, relatedCommentId, actorName);
+                return;
+            }
         }
 
         Notification notification = Notification.builder()
@@ -61,6 +80,7 @@ public class NotificationServiceImpl implements NotificationService {
         // Map to DTO and push via WebSocket
         NotificationResponseDTO dto = mapToDTO(notification);
         
+        log.info("Sending STOMP message to user {}: type={}, message={}", recipient.getId(), dto.type(), dto.message());
         // This pushes to /user/{userId}/queue/notifications using Spring's default user destination prefix
         messagingTemplate.convertAndSendToUser(
                 recipient.getId().toString(), 

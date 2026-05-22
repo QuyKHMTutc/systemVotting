@@ -58,4 +58,14 @@ public class CommentResponseDTO {
 
     @Schema(description = "Danh sách các phản hồi con")
     private List<CommentResponseDTO> replies;
+
+    @Schema(description = "Số lượt thích", example = "5")
+    private long likeCount;
+
+    @Schema(description = "Người dùng hiện tại đã thích hay chưa", example = "false")
+    private boolean likedByMe;
+
+    @Schema(description = "Comment này có phải của người dùng hiện tại không (dùng để hiện nút xóa)", example = "false")
+    @JsonProperty("isOwner")
+    private boolean isOwner;
 }

@@ -106,7 +106,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @Query("SELECT COUNT(p) FROM Poll p WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) AND p.endTime > :now")
     long countPublicActivePolls(@Param("now") java.time.LocalDateTime now);
 
-    @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL GROUP BY p.category.id")
+    @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL AND (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) GROUP BY p.category.id")
     List<Object[]> countPollsByCategory();
 
     List<Poll> findByCategory_Id(Long categoryId);

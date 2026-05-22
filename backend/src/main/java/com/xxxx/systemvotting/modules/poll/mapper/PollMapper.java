@@ -34,7 +34,7 @@ public interface PollMapper {
     @Mapping(target = "invitedEmails", ignore = true)   // set in service
     @Mapping(target = "members",       ignore = true)   // set in service
     @Mapping(target = "category",      ignore = true)   // set in service
-    @Mapping(target = "isAnonymous", source = "isAnonymous")
+    @Mapping(target = "isAnonymous", source = "anonymous")
     Poll toEntity(PollCreateRequestDTO dto);
 
     /**

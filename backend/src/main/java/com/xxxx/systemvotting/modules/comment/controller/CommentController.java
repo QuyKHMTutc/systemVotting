@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.Map;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -58,8 +59,10 @@ public class CommentController {
     public ApiResponse<CommentThreadResponse> getCommentsByPollId(
             @PathVariable Long pollId,
             @Parameter(description = "Số trang (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
-            @Parameter(description = "Kích thước trang, tối đa 50") @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
-        CommentThreadResponse response = commentService.getCommentsByPollId(pollId, page, size);
+            @Parameter(description = "Kích thước trang, tối đa 50") @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long currentUserId = jwt != null ? Long.valueOf(jwt.getSubject()) : null;
+        CommentThreadResponse response = commentService.getCommentsByPollId(pollId, page, size, currentUserId);
         return ApiResponse.<CommentThreadResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Comments retrieved successfully")
@@ -123,6 +126,25 @@ public class CommentController {
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("Comment deleted successfully")
+                .build();
+    }
+
+    @Operation(summary = "Thích / Bỏ thích bình luận", description = "Toggle like trên một bình luận. Trả về liked=true nếu đã thích, false nếu đã bỏ thích.")
+    @PostMapping("/{id}/like")
+    public ApiResponse<Map<String, Object>> toggleLike(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            return ApiResponse.<Map<String, Object>>builder()
+                    .code(HttpStatus.UNAUTHORIZED.value())
+                    .message("Unauthorized")
+                    .build();
+        }
+        boolean liked = commentService.toggleLike(id, Long.valueOf(jwt.getSubject()));
+        return ApiResponse.<Map<String, Object>>builder()
+                .code(HttpStatus.OK.value())
+                .message(liked ? "Liked" : "Unliked")
+                .data(Map.of("liked", liked))
                 .build();
     }
 }

@@ -170,7 +170,7 @@ public class VoteServiceImpl implements VoteService {
         handleFirstVoteSideEffects(userId, poll);
 
         // Step 6 — Broadcast live counts (non-blocking Redis read + WebSocket)
-        broadcastVoteUpdate(poll, RedisKeyUtils.getPollVotesKey(pollId));
+        broadcastVoteUpdate(userId, poll, RedisKeyUtils.getPollVotesKey(pollId));
 
         log.debug("Vote submitted: userId={}, pollId={}, optionId={}",
                 userId, pollId, optionId);
@@ -351,25 +351,31 @@ public class VoteServiceImpl implements VoteService {
      * Reads latest counts from Redis and pushes them to WebSocket subscribers.
      * Non-blocking: Redis read is O(N options), WebSocket is fire-and-forget.
      */
-    private void broadcastVoteUpdate(Poll poll, String pollVotesKey) {
+    private void broadcastVoteUpdate(Long userId, Poll poll, String pollVotesKey) {
         Map<Object, Object> redisCounts = stringRedisTemplate.opsForHash().entries(pollVotesKey);
 
         List<Map<String, Object>> optionUpdates = poll.getOptions().stream()
                 .map(o -> {
                     Object audienceRaw = redisCounts.get(o.getId() + ":AUDIENCE");
                     Object judgeRaw = redisCounts.get(o.getId() + ":JUDGE");
-                    
+
                     int audienceCount = audienceRaw != null ? Integer.parseInt(audienceRaw.toString()) : 0;
                     int judgeCount = judgeRaw != null ? Integer.parseInt(judgeRaw.toString()) : 0;
-                    
-                    // Note: totalVoteCount here is a virtual weighted sum for simple display if needed,
-                    // but the frontend will do the heavy lifting with judgeWeight.
+                    int redisTotal = audienceCount + judgeCount;
+
+                    // Redis tracks votes in the current session (Lua HINCRBY). The DB baseline
+                    // (o.getVoteCount()) reflects votes already flushed by VoteEventConsumer.
+                    // Take the max so we never broadcast a count lower than what DB already has.
+                    // Example: DB=100, Redis=3 (after a Redis restart) → broadcast 100, not 3.
+                    int broadcastVoteCount = Math.max(o.getVoteCount(), redisTotal);
+
                     return Map.<String, Object>of(
-                            "optionId",  o.getId(),
-                            "text",      o.getText(),
+                            "optionId",      o.getId(),
+                            "text",          o.getText(),
+                            "voteCount",     broadcastVoteCount,
                             "audienceCount", audienceCount,
-                            "judgeCount", judgeCount,
-                            "judgeWeight", poll.getJudgeWeight()
+                            "judgeCount",    judgeCount,
+                            "judgeWeight",   poll.getJudgeWeight()
                     );
                 })
                 .collect(Collectors.toList());
@@ -383,7 +389,7 @@ public class VoteServiceImpl implements VoteService {
         // Global channel (explore/dashboard page)
         realTimeService.broadcast(
                 "/topic/polls/events",
-                Map.of("type", "VOTED", "pollId", poll.getId(), "options", optionUpdates)
+                Map.of("type", "VOTED", "pollId", poll.getId(), "userId", userId, "options", optionUpdates)
         );
     }
 
