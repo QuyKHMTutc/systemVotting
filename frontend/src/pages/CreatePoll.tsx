@@ -15,8 +15,11 @@ const CreatePoll = () => {
     const { user } = useAuth();
     const plan = (user?.plan ?? 'FREE').toUpperCase();
     const maxJudges = PlanPollLimits.maxJudges(plan);
-    const judgeWeight = PlanPollLimits.judgeWeight(plan);
+    const maxInvites = PlanPollLimits.maxInvites(plan);
+    const defaultJudgeWeight = PlanPollLimits.judgeWeight(plan);
     const canUseJudges = maxJudges > 0;
+
+    const [judgeWeightState, setJudgeWeightState] = useState(defaultJudgeWeight);
 
     const [question, setQuestion] = useState('');
     const [description, setDescription] = useState('');
@@ -37,7 +40,7 @@ const CreatePoll = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        categoryService.getAllCategories().then(setCategories).catch(() => {});
+        categoryService.getAllCategories().then(setCategories).catch(() => { });
     }, []);
 
     const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -67,14 +70,17 @@ const CreatePoll = () => {
                 title: question,
                 description: description.trim() || undefined,
                 tags: tags,
-                isAnonymous,
+                isAnonymous: isAnonymous,
+                anonymous: isAnonymous,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime,
                 judgeIds: enableJudges && judges.length > 0 ? judges.filter(j => j.id).map(j => j.id) : [],
+                judgeWeight: enableJudges ? judgeWeightState : 0,
                 visibility,
                 invitedEmails: visibility === 'PRIVATE' ? invitedUsers.map(u => u.email ?? '').filter(Boolean) : [],
                 categoryId: selectedCategoryId,
             });
+            sessionStorage.removeItem('explore_scroll_cache');
             navigate('/explore');
         } catch (err: any) {
             setError(err.response?.data?.message || t('createPoll.errorFailed'));
@@ -225,84 +231,126 @@ const CreatePoll = () => {
                             {advancedOpen && (
                                 <div className="divide-y divide-slate-200 dark:divide-white/10 px-5 py-4 space-y-5">
 
-                        {/* Privacy */}
-                        <div className="space-y-4">
-                            <label className="flex items-center cursor-pointer group">
-                                <div className="relative">
-                                    <input type="checkbox" className="sr-only" checked={visibility === 'PRIVATE'} onChange={() => {
-                                        const next = visibility === 'PUBLIC' ? 'PRIVATE' : 'PUBLIC';
-                                        setVisibility(next); setInvitedUsers([]);
-                                        if (next === 'PRIVATE') { setEnableJudges(false); setJudges([]); }
-                                    }} />
-                                    <div className={`block w-12 h-7 rounded-full transition-colors ${visibility === 'PRIVATE' ? 'bg-violet-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
-                                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${visibility === 'PRIVATE' ? 'transform translate-x-5' : ''}`}></div>
-                                </div>
-                                <div className="ml-4">
-                                    <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">{t('createPoll.privacyPrivate')}</span>
-                                    <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">{t('createPoll.privacyPrivateDesc')}</span>
-                                </div>
-                            </label>
-                            {visibility === 'PRIVATE' && (
-                                <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
-                                    <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 mb-3">{t('createPoll.invitedUsersList')}</p>
-                                    <InviteUserSelector invitedUsers={invitedUsers} onChange={setInvitedUsers} />
-                                </div>
-                            )}
-                        </div>
+                                    {/* Privacy */}
+                                    <div className="space-y-4">
+                                        <label className="flex items-center justify-between cursor-pointer group">
+                                            <div>
+                                                <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">{t('createPoll.privacyPrivate')}</span>
+                                                <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">{t('createPoll.privacyPrivateDesc')}</span>
+                                            </div>
+                                            <div className="relative ml-4 flex-shrink-0">
+                                                <input type="checkbox" className="sr-only" checked={visibility === 'PRIVATE'} onChange={() => {
+                                                    const next = visibility === 'PUBLIC' ? 'PRIVATE' : 'PUBLIC';
+                                                    setVisibility(next); setInvitedUsers([]);
+                                                    if (next === 'PRIVATE') { setEnableJudges(false); setJudges([]); }
+                                                }} />
+                                                <div className={`block w-12 h-7 rounded-full transition-colors ${visibility === 'PRIVATE' ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
+                                                <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${visibility === 'PRIVATE' ? 'transform translate-x-5' : ''}`}></div>
+                                            </div>
+                                        </label>
+                                        {visibility === 'PRIVATE' && (
+                                            <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-4">
+                                                <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 mb-3">{t('createPoll.invitedUsersList')}</p>
+                                                <InviteUserSelector invitedUsers={invitedUsers} onChange={setInvitedUsers} maxInvites={maxInvites} />
+                                            </div>
+                                        )}
+                                    </div>
 
-                        {/* Anonymous */}
-                        <div className="pt-2">
-                            <label className="flex items-center cursor-pointer group">
-                                <div className="relative">
-                                    <input type="checkbox" className="sr-only" checked={isAnonymous} onChange={() => setIsAnonymous(!isAnonymous)} />
-                                    <div className={`block w-12 h-7 rounded-full transition-colors ${isAnonymous ? 'bg-pink-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
-                                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${isAnonymous ? 'transform translate-x-5' : ''}`}></div>
-                                </div>
-                                <div className="ml-4">
-                                    <span className="block text-slate-800 dark:text-white font-medium">{t('createPoll.anonymousMode')}</span>
-                                    <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">{t('createPoll.anonymousDesc')}</span>
-                                </div>
-                            </label>
-                        </div>
+                                    {/* Anonymous */}
+                                    <div className="pt-2">
+                                        <label className="flex items-center justify-between cursor-pointer group">
+                                            <div>
+                                                <span className="block text-slate-800 dark:text-white font-medium">{t('createPoll.anonymousMode')}</span>
+                                                <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">{t('createPoll.anonymousDesc')}</span>
+                                            </div>
+                                            <div className="relative ml-4 flex-shrink-0">
+                                                <input type="checkbox" className="sr-only" checked={isAnonymous} onChange={() => setIsAnonymous(!isAnonymous)} />
+                                                <div className={`block w-12 h-7 rounded-full transition-colors ${isAnonymous ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
+                                                <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${isAnonymous ? 'transform translate-x-5' : ''}`}></div>
+                                            </div>
+                                        </label>
+                                    </div>
 
-                        {/* Judges */}
-                        {visibility !== 'PRIVATE' && (canUseJudges ? (
-                            <div className="pt-2 space-y-4">
-                                <label className="flex items-center cursor-pointer group">
-                                    <div className="relative">
-                                        <input type="checkbox" className="sr-only" checked={enableJudges} onChange={() => { setEnableJudges(!enableJudges); if (enableJudges) setJudges([]); }} />
-                                        <div className={`block w-12 h-7 rounded-full transition-colors ${enableJudges ? 'bg-amber-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
-                                        <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${enableJudges ? 'transform translate-x-5' : ''}`}></div>
-                                    </div>
-                                    <div className="ml-4">
-                                        <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">
-                                            {t('createPoll.judgesEnable')}
-                                            <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">{plan}</span>
-                                        </span>
-                                        <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">{t('createPoll.judgesWeightDesc', { judgeWeight, audienceWeight: 100 - judgeWeight })}</span>
-                                    </div>
-                                </label>
-                                {enableJudges && (
-                                    <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">
-                                        <JudgeSelector judges={judges} onChange={setJudges} maxJudges={maxJudges} judgeWeight={judgeWeight} />
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="pt-2">
-                                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                                    <span className="text-2xl">⚖️</span>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('createPoll.judgesEnable').replace('⚖️ ', '')}</p>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500">{t('createPoll.judgesUpgrade')}</p>
-                                    </div>
-                                    <button type="button" onClick={() => navigate('/profile')}
-                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all shadow-sm">
-                                        {t('createPoll.upgradeBtn')}
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                                    {/* Judges */}
+                                    {visibility !== 'PRIVATE' && (canUseJudges ? (
+                                        <div className="pt-2 space-y-4">
+                                            <label className="flex items-center justify-between cursor-pointer group">
+                                                <div>
+                                                    <span className="flex items-center gap-2 text-slate-800 dark:text-white font-medium">
+                                                        {t('createPoll.judgesEnable')}
+                                                        <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">{plan}</span>
+                                                    </span>
+                                                
+                                                </div>
+                                                <div className="relative ml-4 flex-shrink-0">
+                                                    <input type="checkbox" className="sr-only" checked={enableJudges} onChange={() => { setEnableJudges(!enableJudges); if (enableJudges) setJudges([]); }} />
+                                                    <div className={`block w-12 h-7 rounded-full transition-colors ${enableJudges ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
+                                                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${enableJudges ? 'transform translate-x-5' : ''}`}></div>
+                                                </div>
+                                            </label>
+                                            {enableJudges && (
+                                                <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 space-y-4">
+                                                    <div>
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <label className="text-sm font-semibold text-slate-700 dark:text-amber-100">Cấu hình trọng số</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    max={99}
+                                                                    value={judgeWeightState}
+                                                                    onChange={e => {
+                                                                        const val = parseInt(e.target.value);
+                                                                        if (!isNaN(val)) {
+                                                                            setJudgeWeightState(Math.min(99, Math.max(1, val)));
+                                                                        }
+                                                                    }}
+                                                                    className="w-16 px-2 py-1 text-center text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10 text-slate-800 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none shadow-sm"
+                                                                />
+                                                                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">%</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <input
+                                                            type="range"
+                                                            min={1}
+                                                            max={99}
+                                                            value={judgeWeightState}
+                                                            onChange={e => setJudgeWeightState(parseInt(e.target.value))}
+                                                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                                                        />
+
+                                                        <div className="flex justify-between text-xs mt-2 font-medium">
+                                                            <span className="text-amber-600 dark:text-amber-400">Giám khảo: {judgeWeightState}%</span>
+                                                            <span className="text-indigo-600 dark:text-indigo-400">Khán giả: {100 - judgeWeightState}%</span>
+                                                        </div>
+
+                                                        {/* Progress bar visualizer */}
+                                                        <div className="w-full flex h-1.5 rounded-full overflow-hidden mt-1 bg-slate-200">
+                                                            <div className="bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-300" style={{ width: `${judgeWeightState}%` }}></div>
+                                                            <div className="bg-gradient-to-r from-indigo-400 to-indigo-500 transition-all duration-300" style={{ width: `${100 - judgeWeightState}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                    <hr className="border-amber-500/20" />
+                                                    <JudgeSelector judges={judges} onChange={setJudges} maxJudges={maxJudges} judgeWeight={judgeWeightState} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="pt-2">
+                                            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                                                <span className="text-2xl">⚖️</span>
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('createPoll.judgesEnable').replace('⚖️ ', '')}</p>
+                                                    <p className="text-xs text-slate-400 dark:text-slate-500">{t('createPoll.judgesUpgrade')}</p>
+                                                </div>
+                                                <button type="button" onClick={() => navigate('/profile')}
+                                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all shadow-sm">
+                                                    {t('createPoll.upgradeBtn')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
 
                                 </div>
                             )}

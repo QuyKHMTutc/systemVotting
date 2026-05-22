@@ -420,7 +420,11 @@
     "termsOfService": "Terms of Service",
     "cancellationPolicy": "Cancellation Policy",
     "connectNow": "Connect Now",
-    "copyright": "Copyright © 2026 by TRAN VAN QUY"
+    "copyright": "Copyright © 2026 by TRAN VAN QUY",
+    "ctaTitle": "Ready to get started?",
+    "ctaSubtitle": "Completely free!",
+    "ctaLogin": "Sign In",
+    "ctaRegister": "Sign Up"
   },
   "notification": {
     "title": "Notifications",
@@ -439,7 +443,8 @@
     "hoursAgo": "{{count}}h",
     "daysAgo": "{{count}}d",
     "invitedJudge": "invited you as a Judge",
-    "invitedPrivate": "invited you to a private poll:"
+    "invitedPrivate": "invited you to a private poll:",
+    "likedComment": "liked your comment"
   },
   "liveChart": {
     "option": "Option",

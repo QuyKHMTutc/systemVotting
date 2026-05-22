@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePollWebSocket } from '../hooks/usePollWebSocket';
 import { useTranslation } from 'react-i18next';
 import PollLiveChartModal from '../components/poll/PollLiveChartModal';
+import { getAnonymousCreatorName } from '../utils/anonymous';
 
 const COMMENT_PAGE_SIZE = 20;
 
@@ -378,6 +379,8 @@ const PollDetail = () => {
 
   const isActive = new Date(poll.endTime) > new Date();
   const isCreator = !!user && user.id === poll.creator.id;
+  const creatorName = poll.isAnonymous ? getAnonymousCreatorName(poll.id) : poll.creator.username;
+  const creatorAvatar = poll.isAnonymous ? null : poll.creator.avatarUrl;
   const judgeWeight = poll.judgeWeight ?? 0;
   const audienceWeight = 100 - judgeWeight;
   const hasWeightedVoting = judgeWeight > 0;
@@ -424,7 +427,7 @@ const PollDetail = () => {
 
         {/* LEFT SIDEBAR */}
         <aside
-          className={`fixed z-[60] hidden xl:flex xl:flex-col top-[4.75rem] bottom-0 border-r border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-[#0b0a18] transition-[width] duration-300 ease-in-out overflow-visible ${sidebarOpen ? 'w-[240px]' : 'w-0'}`}
+          className={`fixed z-[60] hidden xl:flex xl:flex-col top-[4.75rem] bottom-0 border-r border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-[#0b0a18] transition-[width] duration-500 ease-in-out overflow-visible ${sidebarOpen ? 'w-[240px]' : 'w-0'}`}
           style={{ left: `max(1rem, calc((100vw - min(1700px, 100vw)) / 2 + 2rem))` }}
         >
           <div className="absolute -right-4 top-2 z-20 group">
@@ -440,23 +443,28 @@ const PollDetail = () => {
             </div>
           </div>
 
-          <div className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 pt-1 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible pointer-events-none'}`}>
-            <ExploreSidebar
-              filterTag={exploreState.filterTag}
-              filterCategory={exploreState.filterCategory}
-              filterStatus={exploreState.filterStatus}
-              onResetExplore={handleResetExplore}
-              onScrollToTrending={() => { }}
-              onScrollToPollGrid={() => { }}
-              onSetFilterStatus={handleSetFilterStatus}
-              onSetFilterTag={handleSetFilterTag}
-              onSetFilterCategory={handleSetFilterCategory}
-            />
+          {/* Inner overflow-hidden clips content during animation, but doesn't clip the button */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="h-full w-[240px] overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 pt-1">
+              <ExploreSidebar
+                filterTag={exploreState.filterTag}
+                filterCategory={exploreState.filterCategory}
+                filterStatus={exploreState.filterStatus}
+                onResetExplore={handleResetExplore}
+                onScrollToTrending={() => { }}
+                onScrollToPollGrid={() => { }}
+                onSetFilterStatus={handleSetFilterStatus}
+                onSetFilterTag={handleSetFilterTag}
+                onSetFilterCategory={handleSetFilterCategory}
+                trendingCount={0}
+                pollListVersion={0}
+              />
+            </div>
           </div>
         </aside>
 
         {/* MAIN CONTENT AREA */}
-        <main className={`min-w-0 flex flex-col items-center pt-2 lg:px-4 xl:mr-[calc(296px+0.5rem)] ${sidebarOpen ? 'xl:ml-[calc(240px+1rem)]' : 'xl:ml-6'}`}>
+        <main className={`min-w-0 flex flex-col items-center pt-2 lg:px-4 xl:mr-[calc(296px+0.5rem)] transition-[margin-left] duration-500 ease-in-out ${sidebarOpen ? 'xl:ml-[calc(240px+1rem)]' : 'xl:ml-6'}`}>
           <div className="flex items-start gap-4 w-full max-w-[960px]">
 
                 {/* Back Button (Left side) */}
@@ -536,19 +544,19 @@ const PollDetail = () => {
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white/20 shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
-                            {poll.creator.avatarUrl && poll.creator.avatarUrl !== 'null' && poll.creator.avatarUrl.trim() !== '' ? (
+                            {creatorAvatar && creatorAvatar !== 'null' && creatorAvatar.trim() !== '' ? (
                               <img
-                                src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
-                                alt={poll.creator.username}
+                                src={creatorAvatar.startsWith('http') || creatorAvatar.startsWith('blob') ? creatorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
+                                alt={creatorName}
                                 className="w-full h-full object-cover"
-                                onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                                onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}` }}
                               />
                             ) : (
-                              <span>{poll.creator.username.charAt(0).toUpperCase()}</span>
+                              <span>{creatorName.charAt(0).toUpperCase()}</span>
                             )}
                           </div>
                           <div>
-                            <span className="text-slate-800 dark:text-white/90 font-medium block">{poll.creator.username}</span>
+                            <span className="text-slate-800 dark:text-white/90 font-medium block">{creatorName}</span>
                             <span className="text-slate-500 dark:text-white/50 text-sm">{timeAgo(poll.createdAt)} · {endsIn(poll.endTime)}</span>
                           </div>
                         </div>
@@ -828,23 +836,23 @@ const PollDetail = () => {
                   </h3>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold ring-2 ring-white/10 shadow-md overflow-hidden shrink-0">
-                      {poll.creator.avatarUrl && poll.creator.avatarUrl !== 'null' && poll.creator.avatarUrl.trim() !== '' ? (
+                      {creatorAvatar && creatorAvatar !== 'null' && creatorAvatar.trim() !== '' ? (
                         <img
-                          src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
-                          alt={poll.creator.username}
+                          src={creatorAvatar.startsWith('http') || creatorAvatar.startsWith('blob') ? creatorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
+                          alt={creatorName}
                           className="w-full h-full object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                          onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}` }}
                         />
                       ) : (
-                        <span>{poll.creator.username.charAt(0).toUpperCase()}</span>
+                        <span>{creatorName.charAt(0).toUpperCase()}</span>
                       )}
                     </div>
                     <div>
                       <h4 className="font-bold text-slate-900 dark:text-white text-base leading-tight">
-                        {poll.creator.username}
+                        {creatorName}
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-white/40 mt-1">
-                        {(poll.creator as any).role === 'ADMIN' ? t('pollDetail.adminRole', 'Administrator') : t('pollDetail.memberRole', 'Community Member')}
+                        {poll.isAnonymous ? t('pollDetail.anonymousCreator', 'Tác giả ẩn danh') : ((poll.creator as any).role === 'ADMIN' ? t('pollDetail.adminRole', 'Administrator') : t('pollDetail.memberRole', 'Community Member'))}
                       </p>
                     </div>
                   </div>
@@ -897,7 +905,7 @@ const PollDetail = () => {
                           </h4>
                           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-white/40">
                             <span className="truncate max-w-[120px] font-medium text-slate-600 dark:text-white/50">
-                              @{tp.creator.username}
+                              @{tp.isAnonymous ? getAnonymousCreatorName(tp.id) : tp.creator.username}
                             </span>
                             <span>
                               {tp.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0)} phiếu

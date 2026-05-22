@@ -5,9 +5,10 @@ import type { JudgeCandidate } from '../services/judge.service';
 interface InviteUserSelectorProps {
     invitedUsers: JudgeCandidate[];
     onChange: (users: JudgeCandidate[]) => void;
+    maxInvites: number;
 }
 
-const InviteUserSelector = ({ invitedUsers, onChange }: InviteUserSelectorProps) => {
+const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSelectorProps) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<JudgeCandidate[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -36,6 +37,7 @@ const InviteUserSelector = ({ invitedUsers, onChange }: InviteUserSelectorProps)
     }, [addedIds]);
 
     const addUser = (user: JudgeCandidate) => {
+        if (invitedUsers.length >= maxInvites) return;
         if (addedIds.has(user.id)) return;
         onChange([...invitedUsers, user]);
         setSearchQuery('');
@@ -89,7 +91,8 @@ const InviteUserSelector = ({ invitedUsers, onChange }: InviteUserSelectorProps)
                 }
             }
         }
-        onChange([...invitedUsers, ...toAdd]);
+        const canAdd = Math.min(toAdd.length, maxInvites - invitedUsers.length);
+        onChange([...invitedUsers, ...toAdd.slice(0, canAdd)]);
         setShowImportModal(false);
         setImportPreview([]);
     };
@@ -99,6 +102,18 @@ const InviteUserSelector = ({ invitedUsers, onChange }: InviteUserSelectorProps)
 
     return (
         <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-2">
+                <div>
+                    <p className="text-sm text-slate-500 dark:text-indigo-200/60">
+                        Chế độ riêng tư: Tối đa <span className="font-bold text-violet-400">{maxInvites}</span> người tham gia.
+                    </p>
+                </div>
+                <span className="text-sm font-medium text-slate-600 dark:text-indigo-200">
+                    {invitedUsers.length}/{maxInvites}
+                </span>
+            </div>
+
             {/* Added user chips */}
             {invitedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 p-3 bg-violet-500/5 border border-violet-500/20 rounded-xl">

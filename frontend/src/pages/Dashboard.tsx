@@ -41,7 +41,7 @@ function loadDashboardCache(): DashboardCache | null {
   try {
     const cached = sessionStorage.getItem(CACHE_KEY);
     if (cached) return JSON.parse(cached);
-  } catch (e) {}
+  } catch (e) { }
   return null;
 }
 
@@ -72,8 +72,14 @@ const Dashboard = () => {
   const [trendingLoading, setTrendingLoading] = useState(() => !shouldRestore);
   const [loading, setLoading] = useState(() => !shouldRestore);
   const [error, setError] = useState('');
-  const [votedPollIds, setVotedPollIds] = useState<number[]>([]);
+  // Initialise synchronously from localStorage so the very first render already
+  // shows percentage bars for polls the user has voted on (avoids a flash of
+  // "unvoted" state that occurs when using an async useEffect for this).
+  const [votedPollIds, setVotedPollIds] = useState<number[]>(() => {
+    try { return JSON.parse(localStorage.getItem('votedPolls') || '[]'); } catch { return []; }
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [pollListVersion, setPollListVersion] = useState(0);
 
   const [page, setPage] = useState(() => shouldRestore ? initialCache!.page : 0);
   const [polls, setPolls] = useState<Poll[]>(() => shouldRestore ? initialCache!.polls : []);
@@ -115,19 +121,19 @@ const Dashboard = () => {
     if (shouldRestore && initialCache?.scrollY) {
       const targetY = initialCache.scrollY;
       let attempts = 0;
-      
+
       // Robust scroll loop: try scrolling multiple times as images/DOM might be rendering
       const tryScroll = () => {
         window.scrollTo({ top: targetY, behavior: 'instant' });
         attempts++;
         if (attempts < 20 && Math.abs(window.scrollY - targetY) > 5) {
-           setTimeout(tryScroll, 100);
+          setTimeout(tryScroll, 100);
         }
       };
-      
+
       requestAnimationFrame(tryScroll);
     }
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
@@ -153,17 +159,90 @@ const Dashboard = () => {
   }, [filterStatus, filterTag, filterCategory]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('votedPolls') || '[]');
-    setVotedPollIds(stored);
     if (user) {
+      // Sync voted-poll list from server so percentages show correctly on the
+      // Explore cards when the user returns after voting in PollDetail.
       pollService.getMyVotedPolls(0, 500)
-        .then((vp) => { const ids = vp.content.map((p) => p.id); setVotedPollIds(ids); localStorage.setItem('votedPolls', JSON.stringify(ids)); })
+        .then((vp) => {
+          const apiIds = vp.content.map((p) => p.id);
+          // MERGE rather than replace: the vote backend uses Redis → async DB write,
+          // so the DB may not yet contain a vote the user just cast in PollDetail.
+          // Keeping local IDs that aren't in the API response preserves those
+          // pending votes so the percentage bars appear immediately on return.
+          setVotedPollIds((current) => {
+            const merged = [...new Set([...apiIds, ...current])];
+            localStorage.setItem('votedPolls', JSON.stringify(merged));
+            return merged;
+          });
+        })
         .catch(() => { });
     }
   }, [user?.id]);
 
+  // Silent background refresh after cache restore ─────────────────────────────
+  // When returning from PollDetail the Dashboard restores instantly from the
+  // sessionStorage cache (good UX + scroll position). But commentCount in the
+  // cache is stale because the WS event fired while the component was unmounted.
+  // NOTE: voteCount is deliberately merged taking MAX(api, current) to avoid
+  // overwriting real-time WS-based counts with stale DB values (VoteEventConsumer
+  // persists to DB every 2 s, so an immediate API call may return voteCount=0).
   useEffect(() => {
-    if (shouldRestore && initialCache!.trendingPolls.length > 0) return;
+    if (!shouldRestore) return;
+    let cancelled = false;
+
+    const backendStatus = filterStatus === 'NEWEST' ? 'ACTIVE' : filterStatus;
+    const backendSortBy = filterStatus === 'NEWEST' ? 'createdAt' : filterStatus === 'ACTIVE' ? 'endTime' : 'createdAt';
+    const backendDirection = filterStatus === 'NEWEST' ? 'desc' : filterStatus === 'ACTIVE' ? 'asc' : 'desc';
+
+    // Real-time API merge: fetch immediately. Backend API already includes real-time 
+    // Redis data, so there is no need to wait for DB flush.
+    const mergePoll = (apiPoll: Poll, currentPoll: Poll | undefined): Poll => {
+      if (!currentPoll) return apiPoll;
+      return {
+        ...apiPoll,
+        // Prefer the higher voteCount (real-time WS may have updated it)
+        options: apiPoll.options.map((apiOpt) => {
+          const cur = currentPoll.options.find((o) => o.id === apiOpt.id);
+          return cur && cur.voteCount > apiOpt.voteCount
+            ? { ...apiOpt, voteCount: cur.voteCount }
+            : apiOpt;
+        }),
+      };
+    };
+
+    const fetchSize = Math.max(12, polls.length || 0);
+
+    pollService.getAllPolls(0, fetchSize, searchQuery, filterTag, backendStatus, backendSortBy, backendDirection, filterCategory)
+      .then((data) => {
+        if (cancelled) return;
+        setPollPage(data);
+        setPolls((prev) => {
+          const prevById = new Map(prev.map((p) => [p.id, p]));
+          const freshIds = new Set(data.content.map((p) => p.id));
+          const tail = prev.filter((p) => !freshIds.has(p.id));
+          return [...data.content.map((p) => mergePoll(p, prevById.get(p.id))), ...tail];
+        });
+        setHasMore(data.currentPage + 1 < data.totalPages);
+      })
+      .catch(() => { /* non-critical – cache data remains visible */ });
+
+    pollService.getTrendingPolls(8)
+      .then((list) => {
+        if (cancelled) return;
+        setTrendingPolls((prev) => {
+          const prevById = new Map(prev.map((p) => [p.id, p]));
+          return list.map((p) => mergePoll(p, prevById.get(p.id)));
+        });
+      })
+      .catch(() => { });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally run once on mount, not on filter changes
+
+  // Initial trending polls fetch (only when NOT restoring from cache) ──────────
+  useEffect(() => {
+    if (shouldRestore) return; // handled by the silent refresh above
     let cancelled = false;
     setTrendingLoading(true);
     pollService.getTrendingPolls(8)
@@ -173,14 +252,15 @@ const Dashboard = () => {
     return () => { cancelled = true; };
   }, [shouldRestore]);
 
+
   // Reset and fetch page 0 when filters change
   useEffect(() => {
-    const filtersChanged = 
+    const filtersChanged =
       prevFiltersRef.current.searchQuery !== searchQuery ||
       prevFiltersRef.current.filterTag !== filterTag ||
       prevFiltersRef.current.filterStatus !== filterStatus ||
       prevFiltersRef.current.filterCategory !== filterCategory;
-    
+
     prevFiltersRef.current = { searchQuery, filterTag, filterStatus, filterCategory };
 
     // Skip fetch if this is a mount/remount and we are restoring from cache
@@ -217,35 +297,65 @@ const Dashboard = () => {
   const handlePollEvent = useCallback((payload: PollEventPayload) => {
     const matchFilter = (p: Poll) => {
       if (filterStatus !== 'ALL') { const active = new Date(p.endTime) > new Date(); if (filterStatus === 'ACTIVE' && !active) return false; if (filterStatus === 'ENDED' && active) return false; }
-      if (filterTag !== 'ALL' && !p.tags.some((t) => t.toLowerCase().includes(filterTag.toLowerCase()))) return false;
+      if (filterTag !== 'ALL' && !(p.tags || []).some((t) => t.toLowerCase().includes(filterTag.toLowerCase()))) return false;
       if (searchQuery.trim() && !p.title.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
       return true;
     };
 
     setTrendingPolls((prev) => {
       if (payload.type === 'CREATED') {
-        if (payload.poll.visibility === 'PRIVATE') return prev;
         if (prev.some((p) => p.id === payload.poll.id)) return prev;
         return [payload.poll, ...prev].slice(0, 8);
       }
       if (payload.type === 'DELETED') return prev.filter((p) => p.id !== payload.pollId);
-      if (payload.type === 'VOTED') return patchPoll(prev, payload.pollId, (p) => ({ ...p, options: p.options.map((o) => { const u = payload.options.find((x) => x.optionId === o.id); return u ? { ...o, voteCount: u.voteCount } : o; }) }));
-      if (payload.type === 'COMMENT_ADDED') return patchPoll(prev, payload.pollId, (p) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
+      if (payload.type === 'VOTED') return patchPoll(prev, payload.pollId, (p) => ({
+        ...p,
+        judgeWeight: payload.options[0]?.judgeWeight ?? p.judgeWeight,
+        options: p.options.map((o) => {
+          const u = payload.options.find((x) => x.optionId === o.id);
+          return u ? { ...o, voteCount: u.voteCount, audienceCount: u.audienceCount ?? o.audienceCount, judgeCount: u.judgeCount ?? o.judgeCount } : o;
+        })
+      }));
+      if (payload.type === 'COMMENT_ADDED') return patchPoll(prev, payload.pollId, (p) => ({
+        ...p,
+        commentCount: payload.commentCount != null ? payload.commentCount : (p.commentCount || 0) + 1
+      }));
+      if (payload.type === 'COMMENT_DELETED') return patchPoll(prev, payload.pollId, (p) => ({
+        ...p,
+        commentCount: payload.commentCount != null ? payload.commentCount : Math.max(0, (p.commentCount || 1) - 1)
+      }));
       return prev;
     });
 
     setPolls((prev) => {
       let list = [...prev];
       if (payload.type === 'CREATED') {
-        if (payload.poll.visibility !== 'PRIVATE' && matchFilter(payload.poll) && !list.some((p) => p.id === payload.poll.id)) {
+        setPollListVersion(v => v + 1);
+        if (matchFilter(payload.poll) && !list.some((p) => p.id === payload.poll.id)) {
           list.unshift(payload.poll);
         }
       } else if (payload.type === 'DELETED') {
+        setPollListVersion(v => v + 1);
         list = list.filter((p) => p.id !== payload.pollId);
       } else if (payload.type === 'VOTED') {
-        list = patchPoll(list, payload.pollId, (p) => ({ ...p, options: p.options.map((o) => { const u = payload.options.find((x) => x.optionId === o.id); return u ? { ...o, voteCount: u.voteCount } : o; }) }));
+        list = patchPoll(list, payload.pollId, (p) => ({
+          ...p,
+          judgeWeight: payload.options[0]?.judgeWeight ?? p.judgeWeight,
+          options: p.options.map((o) => {
+            const u = payload.options.find((x) => x.optionId === o.id);
+            return u ? { ...o, voteCount: u.voteCount, audienceCount: u.audienceCount ?? o.audienceCount, judgeCount: u.judgeCount ?? o.judgeCount } : o;
+          })
+        }));
       } else if (payload.type === 'COMMENT_ADDED') {
-        list = patchPoll(list, payload.pollId, (p) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
+        list = patchPoll(list, payload.pollId, (p) => ({
+          ...p,
+          commentCount: payload.commentCount != null ? payload.commentCount : (p.commentCount || 0) + 1
+        }));
+      } else if (payload.type === 'COMMENT_DELETED') {
+        list = patchPoll(list, payload.pollId, (p) => ({
+          ...p,
+          commentCount: payload.commentCount != null ? payload.commentCount : Math.max(0, (p.commentCount || 1) - 1)
+        }));
       }
       return list;
     });
@@ -261,13 +371,38 @@ const Dashboard = () => {
       } else if (payload.type === 'DELETED') {
         const before = content.length; content = content.filter((p) => p.id !== payload.pollId); if (content.length < before) total = Math.max(0, total - 1);
       } else if (payload.type === 'VOTED') {
-        content = patchPoll(content, payload.pollId, (p) => ({ ...p, options: p.options.map((o) => { const u = payload.options.find((x) => x.optionId === o.id); return u ? { ...o, voteCount: u.voteCount } : o; }) }));
+        content = patchPoll(content, payload.pollId, (p) => ({
+          ...p,
+          judgeWeight: payload.options[0]?.judgeWeight ?? p.judgeWeight,
+          options: p.options.map((o) => {
+            const u = payload.options.find((x) => x.optionId === o.id);
+            return u ? { ...o, voteCount: u.voteCount, audienceCount: u.audienceCount ?? o.audienceCount, judgeCount: u.judgeCount ?? o.judgeCount } : o;
+          })
+        }));
       } else if (payload.type === 'COMMENT_ADDED') {
-        content = patchPoll(content, payload.pollId, (p) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
+        content = patchPoll(content, payload.pollId, (p) => ({
+          ...p,
+          commentCount: payload.commentCount != null ? payload.commentCount : (p.commentCount || 0) + 1
+        }));
+      } else if (payload.type === 'COMMENT_DELETED') {
+        content = patchPoll(content, payload.pollId, (p) => ({
+          ...p,
+          commentCount: payload.commentCount != null ? payload.commentCount : Math.max(0, (p.commentCount || 1) - 1)
+        }));
       }
       return { ...prev, content, totalElements: total, totalPages: Math.max(1, Math.ceil(total / prev.pageSize)) };
     });
-  }, [filterStatus, filterTag, searchQuery]);
+
+    // When the current user votes, mark that poll as voted so % bars show immediately
+    if (payload.type === 'VOTED' && payload.userId && user && payload.userId === user.id) {
+      setVotedPollIds((prev) => {
+        if (prev.includes(payload.pollId)) return prev;
+        const updated = [...prev, payload.pollId];
+        localStorage.setItem('votedPolls', JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [filterStatus, filterTag, searchQuery, user]);
 
   usePollEventsWebSocket({ onEvent: handlePollEvent });
 
@@ -377,6 +512,27 @@ const Dashboard = () => {
 
   const totalPolls = filterStatus === 'TRENDING' ? trendingPolls.length : (pollPage?.totalElements ?? 0);
 
+  // Reconcile polls grid with trendingPolls: both come from separate API calls at ~same time,
+  // but trendingPolls is enriched by Redis while getAllPolls may use DB-only counts for some polls.
+  // Take the max voteCount per option so the grid cards show the same number as the carousel.
+  const displayPolls = useMemo(() => {
+    const trendingById = new Map(trendingPolls.map((p) => [p.id, p]));
+    return polls.map((p) => {
+      const trend = trendingById.get(p.id);
+      if (!trend) return p;
+      return {
+        ...p,
+        options: p.options.map((o) => {
+          const to = trend.options.find((x) => x.id === o.id);
+          if (!to) return o;
+          return (to.voteCount ?? 0) > (o.voteCount ?? 0)
+            ? { ...o, voteCount: to.voteCount, audienceCount: to.audienceCount, judgeCount: to.judgeCount }
+            : o;
+        }),
+      };
+    });
+  }, [polls, trendingPolls]);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0b0a18] transition-colors">
       <Navbar />
@@ -386,7 +542,7 @@ const Dashboard = () => {
 
         {/* LEFT — fixed to viewport; document scroll keeps scrollbar at screen edge */}
         <aside
-          className={`fixed z-[60] hidden xl:flex xl:flex-col top-[4.75rem] bottom-0 border-r border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-[#0b0a18] transition-[width] duration-300 ease-in-out overflow-visible ${sidebarOpen ? 'w-[240px]' : 'w-0'}`}
+          className={`fixed z-[60] hidden xl:flex xl:flex-col top-[4.75rem] bottom-0 border-r border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-[#0b0a18] transition-[width] duration-500 ease-in-out overflow-visible ${sidebarOpen ? 'w-[240px]' : 'w-0'}`}
           style={{ left: `max(1rem, calc((100vw - min(1700px, 100vw)) / 2 + 2rem))` }}
         >
           <div className="absolute -right-4 top-2 z-20 group">
@@ -403,18 +559,23 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 pt-1 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 invisible pointer-events-none'}`}>
-            <ExploreSidebar
-              filterTag={filterTag}
-              filterCategory={filterCategory}
-              filterStatus={filterStatus}
-              onResetExplore={resetExplore}
-              onScrollToTrending={scrollToTrending}
-              onScrollToPollGrid={scrollToPollGrid}
-              onSetFilterStatus={setFilterStatus}
-              onSetFilterTag={setFilterTag}
-              onSetFilterCategory={setFilterCategory}
-            />
+          {/* Inner overflow-hidden clips content during animation, but doesn't clip the button */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="h-full w-[240px] overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 pt-1">
+              <ExploreSidebar
+                filterTag={filterTag}
+                filterCategory={filterCategory}
+                filterStatus={filterStatus}
+                trendingCount={trendingPolls.length}
+                pollListVersion={pollListVersion}
+                onResetExplore={resetExplore}
+                onScrollToTrending={scrollToTrending}
+                onScrollToPollGrid={scrollToPollGrid}
+                onSetFilterStatus={setFilterStatus}
+                onSetFilterTag={setFilterTag}
+                onSetFilterCategory={setFilterCategory}
+              />
+            </div>
           </div>
         </aside>
 
@@ -439,112 +600,112 @@ const Dashboard = () => {
         </aside>
 
         <main
-          className={`min-w-0 flex flex-col items-center pt-2 px-1 xl:mr-[calc(296px+0.5rem)] ${sidebarOpen ? 'xl:ml-[calc(240px+1rem)]' : 'xl:ml-6'}`}
+          className={`min-w-0 flex flex-col items-center pt-2 px-1 xl:mr-[calc(296px+0.5rem)] transition-[margin-left] duration-500 ease-in-out ${sidebarOpen ? 'xl:ml-[calc(240px+1rem)]' : 'xl:ml-6'}`}
         >
-              <div className="w-full max-w-5xl space-y-6 transition-all duration-300">
-                {/* Hero trending */}
-                <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
+          <div className="w-full max-w-5xl space-y-6 transition-all duration-300">
+            {/* Hero trending */}
+            <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
 
 
-                {/* Section title */}
-                <div id="explore-polls-grid" className="flex items-center justify-between scroll-mt-28">
-                  <div className="flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-orange-400" />
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('dashboard.exploreSectionTitle')}</h2>
-                    <span className="text-slate-400 dark:text-white/35 text-sm ml-1">{totalPolls > 0 ? `(${totalPolls})` : ''}</span>
+            {/* Section title */}
+            <div id="explore-polls-grid" className="flex items-center justify-between scroll-mt-28">
+              <div className="flex items-center gap-2">
+                <Flame className="w-5 h-5 text-orange-400" />
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('dashboard.exploreSectionTitle')}</h2>
+                <span className="text-slate-400 dark:text-white/35 text-sm ml-1">{totalPolls > 0 ? `(${totalPolls})` : ''}</span>
+              </div>
+              <button type="button" onClick={resetExplore} className="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
+                {t('dashboard.seeAll')}
+              </button>
+            </div>
+
+            {/* Poll grid */}
+            {filterStatus === 'TRENDING' ? (
+              trendingLoading && trendingPolls.length === 0 ? (
+                <div className="flex justify-center items-center py-24">
+                  <div className="w-10 h-10 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
+                </div>
+              ) : trendingPolls.length === 0 ? (
+                <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#13112a]">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                    <span className="text-3xl">🗳️</span>
                   </div>
-                  <button type="button" onClick={resetExplore} className="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
-                    {t('dashboard.seeAll')}
+                  <p className="text-slate-500 dark:text-white/50 text-base mb-1">{t('dashboard.noPolls')}</p>
+                  <button onClick={resetExplore} className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors">
+                    {t('dashboard.clearFilters')}
                   </button>
                 </div>
-
-                {/* Poll grid */}
-                {filterStatus === 'TRENDING' ? (
-                  trendingLoading && trendingPolls.length === 0 ? (
-                    <div className="flex justify-center items-center py-24">
-                      <div className="w-10 h-10 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {trendingPolls.map((poll, idx) => (
+                    <div key={poll.id} className={shouldRestore && idx < initialCache!.trendingPolls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.trendingPolls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
+                      <ExplorePollCard
+                        poll={poll}
+                        hasVoted={votedPollIds.includes(poll.id)}
+                        commentCount={poll.commentCount}
+                        onDelete={canDelete(poll) ? handleDelete : undefined}
+                        showDeleteButton={canDelete(poll)}
+                      />
                     </div>
-                  ) : trendingPolls.length === 0 ? (
-                    <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#13112a]">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                        <span className="text-3xl">🗳️</span>
-                      </div>
-                      <p className="text-slate-500 dark:text-white/50 text-base mb-1">{t('dashboard.noPolls')}</p>
-                      <button onClick={resetExplore} className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors">
-                        {t('dashboard.clearFilters')}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {trendingPolls.map((poll, idx) => (
-                        <div key={poll.id} className={shouldRestore && idx < initialCache!.trendingPolls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.trendingPolls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
-                          <ExplorePollCard
-                            poll={poll}
-                            hasVoted={votedPollIds.includes(poll.id)}
-                            commentCount={poll.commentCount}
-                            onDelete={canDelete(poll) ? handleDelete : undefined}
-                            showDeleteButton={canDelete(poll)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )
-                ) : loading && polls.length === 0 ? (
-                  <div className="flex justify-center items-center py-24">
-                    <div className="w-10 h-10 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
-                  </div>
-                ) : polls.length === 0 ? (
-                  <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#13112a]">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                      <span className="text-3xl">🗳️</span>
-                    </div>
-                    <p className="text-slate-500 dark:text-white/50 text-base mb-1">{t('dashboard.noPolls')}</p>
-                    {filterCategory && (
-                      <p className="text-xs text-slate-400 dark:text-white/30 mb-3">
-                        {t('dashboard.noPollsInCategory')}
-                      </p>
-                    )}
-                    <button
-                      onClick={resetExplore}
-                      className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors"
-                    >
-                      {t('dashboard.clearFilters')}
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-col gap-3">
-                      {polls.map((poll, idx) => (
-                        <div key={poll.id} className={shouldRestore && idx < initialCache!.polls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.polls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
-                          <ExplorePollCard
-                            poll={poll}
-                            hasVoted={votedPollIds.includes(poll.id)}
-                            commentCount={poll.commentCount}
-                            onDelete={canDelete(poll) ? handleDelete : undefined}
-                            showDeleteButton={canDelete(poll)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Infinite Scroll Anchor */}
-                    <div ref={loadMoreSentinelRef} className="py-8 flex justify-center items-center w-full">
-                      {loadingMore && (
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="w-8 h-8 rounded-full border-4 border-violet-500/20 border-t-violet-500 animate-spin" />
-                          <p className="text-xs text-slate-400 dark:text-white/30 font-medium">Đang tải thêm bình chọn...</p>
-                        </div>
-                      )}
-                      {!hasMore && polls.length > 0 && (
-                        <p className="text-xs text-slate-400 dark:text-white/20 font-medium mt-4">
-                          Bạn đã xem hết tất cả bình chọn 🎉
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
-
+                  ))}
+                </div>
+              )
+            ) : loading && polls.length === 0 ? (
+              <div className="flex justify-center items-center py-24">
+                <div className="w-10 h-10 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
               </div>
+            ) : polls.length === 0 ? (
+              <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#13112a]">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                  <span className="text-3xl">🗳️</span>
+                </div>
+                <p className="text-slate-500 dark:text-white/50 text-base mb-1">{t('dashboard.noPolls')}</p>
+                {filterCategory && (
+                  <p className="text-xs text-slate-400 dark:text-white/30 mb-3">
+                    {t('dashboard.noPollsInCategory')}
+                  </p>
+                )}
+                <button
+                  onClick={resetExplore}
+                  className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-semibold transition-colors"
+                >
+                  {t('dashboard.clearFilters')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-3">
+                  {displayPolls.map((poll, idx) => (
+                    <div key={poll.id} className={shouldRestore && idx < initialCache!.polls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.polls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
+                      <ExplorePollCard
+                        poll={poll}
+                        hasVoted={votedPollIds.includes(poll.id)}
+                        commentCount={poll.commentCount}
+                        onDelete={canDelete(poll) ? handleDelete : undefined}
+                        showDeleteButton={canDelete(poll)}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Infinite Scroll Anchor */}
+                <div ref={loadMoreSentinelRef} className="py-8 flex justify-center items-center w-full">
+                  {loadingMore && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-8 h-8 rounded-full border-4 border-violet-500/20 border-t-violet-500 animate-spin" />
+                      <p className="text-xs text-slate-400 dark:text-white/30 font-medium">Đang tải thêm bình chọn...</p>
+                    </div>
+                  )}
+                  {!hasMore && polls.length > 0 && (
+                    <p className="text-xs text-slate-400 dark:text-white/20 font-medium mt-4">
+                      Bạn đã xem hết tất cả bình chọn 🎉
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+          </div>
         </main>
       </div>
     </div>

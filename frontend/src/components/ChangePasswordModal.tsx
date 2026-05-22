@@ -65,20 +65,20 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex justify-center bg-black/70 backdrop-blur-md p-4 sm:p-6 transition-all duration-300 items-start pt-[15vh]">
-            <div className="bg-[#1a1b26] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] w-full max-w-md overflow-hidden animate-fade-in-up flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 z-[100] flex justify-center bg-slate-900/40 dark:bg-black/70 backdrop-blur-md p-4 sm:p-6 transition-all duration-300 items-start pt-[15vh]">
+            <div className="bg-white dark:bg-[#1a1b26] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl dark:shadow-[0_0_50px_rgba(99,102,241,0.15)] w-full max-w-md overflow-hidden animate-fade-in-up flex flex-col max-h-[85vh]">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-rose-500/20 to-pink-500/20 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                <div className="bg-gradient-to-r from-rose-500/10 to-pink-500/10 dark:from-rose-500/20 dark:to-pink-500/20 p-6 border-b border-slate-200 dark:border-white/10 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-rose-500/20 rounded-xl text-rose-400">
+                        <div className="p-2 bg-rose-500/10 dark:bg-rose-500/20 rounded-xl text-rose-500 dark:text-rose-400">
                             <KeyRound className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-rose-200 tracking-wide">{t('changePassword.title')}</h2>
-                            <p className="text-rose-200/60 text-xs mt-1">{t('changePassword.subtitle')}</p>
+                            <h2 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-700 to-pink-600 dark:from-white dark:to-rose-200 tracking-wide">{t('changePassword.title')}</h2>
+                            <p className="text-slate-500 dark:text-rose-200/60 text-xs mt-1">{t('changePassword.subtitle')}</p>
                         </div>
                     </div>
-                    <button onClick={handleClose} className="p-2 sm:p-2 bg-white/10 border border-white/20 text-white hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-full transition-all duration-300 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <button onClick={handleClose} className="p-2 sm:p-2 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-500 dark:text-white hover:text-white hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-full transition-all duration-300 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-red-500">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -108,51 +108,51 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
 
                         {/* Old Password */}
                         <div className="space-y-2 relative">
-                            <label className="block text-sm font-medium text-slate-300" htmlFor="oldPassword">{t('changePassword.currentPassword')}</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="oldPassword">{t('changePassword.currentPassword')}</label>
                             <input
                                 id="oldPassword"
                                 type={showOld ? 'text' : 'password'}
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-rose-500 transition-all pr-12"
+                                className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-rose-500 transition-all pr-12"
                                 placeholder={t('changePassword.currentPasswordPlaceholder')}
                                 required
                             />
-                            <button type="button" onClick={() => setShowOld(!showOld)} className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-white transition-colors">
+                            <button type="button" onClick={() => setShowOld(!showOld)} className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
                                 {showOld ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>
 
                         {/* New Password */}
                         <div className="space-y-2 relative">
-                            <label className="block text-sm font-medium text-slate-300" htmlFor="newPassword">{t('changePassword.newPassword')}</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="newPassword">{t('changePassword.newPassword')}</label>
                             <input
                                 id="newPassword"
                                 type={showNew ? 'text' : 'password'}
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-rose-500 transition-all pr-12"
+                                className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-rose-500 transition-all pr-12"
                                 placeholder={t('changePassword.newPasswordPlaceholder')}
                                 required
                             />
-                            <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-white transition-colors">
+                            <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
                                 {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>
 
                         {/* Confirm Password */}
                         <div className="space-y-2 relative">
-                            <label className="block text-sm font-medium text-slate-300" htmlFor="confirmPassword">{t('changePassword.confirmPassword')}</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="confirmPassword">{t('changePassword.confirmPassword')}</label>
                             <input
                                 id="confirmPassword"
                                 type={showConfirm ? 'text' : 'password'}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-rose-500 transition-all pr-12"
+                                className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-rose-500 transition-all pr-12"
                                 placeholder={t('changePassword.confirmPasswordPlaceholder')}
                                 required
                             />
-                            <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-white transition-colors">
+                            <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
                                 {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>
@@ -161,11 +161,11 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
                 </div>
                 
                 {/* Footer Actions */}
-                <div className="bg-black/20 p-5 sm:px-6 border-t border-white/5 flex justify-end gap-3 shrink-0">
+                <div className="bg-slate-50 dark:bg-black/20 p-5 sm:px-6 border-t border-slate-200 dark:border-white/5 flex justify-end gap-3 shrink-0">
                     <button
                         type="button"
                         onClick={handleClose}
-                        className="px-5 py-2.5 text-sm font-medium text-slate-300 hover:text-white bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl transition-all"
+                        className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 rounded-xl transition-all"
                     >
                         {t('changePassword.cancel')}
                     </button>

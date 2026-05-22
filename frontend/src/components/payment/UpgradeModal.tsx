@@ -1,52 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle2, Zap, Crown, Shield, ArrowLeft, Rocket, ExternalLink, Clock, Sparkles, Star } from 'lucide-react';
+import { X, CheckCircle2, Zap, Crown, Shield, Rocket, Sparkles, Star, CreditCard, ShieldCheck, ExternalLink, Loader2 } from 'lucide-react';
 import { vnPayService } from '../../services/vnpay.service';
-import { QRCodeSVG } from 'qrcode.react';
 import { authService } from '../../services/auth.service';
 import { useAuth } from '../../contexts/AuthContext';
 import { createPortal } from 'react-dom';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentPlan?: string;
-  onSuccess?: () => void; // callback khi thanh toán thành công (dùng để refresh payment history)
 }
 
-const QR_TTL = 15 * 60;
-
-/* ── Countdown riêng để không re-render toàn modal mỗi giây ── */
-function QrCountdown() {
-  const [sec, setSec] = useState(QR_TTL);
-  useEffect(() => {
-    setSec(QR_TTL);
-    const iv = setInterval(() => setSec(p => Math.max(0, p - 1)), 1000);
-    return () => clearInterval(iv);
-  }, []);
-  const mm = String(Math.floor(sec / 60)).padStart(2, '0');
-  const ss = String(sec % 60).padStart(2, '0');
-  const pct = (sec / QR_TTL) * 100;
-  const urgent = sec < 120;
-  const warn = sec < 300;
-  const color = urgent ? '#ef4444' : warn ? '#f59e0b' : '#10b981';
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-white/40">
-          <Clock className="w-3.5 h-3.5" />
-          <span>Mã hết hạn sau</span>
-        </div>
-        <span className="text-sm font-black tabular-nums" style={{ color }}>{mm}:{ss}</span>
-      </div>
-      <div className="h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-1000"
-          style={{ width: `${pct}%`, background: color }}
-        />
-      </div>
-    </div>
-  );
-}
 
 const PLANS = [
   {
@@ -111,11 +76,10 @@ type PlanKey = typeof PLANS[number]['key'];
 const PLAN_MAP = Object.fromEntries(PLANS.map(p => [p.key, p])) as Record<PlanKey, typeof PLANS[number]>;
 const planRank = (p?: string | null) => ({ FREE: 0, GO: 1, PLUS: 2, PRO: 3 }[(p || 'FREE').toUpperCase()] ?? 0);
 
-export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', onSuccess }: UpgradeModalProps) {
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: UpgradeModalProps) {
+
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [targetPlan, setTargetPlan] = useState<PlanKey | null>(null);
-  const [snapshotPlan, setSnapshotPlan] = useState<string>('FREE');
   const [syncedPlan, setSyncedPlan] = useState<string>(currentPlan || 'FREE');
   const [syncingPlan, setSyncingPlan] = useState(false);
   const openedAtRef = useRef<number>(0);
@@ -140,36 +104,12 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
           }
           const sp = (ud.plan || 'FREE').toUpperCase();
           setSyncedPlan(sp);
-          setSnapshotPlan(sp);
           updateUser(ud);
         }
       })
       .catch(() => {})
       .finally(() => setSyncingPlan(false));
   }, [isOpen]);
-
-  /* Polling: phát hiện thanh toán thành công */
-  useEffect(() => {
-    if (!qrUrl || !targetPlan) return;
-    const t = setTimeout(() => {
-      const iv = setInterval(async () => {
-        try {
-          const res = await authService.me();
-          if (
-            res?.code === 200 && res.data &&
-            planRank(res.data.plan) >= planRank(targetPlan) &&
-            planRank(res.data.plan) > planRank(snapshotPlan)
-          ) {
-            updateUser(res.data);
-            onSuccess?.(); // báo Profile refresh payment history
-            onClose();
-          }
-        } catch {}
-      }, 3000);
-      return () => clearInterval(iv);
-    }, 5000);
-    return () => clearTimeout(t);
-  }, [qrUrl, targetPlan, snapshotPlan]);
 
   /* Body scroll lock */
   useEffect(() => {
@@ -181,7 +121,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
     } else {
       document.body.style.paddingRight = '';
       document.body.style.overflow = '';
-      setQrUrl(null); setTargetPlan(null); setLoadingPlan(null);
+      setQrUrl(null); setTargetPlan(null);
     }
     return () => { document.body.style.paddingRight = ''; document.body.style.overflow = ''; };
   }, [isOpen]);
@@ -198,16 +138,45 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
       alert(`Bạn đang dùng gói ${PLAN_MAP[activePlan as PlanKey]?.name || activePlan}. Hãy làm mới trang nếu vừa thanh toán.`);
       return;
     }
-    setLoadingPlan(plan);
+    setTargetPlan(plan);
     try {
-      const url = await vnPayService.createPaymentUrl(plan);
-      setSnapshotPlan(activePlan);
+      const url = await vnPayService.createPaymentUrl(plan, '');
       setQrUrl(url);
-      setTargetPlan(plan);
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message;
-      alert(msg ? `Không thể tạo thanh toán: ${msg}` : 'Không thể khởi tạo thanh toán lúc này.');
-    } finally { setLoadingPlan(null); }
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  const handleOpenPopup = () => {
+    if (!qrUrl) return;
+    const newTab = window.open(qrUrl, '_blank');
+
+    if (!newTab) {
+      window.location.href = qrUrl;
+      return;
+    }
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'PAYMENT_RESULT') {
+        if (e.data.status === 'success') {
+          authService.me().then(res => {
+            if (res?.code === 200 && res.data) updateUser(res.data);
+          });
+          onClose();
+        }
+        window.removeEventListener('message', handleMessage);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    const checkClosedTimer = setInterval(() => {
+      if (newTab.closed) {
+        clearInterval(checkClosedTimer);
+        window.removeEventListener('message', handleMessage);
+      }
+    }, 500);
   };
 
   const meta = targetPlan ? PLAN_MAP[targetPlan] : null;
@@ -223,56 +192,47 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
       {/* ── Modal shell ── */}
       <div
         className={[
-          'relative w-full max-w-5xl max-h-[92vh] flex flex-col rounded-3xl overflow-hidden',
-          // Light mode: clean white card
+          'relative w-full flex flex-col rounded-3xl overflow-hidden',
+          targetPlan ? 'max-w-[420px]' : 'max-w-5xl max-h-[92vh]',
           'bg-white border border-slate-200/80 shadow-[0_32px_80px_rgba(0,0,0,0.18)]',
-          // Dark mode: deep dark glass
           'dark:bg-[#0f0c1d] dark:border-white/[0.07] dark:shadow-[0_50px_120px_rgba(0,0,0,0.8)]',
         ].join(' ')}
         onClick={e => e.stopPropagation()}
       >
-        {/* Ambient glow — dark only */}
-        <div className="hidden dark:block absolute top-0 right-0 w-[350px] h-[250px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none" />
-        <div className="hidden dark:block absolute bottom-0 left-0 w-[250px] h-[200px] bg-indigo-600/8 blur-[80px] rounded-full pointer-events-none" />
-
-        {/* Light mode soft gradient top bar */}
-        <div className="dark:hidden absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-500" />
-
-        {/* ── HEADER ── */}
-        <div className="relative flex items-center justify-between px-6 pt-6 pb-5 shrink-0 border-b border-slate-100 dark:border-white/[0.06]">
-          <div className="flex items-center gap-3">
-            {qrUrl && (
-              <button
-                onClick={() => setQrUrl(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/8 transition-all"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            )}
-            <div>
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Sparkles className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
-                <span className="text-[11px] font-black uppercase tracking-[0.15em] text-violet-500 dark:text-violet-400">
-                  {qrUrl ? 'Thanh toán' : 'Nâng cấp tài khoản'}
-                </span>
+        {!targetPlan && (
+          <>
+            <div className="hidden dark:block absolute top-0 right-0 w-[350px] h-[250px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none" />
+            <div className="hidden dark:block absolute bottom-0 left-0 w-[250px] h-[200px] bg-indigo-600/8 blur-[80px] rounded-full pointer-events-none" />
+            <div className="dark:hidden absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-500" />
+            
+            <div className="relative flex items-center justify-between px-6 pt-6 pb-5 shrink-0 border-b border-slate-100 dark:border-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <Sparkles className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.15em] text-violet-500 dark:text-violet-400">
+                      Nâng cấp tài khoản
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-black text-slate-800 dark:text-white leading-tight">
+                    Chọn gói phù hợp với bạn
+                  </h2>
+                </div>
               </div>
-              <h2 className="text-xl font-black text-slate-800 dark:text-white leading-tight">
-                {qrUrl ? `Xác nhận gói ${meta?.name}` : 'Chọn gói phù hợp với bạn'}
-              </h2>
+              <button
+                onClick={onClose}
+                className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/8 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/8 transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          </>
+        )}
 
         {/* ── CONTENT ── */}
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
           {/* Syncing indicator */}
-          {syncingPlan && !qrUrl && (
+          {syncingPlan && !targetPlan && (
             <div className="flex items-center justify-center gap-2 py-2.5 text-slate-400 dark:text-white/30 text-xs">
               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -282,105 +242,80 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
             </div>
           )}
 
-          {qrUrl && meta ? (
-            /* ── QR PAYMENT ── */
-            <div className="flex flex-col md:flex-row min-h-[420px]">
-              {/* LEFT — Tóm tắt */}
-              <div className="md:w-60 shrink-0 p-6 flex flex-col gap-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-white/[0.06] bg-slate-50/50 dark:bg-transparent">
-                {/* Plan mini card */}
-                <div className="rounded-2xl p-4 bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"
-                      style={{ background: `linear-gradient(135deg, ${meta.colorFrom}, ${meta.colorTo})` }}
-                    >
-                      {meta.icon}
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest font-black text-slate-400 dark:text-white/30">Gói đang mua</p>
-                      <p className="text-base font-black" style={{ background: `linear-gradient(135deg, ${meta.colorFrom}, ${meta.colorTo})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{meta.name}</p>
-                    </div>
+          {targetPlan && meta ? (
+            <div className="flex flex-col w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+               {/* Premium Background Orbs */}
+               <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-violet-500/20 blur-[50px] rounded-full pointer-events-none" />
+               <div className="absolute bottom-[-50px] right-[-50px] w-40 h-40 bg-indigo-500/20 blur-[50px] rounded-full pointer-events-none" />
+               
+               <div className="relative z-10 p-8 flex flex-col items-center">
+                  {/* Header */}
+                  <div className="w-full flex items-center justify-between mb-8">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-500/20 dark:to-indigo-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner ring-1 ring-violet-500/10">
+                           <CreditCard className="w-6 h-6" />
+                        </div>
+                        <div>
+                           <p className="text-[10px] uppercase tracking-widest font-black text-slate-400 dark:text-white/40 mb-1">Xác nhận thanh toán</p>
+                           <h3 className="font-black text-xl text-slate-800 dark:text-white leading-none">Gói {meta.name}</h3>
+                        </div>
+                     </div>
+                     <button onClick={() => {setTargetPlan(null); setQrUrl(null);}} className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-white/60 transition-colors">
+                        <X className="w-4 h-4" />
+                     </button>
                   </div>
-                  <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-400 dark:text-white/40">Giá thuê bao</span>
-                      <span className="font-black" style={{ background: `linear-gradient(135deg, ${meta.colorFrom}, ${meta.colorTo})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{meta.price}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-400 dark:text-white/40">Chu kỳ</span>
-                      <span className="font-semibold text-slate-600 dark:text-white/60">1 tháng</span>
-                    </div>
-                    <div className="flex justify-between text-sm pt-2 border-t border-slate-100 dark:border-white/[0.06]">
-                      <span className="font-bold text-slate-600 dark:text-white/70">Tổng cộng</span>
-                      <span className="font-black" style={{ background: `linear-gradient(135deg, ${meta.colorFrom}, ${meta.colorTo})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{meta.price}</span>
-                    </div>
+                  
+                  {/* Price & Badge */}
+                  <div className="flex flex-col items-center gap-3 mb-8">
+                     <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 drop-shadow-sm">{meta.priceDisplay}<span className="text-2xl ml-0.5">đ</span></span>
+                     <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] px-3.5 py-1.5 rounded-full font-bold border border-amber-200/50 dark:border-amber-500/20 shadow-sm">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        Chờ thanh toán
+                     </div>
                   </div>
-                </div>
-
-                {/* Countdown */}
-                <div className="rounded-2xl p-3.5 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.07]">
-                  <QrCountdown />
-                </div>
-
-                {/* Steps */}
-                <div className="flex flex-col gap-2.5">
-                  {['Mở App Ngân hàng hoặc VNPAY', 'Chọn "Quét QR" / "Thanh toán QR"', 'Quét mã bên cạnh', 'Xác nhận thanh toán'].map((s, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5 bg-slate-100 dark:bg-white/[0.07] text-slate-500 dark:text-white/40">
-                        {i + 1}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-white/40 leading-relaxed">{s}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* RIGHT — QR */}
-              <div className="flex-1 flex flex-col items-center justify-center p-8 gap-5">
-                {/* QR with gradient border */}
-                <div className="relative rounded-3xl p-1.5" style={{
-                  background: `linear-gradient(135deg, ${meta.colorFrom}, ${meta.colorTo})`,
-                  boxShadow: `0 0 60px -10px ${meta.glowColor}`,
-                }}>
-                  <div className="bg-white rounded-[18px] p-3 relative overflow-hidden">
-                    <div
-                      className="absolute left-0 w-full h-0.5 z-10 animate-scan"
-                      style={{
-                        background: `linear-gradient(90deg, transparent, ${meta.colorFrom}, transparent)`,
-                        opacity: 0.9,
-                        boxShadow: `0 0 10px ${meta.colorFrom}`,
-                      }}
-                    />
-                    <QRCodeSVG value={qrUrl} size={196} level="Q" className="rounded-xl relative z-0 block" />
+                  
+                  {/* QR Code Container */}
+                  <div className="relative group mb-8">
+                     <div className="absolute -inset-1 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-[1.5rem] blur opacity-25 group-hover:opacity-40 transition duration-500"></div>
+                     <div className="relative w-[220px] h-[220px] bg-white dark:bg-white p-4 rounded-2xl shadow-xl flex items-center justify-center ring-1 ring-slate-200/50 dark:ring-white/10">
+                        {qrUrl ? (
+                           <QRCodeSVG value={qrUrl} size={188} />
+                        ) : (
+                           <div className="flex flex-col items-center gap-3 text-slate-400">
+                             <Loader2 className="w-8 h-8 animate-spin" />
+                             <span className="text-xs font-medium">Đang tạo mã...</span>
+                           </div>
+                        )}
+                     </div>
                   </div>
-                </div>
-
-                {/* Waiting */}
-                <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/8 border border-emerald-200 dark:border-emerald-500/20">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" style={{ boxShadow: '0 0 8px rgba(16,185,129,0.7)' }} />
-                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold text-sm">Đang chờ xác nhận từ ngân hàng...</span>
-                </div>
-
-                {/* Open link */}
-                <a
-                  href={qrUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-white/50 dark:hover:text-white dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-slate-200 dark:border-white/[0.08] transition-all"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Không quét được? Mở link thanh toán
-                </a>
-
-                {/* Trust */}
-                <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-white/25 font-semibold">
-                  <span>🔒 Bảo mật SSL</span>
-                  <span>·</span>
-                  <span className="font-black">VN<span className="text-red-500">PAY</span></span>
-                  <span>·</span>
-                  <span>⚡ Kích hoạt ngay</span>
-                </div>
-              </div>
+                  
+                  {/* Order Info */}
+                  <div className="w-full flex items-center justify-between text-sm mb-8 px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] rounded-xl border border-slate-100 dark:border-white/[0.05]">
+                     <span className="text-slate-500 dark:text-white/50 font-medium">Mã giao dịch</span>
+                     <span className="font-black text-slate-700 dark:text-white tracking-widest">{qrUrl?.match(/[?&]vnp_TxnRef=([^&]+)/)?.[1] || '...'}</span>
+                  </div>
+                  
+                  {/* Action Button */}
+                  <button 
+                    onClick={handleOpenPopup}
+                    disabled={!qrUrl}
+                    className="w-full group relative flex items-center justify-center py-4 rounded-xl font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 overflow-hidden"
+                  >
+                     <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 transition-transform duration-300 group-hover:scale-[1.02]"></div>
+                     <span className="relative flex items-center gap-2 tracking-wide">
+                        Tiếp tục thanh toán <ExternalLink className="w-4 h-4" />
+                     </span>
+                  </button>
+                  
+                  {/* Security Notice */}
+                  <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-white/40 font-medium">
+                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                     <p>Bảo mật & mã hóa SSL bởi <b>VNPay</b></p>
+                  </div>
+               </div>
             </div>
           ) : (
             /* ── PLAN SELECTION ── */
@@ -507,22 +442,13 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
                           ) : (
                             <button
                               onClick={() => handleUpgrade(plan.key)}
-                              disabled={loadingPlan === plan.key}
-                              className="w-full py-2.5 rounded-xl text-xs font-black text-white transition-all active:scale-[0.98] disabled:opacity-60 hover:brightness-110"
+                              className="w-full py-2.5 rounded-xl text-xs font-black text-white transition-all active:scale-[0.98] hover:brightness-110"
                               style={{
                                 background: gradientBg,
                                 boxShadow: `0 4px 20px -5px ${plan.glowColor}`,
                               }}
                             >
-                              {loadingPlan === plan.key ? (
-                                <span className="flex items-center justify-center gap-1.5">
-                                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                  </svg>
-                                  Đang tạo mã...
-                                </span>
-                              ) : `Nâng cấp lên ${plan.name} →`}
+                              {`Nâng cấp lên ${plan.name} →`}
                             </button>
                           )}
                         </div>
@@ -536,19 +462,21 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE', on
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="shrink-0 px-6 py-3.5 flex items-center justify-between border-t border-slate-100 dark:border-white/[0.05] bg-slate-50/50 dark:bg-transparent">
-          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/25 font-medium">
-            <span>Thanh toán bởi</span>
-            <span className="font-black text-sm text-[#005ba6] dark:text-[#005ba6]/60">VN<span className="text-[#ed1c24] dark:text-[#ed1c24]/60">PAY</span></span>
+        {!targetPlan && (
+          <div className="shrink-0 px-6 py-3.5 flex items-center justify-between border-t border-slate-100 dark:border-white/[0.05] bg-slate-50/50 dark:bg-transparent">
+            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/25 font-medium">
+              <span>Thanh toán bởi</span>
+              <span className="font-black text-sm text-[#005ba6] dark:text-[#005ba6]/60">VN<span className="text-[#ed1c24] dark:text-[#ed1c24]/60">PAY</span></span>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-white/20 font-medium">
+              <span>🔒 SSL bảo mật</span>
+              <span className="text-slate-200 dark:text-white/10">·</span>
+              <span>⚡ Kích hoạt ngay</span>
+              <span className="text-slate-200 dark:text-white/10">·</span>
+              <span>✕ Hủy bất cứ lúc nào</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-white/20 font-medium">
-            <span>🔒 SSL bảo mật</span>
-            <span className="text-slate-200 dark:text-white/10">·</span>
-            <span>⚡ Kích hoạt ngay</span>
-            <span className="text-slate-200 dark:text-white/10">·</span>
-            <span>✕ Hủy bất cứ lúc nào</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>,
     document.body

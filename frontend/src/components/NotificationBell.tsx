@@ -1,57 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, MessageSquare, Reply, PieChart, MoreHorizontal, Check, Gavel, Lock } from 'lucide-react';
+import { Bell, MessageSquare, Reply, PieChart, MoreHorizontal, Check, Gavel, Lock, ThumbsUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationService } from '../services/notification.service';
 import type { Notification } from '../services/notification.service';
-import { useGlobalWebSocket } from '../contexts/WebSocketContext';
-import type { IMessage } from '@stomp/stompjs';
+import { useGlobalNotifications } from '../contexts/WebSocketContext';
 import { useTranslation } from 'react-i18next';
 
 export default function NotificationBell() {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    const { notifications, unreadCount, setNotifications, setUnreadCount } = useGlobalNotifications();
     const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
     const [visibleCount, setVisibleCount] = useState(5);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const client = useGlobalWebSocket();
-
-    const fetchNotifications = async () => {
-        try {
-            const [unread, page] = await Promise.all([
-                notificationService.getUnreadCount(),
-                notificationService.getMyNotifications(0, 100),
-            ]);
-            setUnreadCount(unread);
-            setNotifications(page.content);
-        } catch (error) {
-            console.error('Failed to load notifications', error);
-        }
-    };
-
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    useEffect(() => {
-        if (!client || !client.connected) return;
-
-        // Lắng nghe socket
-        const subscription = client.subscribe('/user/queue/notifications', (message: IMessage) => {
-            if (message.body) {
-                const newNotif: Notification = JSON.parse(message.body);
-                setNotifications(prev => [newNotif, ...prev]);
-                setUnreadCount(prev => prev + 1);
-            }
-        });
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [client]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -87,7 +50,7 @@ export default function NotificationBell() {
         setIsOpen(false);
         if (notif.relatedPollId) {
             const currentPath = `/poll/${notif.relatedPollId}`;
-            if (notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY') {
+            if (notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY' || notif.type === 'COMMENT_LIKED') {
                 const search = notif.relatedCommentId ? `?commentId=${notif.relatedCommentId}` : '';
                 if (window.location.pathname === currentPath &&
                     window.location.hash === '#comments' &&
@@ -136,6 +99,8 @@ export default function NotificationBell() {
                 return <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1e1b4b] shadow-sm"><Gavel className="w-3 h-3 text-white" /></div>;
             case 'PRIVATE_POLL_INVITATION':
                 return <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1e1b4b] shadow-sm"><Lock className="w-3 h-3 text-white" /></div>;
+            case 'COMMENT_LIKED':
+                return <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1e1b4b] shadow-sm"><ThumbsUp className="w-3 h-3 text-white" /></div>;
             default:
                 return null;
         }
@@ -275,12 +240,15 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
                     {notif.type === 'NEW_COMMENT' && t('notification.commentedPoll')}
                     {notif.type === 'NEW_REPLY' && t('notification.repliedComment')}
                     {notif.type === 'NEW_VOTE' && t('notification.votedPoll')}
+                    {notif.type === 'COMMENT_LIKED' && (
+                        <>{t('notification.likedComment')}: <span className="italic text-slate-600 dark:text-white/60">“{notif.message}”</span></>
+                    )}
                     {notif.type === 'JUDGE_INVITATION' && (notif.message.includes('Giám khảo') || notif.message.includes('Judge') ? '' : t('notification.invitedJudge'))}
                     {notif.type === 'PRIVATE_POLL_INVITATION' && ''}
                 </p>
                 {(notif.type === 'NEW_COMMENT' || notif.type === 'NEW_REPLY' || notif.type === 'JUDGE_INVITATION' || notif.type === 'PRIVATE_POLL_INVITATION') && (
                     <p className="text-[13px] text-slate-600 dark:text-white/60 line-clamp-2 mt-0.5">
-                        {(notif.type === 'JUDGE_INVITATION' || notif.type === 'PRIVATE_POLL_INVITATION') ? notif.message : `"${notif.message}"`}
+                        {(notif.type === 'JUDGE_INVITATION' || notif.type === 'PRIVATE_POLL_INVITATION') ? notif.message : `“${notif.message}”`}
                     </p>
                 )}
                 <p className={`text-[12px] font-medium mt-1 ${!notif.isRead ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-white/50'}`}>

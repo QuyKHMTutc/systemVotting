@@ -25,38 +25,48 @@ export default function PaymentResult() {
         return;
       }
 
-      if (vnp_ResponseCode !== '00') {
-        setStatus('error');
-        setMessage('Giao dịch đã bị hủy hoặc thanh toán không thành công.');
-        return;
-      }
-
+      // Vẫn luôn gọi backend để đồng bộ trạng thái FAILED/SUCCESS vào database
       try {
         const response = await api.get(`/payments/vnpay-return${location.search}`);
-        if (response.data.success) {
+        
+        if (vnp_ResponseCode === '00' && response.data.success) {
           setStatus('success');
           setMessage('Thanh toán thành công! Giao dịch của bạn đã được xác nhận.');
-          
+          localStorage.setItem('payment_status', JSON.stringify({ status: 'success', timestamp: Date.now() }));
+
           // Refresh user state globally!
           const userRes = await authService.me();
           if (userRes?.code === 200 && userRes.data) {
             updateUser(userRes.data);
             setPlanType(userRes.data.plan || 'PLUS');
           }
-          
         } else {
           setStatus('error');
-          setMessage(response.data.message || 'Xác thực chữ ký thất bại.');
+          setMessage('Giao dịch đã bị hủy hoặc thanh toán không thành công.');
+          localStorage.setItem('payment_status', JSON.stringify({ status: 'error', timestamp: Date.now() }));
         }
       } catch (error: any) {
         console.error('Error verifying payment:', error);
         setStatus('error');
-        setMessage('Lỗi kết nối máy chủ khi xác thực thanh toán.');
+        setMessage('Giao dịch đã bị hủy hoặc gặp lỗi xác thực.');
+        localStorage.setItem('payment_status', JSON.stringify({ status: 'error', timestamp: Date.now() }));
       }
     };
 
     verifyPayment();
   }, [location.search, updateUser]);
+
+  useEffect(() => {
+    if (status === 'success' || status === 'error') {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'PAYMENT_RESULT', status }, window.location.origin);
+        const t = setTimeout(() => {
+          window.close();
+        }, 3000);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [status]);
 
   return (
     <div className="h-screen w-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-50 dark:bg-[#0b0f19]">

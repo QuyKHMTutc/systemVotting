@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Comment } from '../../services/comment.service';
+import { commentService } from '../../services/comment.service';
 import { CornerDownRight, ThumbsUp, User, MoreVertical, Trash2 } from 'lucide-react';
 import CommentInput from './CommentInput';
 import { useAuth } from '../../contexts/AuthContext';
@@ -47,8 +48,9 @@ export default function CommentItem({
   const { user } = useAuth();
   const { t } = useTranslation();
   const [isReplying, setIsReplying] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(comment.likedByMe ?? false);
+  const [likeCount, setLikeCount] = useState(comment.likeCount ?? 0);
+  const [liking, setLiking] = useState(false);
   const commentRef = useRef<HTMLDivElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(highlightCommentId === comment.id);
   const [showMenu, setShowMenu] = useState(false);
@@ -91,9 +93,29 @@ export default function CommentItem({
   // Let's use a simpler visual approach: the parent draws the vertical line and each child has an absolute curve.
 
   const handleReplyClick = () => setIsReplying(!isReplying);
-  const handleLikeClick = () => {
-    setLiked(!liked);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
+  const handleLikeClick = async () => {
+    if (!user || liking) return;
+    // Optimistic update
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount(c => wasLiked ? c - 1 : c + 1);
+    setLiking(true);
+    try {
+      const result = await commentService.toggleLike(comment.id);
+      // Sync with server truth
+      setLiked(result.liked);
+      setLikeCount(c => {
+        // If server disagrees with our optimistic, correct it
+        const expected = wasLiked ? c + 1 : c - 1;
+        return result.liked !== !wasLiked ? expected : c;
+      });
+    } catch {
+      // Rollback on error
+      setLiked(wasLiked);
+      setLikeCount(c => wasLiked ? c + 1 : c - 1);
+    } finally {
+      setLiking(false);
+    }
   };
 
   return (
@@ -139,7 +161,7 @@ export default function CommentItem({
           <span className="text-slate-400 dark:text-white/40 text-xs">·</span>
           <span className="text-slate-500 dark:text-white/50 text-xs">{timeAgo}</span>
           
-          {user && comment.userId === user.id && (
+          {user && (comment.userId === user.id || comment.isOwner) && (
             <div className="ml-auto relative comment-menu-container">
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -183,10 +205,15 @@ export default function CommentItem({
         <div className="flex items-center gap-4 mt-2">
           <button
             onClick={handleLikeClick}
-            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${liked ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80'
-              }`}
+            disabled={!user || liking}
+            className={`flex items-center gap-1.5 text-xs font-medium transition-all ${
+              !user ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-white/30' :
+              liked
+                ? 'text-indigo-600 dark:text-indigo-400 scale-105'
+                : 'text-slate-500 dark:text-white/50 hover:text-indigo-500 dark:hover:text-indigo-400'
+            }`}
           >
-            <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+            <ThumbsUp className={`w-4 h-4 transition-transform ${liked ? 'fill-current' : ''} ${liking ? 'animate-pulse' : liked ? 'scale-110' : ''}`} />
             {likeCount > 0 ? likeCount : t('pollDetail.like')}
           </button>
           <button

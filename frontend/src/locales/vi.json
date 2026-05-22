@@ -421,7 +421,11 @@
     "termsOfService": "Điều khoản dịch vụ",
     "cancellationPolicy": "Chính sách hoàn hủy",
     "connectNow": "Kết nối ngay",
-    "copyright": "Bản quyền © 2026 bởi TRẦN VĂN QUÝ"
+    "copyright": "Bản quyền © 2026 bởi TRẦN VĂN QUÝ",
+    "ctaTitle": "Bạn đã sẵn sàng bắt đầu chưa?",
+    "ctaSubtitle": "Hoàn toàn miễn phí!",
+    "ctaLogin": "Đăng nhập",
+    "ctaRegister": "Đăng ký"
   },
   "notification": {
     "title": "Thông báo",
@@ -440,7 +444,8 @@
     "hoursAgo": "{{count}} giờ",
     "daysAgo": "{{count}} ngày",
     "invitedJudge": "đã mời bạn làm Giám khảo",
-    "invitedPrivate": "đã mời bạn tham gia cuộc bình chọn riêng tư:"
+    "invitedPrivate": "đã mời bạn tham gia cuộc bình chọn riêng tư:",
+    "likedComment": "đã thích bình luận của bạn"
   },
   "liveChart": {
     "option": "Lựa chọn",

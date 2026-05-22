@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { timeAgo } from '../../utils/date';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { getAnonymousCreatorName } from '../../utils/anonymous';
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -60,6 +61,8 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
   const { user } = useAuth();
   const navigate = useNavigate();
   const isCreator = !!user && Number(user.id) === Number(poll.creator.id);
+  const creatorName = poll.isAnonymous ? getAnonymousCreatorName(poll.id) : poll.creator.username;
+  const creatorAvatar = poll.isAnonymous ? null : poll.creator.avatarUrl;
   const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
   const remaining = timeRemaining(poll.endTime);
@@ -131,23 +134,23 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
             <div className="flex items-center gap-1.5 mr-1">
               <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 ring-1 ring-white dark:ring-white/10"
                 style={{ background: `linear-gradient(135deg, ${categoryStyle.accent}99, ${categoryStyle.accent}44)` }}>
-                {poll.creator.avatarUrl ? (
+                {creatorAvatar ? (
                   <img
-                    src={poll.creator.avatarUrl.startsWith('http')
-                      ? poll.creator.avatarUrl
-                      : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
+                    src={creatorAvatar.startsWith('http')
+                      ? creatorAvatar
+                      : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
                     alt=""
                     className="w-full h-full object-cover"
-                    onError={e => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}`; }}
+                    onError={e => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}`; }}
                   />
                 ) : (
                   <span className="flex items-center justify-center w-full h-full text-white text-[8px] font-bold">
-                    {poll.creator.username.charAt(0).toUpperCase()}
+                    {creatorName.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
               <span className="text-[12px] font-semibold text-slate-600 dark:text-white/60 hover:text-violet-600 dark:hover:text-violet-300 transition-colors">
-                {poll.creator.username}
+                {creatorName}
               </span>
             </div>
 
@@ -178,6 +181,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
                 <Lock className="w-3 h-3" />{t('pollDetail.privateLabel')}
               </span>
             )}
+
 
             {/* Status badge + Actions — pushed to right */}
             <div className="ml-auto flex items-center gap-2 shrink-0">
@@ -337,18 +341,17 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
               {/* End time badge */}
               {isActive && remaining ? (() => {
                 const diff = new Date(poll.endTime).getTime() - Date.now();
-                const isUrgent  = diff < 3_600_000;
+                const isUrgent = diff < 3_600_000;
                 const isWarning = diff < 86_400_000;
                 const isVi = i18n.language.startsWith('vi');
                 const label = isVi ? 'Kết thúc sau' : 'Ends in';
                 return (
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold border ${
-                    isUrgent
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold border ${isUrgent
                       ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20'
                       : isWarning
-                      ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-500/20'
-                      : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
-                  }`}>
+                        ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-500/20'
+                        : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
+                    }`}>
                     <Clock className={`w-3 h-3 ${isUrgent ? 'animate-pulse' : ''}`} />
                     <span className="text-[10.5px] font-normal opacity-75">{label}</span>
                     <span className="font-bold">{remaining}</span>

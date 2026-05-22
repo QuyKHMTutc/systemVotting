@@ -6,6 +6,7 @@ import { timeAgo, endsIn } from '../utils/date';
 import { getTagPillClass } from '../utils/tagPills';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { getAnonymousCreatorName } from '../utils/anonymous';
 
 export interface PollCardProps {
   poll: Poll;
@@ -25,6 +26,8 @@ export const PollCard = ({
   const { t } = useTranslation();
   const { user } = useAuth();
   const isCreator = !!user && Number(user.id) === Number(poll.creator.id);
+  const creatorName = poll.isAnonymous ? getAnonymousCreatorName(poll.id) : poll.creator.username;
+  const creatorAvatar = poll.isAnonymous ? null : poll.creator.avatarUrl;
   const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
   const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
@@ -109,6 +112,7 @@ export const PollCard = ({
                 <Lock className="w-3 h-3" /> Riêng tư
               </span>
             )}
+
             {poll.tags?.slice(0, 3).map((tag) => (
               <span
                 key={tag}
@@ -130,19 +134,19 @@ export const PollCard = ({
           {/* Creator row */}
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-slate-200 dark:ring-white/20 shrink-0 shadow-lg shadow-indigo-500/20 overflow-hidden">
-              {poll.creator.avatarUrl ? (
+              {creatorAvatar ? (
                 <img
-                  src={poll.creator.avatarUrl.startsWith('http') || poll.creator.avatarUrl.startsWith('blob') ? poll.creator.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${poll.creator.avatarUrl}`}
-                  alt={poll.creator.username}
+                  src={creatorAvatar.startsWith('http') || creatorAvatar.startsWith('blob') ? creatorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
+                  alt={creatorName}
                   className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${poll.creator.username}` }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}` }}
                 />
               ) : (
-                poll.creator.username.charAt(0).toUpperCase()
+                creatorName.charAt(0).toUpperCase()
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-slate-800 dark:text-white/90 font-medium text-sm truncate">{poll.creator.username}</span>
+              <span className="text-slate-800 dark:text-white/90 font-medium text-sm truncate">{creatorName}</span>
               <span className="text-slate-500 dark:text-white/50 text-xs">{timeAgo(poll.createdAt)}</span>
             </div>
           </div>

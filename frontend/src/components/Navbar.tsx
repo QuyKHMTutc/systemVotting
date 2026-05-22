@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link, NavLink, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search, SquarePlus, KeyRound } from 'lucide-react';
+import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search, SquarePlus, KeyRound, User } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UpgradeModal from './payment/UpgradeModal';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -57,11 +57,12 @@ const Navbar = () => {
     }, [isUpgradeModalOpen]);
 
     return (
-        <nav className={`sticky top-0 z-[100] py-3 sm:py-4 mb-2 transition-all duration-300 bg-slate-50 dark:bg-[#0b0a18] ${isScrolled
+        <>
+        <nav className={`fixed w-full top-0 left-0 z-[100] py-3 sm:py-4 transition-all duration-300 bg-slate-50 dark:bg-[#0b0a18] ${isScrolled
             ? 'shadow-sm border-b border-slate-200 dark:border-white/10'
             : 'border-b border-transparent'
             }`}>
-            <div className="w-full pl-4 pr-4 flex items-center justify-between relative">
+            <div className="w-full pl-4 pr-4 flex items-center justify-between relative max-w-[1920px] mx-auto">
 
                 {/* Left: Logo — 220px to align with explore sidebar */}
                 <div className="flex items-center justify-center shrink-0 w-[220px]">
@@ -235,37 +236,9 @@ const Navbar = () => {
 
                                         <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
                                             <div className="w-8 h-8 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400 shrink-0">
-                                                <PenLine className="w-4 h-4" />
+                                                <User className="w-4 h-4" />
                                             </div>
-                                            {t('navbar.editProfile')}
-                                        </Link>
-
-                                        <Link to="/profile?tab=created" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
-                                            <div className="w-8 h-8 rounded-full bg-pink-500/10 dark:bg-pink-500/20 flex items-center justify-center text-pink-500 dark:text-pink-400 shrink-0">
-                                                <ListPlus className="w-4 h-4" />
-                                            </div>
-                                            {t('navbar.myPolls')}
-                                        </Link>
-
-                                        <Link to="/profile?tab=comments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
-                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0">
-                                                <MessageSquare className="w-4 h-4" />
-                                            </div>
-                                            {t('navbar.myComments')}
-                                        </Link>
-
-                                        <Link to="/profile?tab=voted" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
-                                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0">
-                                                <CheckSquare className="w-4 h-4" />
-                                            </div>
-                                            {t('navbar.myVotes')}
-                                        </Link>
-
-                                        <Link to="/profile?tab=payments" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 hover:text-indigo-700 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all">
-                                            <div className="w-8 h-8 rounded-full bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 shrink-0">
-                                                <CreditCard className="w-4 h-4" />
-                                            </div>
-                                            {t('profile.paymentHistory')}
+                                            {i18n.language.startsWith('vi') ? 'Thông tin cá nhân' : 'My Profile'}
                                         </Link>
 
                                         <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent my-1.5 mx-2"></div>
@@ -309,6 +282,9 @@ const Navbar = () => {
                 onClose={() => setIsChangePasswordOpen(false)}
             />
         </nav>
+        {/* Placeholder to prevent content jump since Navbar is now fixed */}
+        <div className="h-[74px] sm:h-[82px] mb-2 w-full shrink-0" aria-hidden="true" />
+        </>
     );
 };
 

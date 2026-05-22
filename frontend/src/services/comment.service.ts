@@ -14,6 +14,9 @@ export interface Comment {
     pollId?: number;
     pollTitle?: string;
     replies?: Comment[];
+    likeCount?: number;
+    likedByMe?: boolean;
+    isOwner?: boolean;
 }
 
 export type CommentPage = PageResponse<Comment>;
@@ -64,5 +67,10 @@ export const commentService = {
 
     deleteComment: async (commentId: number): Promise<void> => {
         await api.delete(`/comments/${commentId}`);
+    },
+
+    toggleLike: async (commentId: number): Promise<{ liked: boolean }> => {
+        const response = await api.post(`/comments/${commentId}/like`);
+        return response.data.data;
     },
 };

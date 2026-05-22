@@ -62,15 +62,15 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex justify-center bg-black/70 backdrop-blur-md p-4 sm:p-6 transition-all duration-300 items-start pt-[15vh]">
-            <div className="bg-[#1a1b26] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] w-full max-w-lg overflow-hidden animate-fade-in-up flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 z-[100] flex justify-center bg-slate-900/40 dark:bg-black/70 backdrop-blur-md p-4 sm:p-6 transition-all duration-300 items-start pt-[15vh]">
+            <div className="bg-white dark:bg-[#1a1b26] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl dark:shadow-[0_0_50px_rgba(99,102,241,0.15)] w-full max-w-lg overflow-hidden animate-fade-in-up flex flex-col max-h-[85vh]">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 p-6 border-b border-slate-200 dark:border-white/10 flex justify-between items-center shrink-0">
                     <div>
-                        <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200 tracking-wide">{t('profile.title')}</h2>
-                        <p className="text-indigo-200/60 text-sm mt-1">{t('profile.desc')}</p>
+                        <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-600 dark:from-white dark:to-indigo-200 tracking-wide">{t('profile.title')}</h2>
+                        <p className="text-slate-500 dark:text-indigo-200/60 text-sm mt-1">{t('profile.desc')}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 sm:p-2.5 bg-white/10 border border-white/20 text-white hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-full transition-all duration-300 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <button onClick={onClose} className="p-2 sm:p-2.5 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-500 dark:text-white hover:text-white hover:bg-red-500 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-full transition-all duration-300 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-red-500">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -99,28 +99,28 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                     <form onSubmit={handleSubmit} className="space-y-8 flex flex-col">
 
                         {/* Avatar Section */}
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 bg-white/5 p-6 rounded-2xl border border-white/5">
-                            <div className="relative group shrink-0 w-24 h-24 rounded-full border-2 border-indigo-500/50 shadow-lg shadow-indigo-500/20 overflow-hidden bg-[#242636] flex items-center justify-center">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 bg-slate-50 dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/5">
+                            <div className="relative group shrink-0 w-24 h-24 rounded-full border-2 border-indigo-500/20 dark:border-indigo-500/50 shadow-lg shadow-indigo-500/10 dark:shadow-indigo-500/20 overflow-hidden bg-slate-100 dark:bg-[#242636] flex items-center justify-center">
                                 {previewUrl && previewUrl !== 'null' && previewUrl.trim() !== '' ? (
                                     <img src={previewUrl.startsWith('http') || previewUrl.startsWith('blob') ? previewUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${previewUrl}`} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.username}` }} />
                                 ) : (
-                                    <span className="text-4xl font-bold text-indigo-300/80">{username.charAt(0).toUpperCase()}</span>
+                                    <span className="text-4xl font-bold text-indigo-500 dark:text-indigo-300/80">{username.charAt(0).toUpperCase()}</span>
                                 )}
                             </div>
                             
                             <div className="flex flex-col items-center sm:items-start justify-center flex-grow text-center sm:text-left space-y-3">
                                 <div>
-                                    <h3 className="text-white font-semibold flex items-center justify-center sm:justify-start gap-2">
+                                    <h3 className="text-slate-800 dark:text-white font-semibold flex items-center justify-center sm:justify-start gap-2">
                                         {t('profile.picture')}
                                     </h3>
-                                    <p className="text-indigo-200/50 text-xs mt-1 max-w-[200px] leading-relaxed">
+                                    <p className="text-slate-500 dark:text-indigo-200/50 text-xs mt-1 max-w-[200px] leading-relaxed">
                                         {t('profile.pictureDesc')}
                                     </p>
                                 </div>
                                 <div className="relative">
                                     <button
                                         type="button"
-                                        className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white/90 text-sm font-medium rounded-xl border border-white/10 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-full sm:w-auto"
+                                        className="px-5 py-2.5 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-700 dark:text-white/90 text-sm font-medium rounded-xl border border-slate-300 dark:border-white/10 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-full sm:w-auto"
                                     >
                                         {t('profile.chooseFile')}
                                     </button>
@@ -137,7 +137,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
 
                         {/* Username Section */}
                         <div className="space-y-3">
-                            <label className="block text-sm font-semibold text-indigo-100/90 tracking-wide" htmlFor="username">
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-indigo-100/90 tracking-wide" htmlFor="username">
                                 {t('profile.username')}
                             </label>
                             <input
@@ -145,7 +145,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-purple-500 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all flex-grow"
+                                className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-purple-500 focus:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all flex-grow"
                                 placeholder={t('profile.usernamePlaceholder')}
                                 required
                                 minLength={3}
@@ -157,11 +157,11 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                 </div>
                 
                 {/* Footer Actions */}
-                <div className="bg-black/20 p-6 sm:px-8 border-t border-white/5 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
+                <div className="bg-slate-50 dark:bg-black/20 p-6 sm:px-8 border-t border-slate-200 dark:border-white/5 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-6 py-3 text-sm font-medium text-indigo-200 hover:text-white bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl transition-all flex-1 sm:flex-none text-center"
+                        className="px-6 py-3 text-sm font-medium text-slate-600 dark:text-indigo-200 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 rounded-xl transition-all flex-1 sm:flex-none text-center"
                     >
                         {t('profile.cancel')}
                     </button>

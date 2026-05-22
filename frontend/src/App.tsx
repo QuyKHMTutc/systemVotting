@@ -66,7 +66,7 @@ function App() {
         <AuthProvider>
           <WebSocketProvider>
           <div className="min-h-screen flex flex-col">
-            <div className="flex-grow flex flex-col relative z-0">
+            <div className="flex-grow flex flex-col relative">
               <Routes>
               <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />

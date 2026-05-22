@@ -9,6 +9,8 @@ interface ExploreSidebarProps {
     filterTag: string;
     filterCategory: string;
     filterStatus: string;
+    trendingCount: number;
+    pollListVersion: number;
     onResetExplore: () => void;
     onScrollToTrending: () => void;
     onScrollToPollGrid: () => void;
@@ -21,6 +23,8 @@ export function ExploreSidebar({
     filterTag,
     filterCategory,
     filterStatus,
+    trendingCount,
+    pollListVersion,
     onScrollToTrending,
     onScrollToPollGrid,
     onSetFilterStatus,
@@ -53,23 +57,23 @@ export function ExploreSidebar({
             pollService.getAllPolls(0, 1, '', 'ALL', 'ALL'),
             pollService.getAllPolls(0, 1, '', 'ALL', 'ACTIVE'),
             pollService.getAllPolls(0, 1, '', 'ALL', 'ENDED'),
-            pollService.getTrendingPolls(50)
-        ]).then(([totalRes, activeRes, endedRes, trendingRes]) => {
+        ]).then(([totalRes, activeRes, endedRes]) => {
             setStats({
                 total: totalRes.totalElements || 0,
                 active: activeRes.totalElements || 0,
                 ended: endedRes.totalElements || 0,
-                trending: trendingRes.length || 0
+                trending: activeRes.totalElements || 0,  // Trending = subset of active polls
             });
         }).catch(() => {});
-    }, []);
+    }, [pollListVersion]);
 
     const navItems = [
-        { label: t('dashboard.sidebarTrending') || 'Trending', Icon: TrendingUp, count: stats.trending, onClick: () => { setActiveTab('TRENDING'); onSetFilterStatus('TRENDING'); onScrollToTrending(); }, isActiveStatus: activeTab === 'TRENDING' },
-        { label: t('dashboard.sidebarNewest') || 'Mới nhất', Icon: Sparkles, count: stats.active, onClick: () => { setActiveTab('NEWEST'); onSetFilterStatus('NEWEST'); setTimeout(onScrollToPollGrid, 100); }, isActiveStatus: activeTab === 'NEWEST' },
+        { label: t('dashboard.sidebarTrending') || 'Trending', Icon: TrendingUp, count: trendingCount, onClick: () => { setActiveTab('TRENDING'); onSetFilterStatus('TRENDING'); onScrollToTrending(); }, isActiveStatus: activeTab === 'TRENDING' },
+        { label: t('dashboard.sidebarNewest') || 'Mới nhất', Icon: Sparkles, count: stats.total, onClick: () => { setActiveTab('NEWEST'); onSetFilterStatus('NEWEST'); setTimeout(onScrollToPollGrid, 100); }, isActiveStatus: activeTab === 'NEWEST' },
         { label: t('dashboard.sidebarOngoing') || 'Đang diễn ra', Icon: Clock, count: stats.active, onClick: () => { setActiveTab('ACTIVE'); onSetFilterStatus('ACTIVE'); }, isActiveStatus: activeTab === 'ACTIVE' },
         { label: t('dashboard.sidebarEnded') || 'Đã kết thúc', Icon: CheckCircle2, count: stats.ended, onClick: () => { setActiveTab('ENDED'); onSetFilterStatus('ENDED'); }, isActiveStatus: activeTab === 'ENDED' },
     ];
+
 
     const isAllActive = !filterCategory && filterTag === 'ALL';
 

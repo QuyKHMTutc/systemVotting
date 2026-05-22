@@ -7,7 +7,7 @@ import { ExplorePollCard } from '../components/explore/ExplorePollCard';
 import {
   ListPlus, CheckSquare, PenLine, MessageSquare,
   CreditCard, Crown, Zap, ArrowLeft, ChevronLeft, ChevronRight,
-  MoreVertical, Trash2
+  MoreVertical, Trash2, User
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -450,7 +450,9 @@ export const Profile = () => {
                     <div key={c.id} className="animate-fade-in-up bg-white dark:bg-[#0e0b1f] rounded-2xl border border-slate-100 dark:border-white/[0.05] p-5 hover:shadow-md hover:border-slate-200 dark:hover:border-white/[0.1] transition-all" style={{ animationDelay: `${i * 30}ms` }}>
                       <div className="flex gap-4">
                         <div className="shrink-0 w-9 h-9 rounded-xl overflow-hidden bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 font-bold text-sm">
-                          {c.isAnonymous ? 'A' : (
+                          {c.isAnonymous ? (
+                            <User className="w-5 h-5" />
+                          ) : (
                             c.avatarUrl && c.avatarUrl !== 'null' && c.avatarUrl.trim() !== '' ? (
                               <img src={c.avatarUrl.startsWith('http') || c.avatarUrl.startsWith('blob') ? c.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${c.avatarUrl}`} alt={c.username} className="w-full h-full object-cover" />
                             ) : c.username.charAt(0).toUpperCase()
@@ -458,7 +460,7 @@ export const Profile = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                            <span className="font-semibold text-slate-900 dark:text-white text-sm">{c.isAnonymous ? 'Anonymous' : c.username}</span>
+                            <span className="font-semibold text-slate-900 dark:text-white text-sm">{c.username}</span>
                             <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
                             <span className="text-slate-400 dark:text-white/30 text-xs">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</span>
                             {c.pollTitle && (
@@ -540,7 +542,6 @@ export const Profile = () => {
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/[0.08]">
                                   <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30" />{t('profile.pending')}
                                 </span>
-                                <span className="text-[10px] text-slate-400 dark:text-white/25 px-1">{t('profile.notScannedQR')}</span>
                               </div>
                             )}
                             {txn.status === 'FAILED' && (
