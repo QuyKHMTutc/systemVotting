@@ -120,40 +120,58 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_80%_20%,rgba(241,7,163,0.22),transparent)] pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_60%_at_10%_70%,rgba(123,47,247,0.25),transparent)] pointer-events-none" />
 
-      {/* Abstract AI/Tech visual on right */}
-      <div className="absolute right-0 top-0 bottom-0 w-[42%] pointer-events-none hidden lg:flex items-center justify-center overflow-hidden">
-        {/* Background glow layers */}
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br ${accent} opacity-25 blur-3xl`} />
-        <div className="absolute top-6 right-6 w-28 h-28 rounded-full bg-fuchsia-500/20 blur-2xl animate-pulse" style={{ animationDuration: '3s' }} />
-        <div className="absolute bottom-6 left-6 w-20 h-20 rounded-full bg-violet-500/25 blur-xl" />
-        {/* Concentric rings */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full border border-white/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 rounded-full border border-white/[0.06]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full border border-white/[0.03]" />
-        {/* Grid dots */}
-        <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-        {/* SVG central icon */}
-        <div className="relative z-10 flex items-center justify-center">
-          <div className={`w-28 h-28 rounded-3xl bg-gradient-to-br ${accent} opacity-80 flex items-center justify-center shadow-2xl`} style={{ boxShadow: '0 0 60px rgba(123,47,247,0.5)' }}>
-            <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="40" cy="28" r="14" stroke="white" strokeWidth="2" strokeOpacity="0.9" />
-              <circle cx="40" cy="28" r="7" fill="white" fillOpacity="0.3" />
-              <circle cx="40" cy="28" r="3" fill="white" fillOpacity="0.9" />
-              <path d="M20 55 Q40 42 60 55" stroke="white" strokeWidth="2" strokeOpacity="0.8" strokeLinecap="round" />
-              <path d="M14 62 Q40 46 66 62" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeLinecap="round" />
-              <line x1="40" y1="14" x2="40" y2="8" stroke="white" strokeWidth="2" strokeOpacity="0.7" strokeLinecap="round" />
-              <circle cx="40" cy="6" r="2.5" fill="white" fillOpacity="0.9" />
-              <line x1="30" y1="17" x2="24" y2="12" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeLinecap="round" />
-              <line x1="50" y1="17" x2="56" y2="12" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeLinecap="round" />
-            </svg>
-          </div>
-          {/* Orbiting dots */}
-          <div className="absolute top-1/2 left-1/2" style={{ width: 120, height: 120, marginLeft: -60, marginTop: -60 }}>
-            <div className="absolute w-3 h-3 rounded-full bg-fuchsia-400 shadow-lg shadow-fuchsia-500/60" style={{ top: 0, left: '50%', transform: 'translateX(-50%)', animation: 'orbit 4s linear infinite' }} />
-            <div className="absolute w-2 h-2 rounded-full bg-violet-400 shadow-lg shadow-violet-500/60" style={{ bottom: 0, left: '50%', transform: 'translateX(-50%)', animation: 'orbit 4s linear infinite reverse' }} />
-          </div>
+      {/* Immersive Background Image (Cinematic Netflix Style) */}
+      {featured.imageUrl && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <img 
+            src={featured.imageUrl} 
+            alt={featured.title} 
+            className="w-full h-full object-cover scale-105" 
+          />
+          {/* Heavy gradient overlays for perfect text readability (fades to transparent on the right so image is original) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0710] via-[#0a0710]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0710] via-[#0a0710]/40 to-transparent lg:hidden" />
         </div>
-      </div>
+      )}
+
+      {/* Right-side Abstract AI/Tech visual (Fallback when NO image) */}
+      {!featured.imageUrl && (
+        <div className="absolute right-0 top-0 bottom-0 w-[50%] pointer-events-none hidden lg:flex items-center justify-center overflow-hidden">
+          <>
+            {/* Background glow layers */}
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br ${accent} opacity-25 blur-3xl`} />
+            <div className="absolute top-6 right-6 w-28 h-28 rounded-full bg-fuchsia-500/20 blur-2xl animate-pulse" style={{ animationDuration: '3s' }} />
+            <div className="absolute bottom-6 left-6 w-20 h-20 rounded-full bg-violet-500/25 blur-xl" />
+            {/* Concentric rings */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full border border-white/10" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 rounded-full border border-white/[0.06]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full border border-white/[0.03]" />
+            {/* Grid dots */}
+            <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+            {/* SVG central icon */}
+            <div className="relative z-10 flex items-center justify-center">
+              <div className={`w-28 h-28 rounded-3xl bg-gradient-to-br ${accent} opacity-80 flex items-center justify-center shadow-2xl`} style={{ boxShadow: '0 0 60px rgba(123,47,247,0.5)' }}>
+                <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="40" cy="28" r="14" stroke="white" strokeWidth="2" strokeOpacity="0.9" />
+                  <circle cx="40" cy="28" r="7" fill="white" fillOpacity="0.3" />
+                  <circle cx="40" cy="28" r="3" fill="white" fillOpacity="0.9" />
+                  <path d="M20 55 Q40 42 60 55" stroke="white" strokeWidth="2" strokeOpacity="0.8" strokeLinecap="round" />
+                  <path d="M14 62 Q40 46 66 62" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeLinecap="round" />
+                  <line x1="40" y1="14" x2="40" y2="8" stroke="white" strokeWidth="2" strokeOpacity="0.7" strokeLinecap="round" />
+                  <circle cx="40" cy="6" r="2.5" fill="white" fillOpacity="0.9" />
+                  <line x1="30" y1="17" x2="24" y2="12" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeLinecap="round" />
+                  <line x1="50" y1="17" x2="56" y2="12" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              {/* Orbiting dots */}
+              <div className="absolute top-1/2 left-1/2" style={{ width: 120, height: 120, marginLeft: -60, marginTop: -60 }}>
+                <div className="absolute w-3 h-3 rounded-full bg-fuchsia-400 shadow-lg shadow-fuchsia-500/60" style={{ top: 0, left: '50%', transform: 'translateX(-50%)', animation: 'orbit 4s linear infinite' }} />
+                <div className="absolute w-2 h-2 rounded-full bg-violet-400 shadow-lg shadow-violet-500/60" style={{ bottom: 0, left: '50%', transform: 'translateX(-50%)', animation: 'orbit 4s linear infinite reverse' }} />
+              </div>
+            </div>
+          </>
+        </div>
+      )}
 
       <div className="relative z-10 flex flex-col lg:flex-row h-full min-h-[280px]">
         {/* Left content */}

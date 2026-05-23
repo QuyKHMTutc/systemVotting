@@ -556,6 +556,18 @@ const PollDetail = () => {
                         </p>
                       )}
 
+                      {/* Cover Image */}
+                      {poll.imageUrl && (
+                        <div className="relative overflow-hidden rounded-2xl mb-4 aspect-[16/6] bg-slate-100 dark:bg-white/5">
+                          <img
+                            src={poll.imageUrl}
+                            alt={`Ảnh bìa: ${poll.title}`}
+                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                        </div>
+                      )}
+
                       {poll.tags && poll.tags.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 mb-5">
                           {poll.tags.map((tag) => (

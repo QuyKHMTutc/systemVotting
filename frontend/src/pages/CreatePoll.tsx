@@ -9,6 +9,7 @@ import JudgeSelector from '../components/JudgeSelector';
 import InviteUserSelector from '../components/InviteUserSelector';
 import type { JudgeCandidate } from '../services/judge.service';
 import { PlanPollLimits } from '../utils/planLimits';
+import ImageUploader from '../components/ImageUploader';
 
 const CreatePoll = () => {
     const { t } = useTranslation();
@@ -23,6 +24,7 @@ const CreatePoll = () => {
 
     const [question, setQuestion] = useState('');
     const [description, setDescription] = useState('');
+    const [pollImageUrl, setPollImageUrl] = useState<string | undefined>(undefined);
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
     const [isAnonymous, setIsAnonymous] = useState(false);
@@ -80,6 +82,7 @@ const CreatePoll = () => {
                 visibility,
                 invitedEmails: visibility === 'PRIVATE' ? invitedUsers.map(u => u.email ?? '').filter(Boolean) : [],
                 categoryId: selectedCategoryId,
+                imageUrl: pollImageUrl,
             });
             sessionStorage.removeItem('explore_scroll_cache');
             // HTTP 202 = SUSPICIOUS — bài đang chờ Admin duyệt
@@ -145,6 +148,22 @@ const CreatePoll = () => {
                                 placeholder="Chia sẻ thêm bối cảnh hoặc chi tiết về cuộc thăm dò..."
                             />
                             <p className="text-right text-xs text-slate-400 dark:text-white/30 mt-1">{description.length}/500</p>
+                        </div>
+
+                        {/* Cover Image Uploader */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-1">
+                                Ảnh bìa{' '}
+                                <span className="text-slate-400 dark:text-white/35 font-normal">(tùy chọn)</span>
+                            </label>
+                            <p className="text-xs text-slate-400 dark:text-white/40 mb-3">
+                                Thêm ảnh bìa giúp cuộc bình chọn nổi bật và thu hút người tham gia hơn.
+                            </p>
+                            <ImageUploader
+                                imageUrl={pollImageUrl}
+                                onImageUploaded={(url) => setPollImageUrl(url)}
+                                onImageRemoved={() => setPollImageUrl(undefined)}
+                            />
                         </div>
 
                         {/* Options */}

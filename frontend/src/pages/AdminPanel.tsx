@@ -467,17 +467,7 @@ const AdminPanel = () => {
                 </div>
             </div>
 
-            <div>
-                <p className="px-3 text-xs font-semibold text-white/30 tracking-wider mb-3">SYSTEM</p>
-                <div className="space-y-1">
-                    {[{ id: 'SETTINGS', label: 'Settings', icon: <Settings size={18}/> }, { id: 'LOGS', label: 'Logs', icon: <FileText size={18}/> }, { id: 'NOTIFICATIONS', label: 'Notifications', icon: <Bell size={18}/> }].map(item => (
-                         <button key={item.id} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-white/40 hover:text-white/70 hover:bg-white/5 transition-all duration-300 border-l-4 border-transparent">
-                            {item.icon}
-                            <span className="flex-1 text-left">{item.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+
         </nav>
 
         <div className="p-4 border-t border-white/5">

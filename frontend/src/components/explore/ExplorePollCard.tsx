@@ -139,7 +139,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
               : 'border-slate-200/60 dark:border-white/[0.07] hover:shadow-md hover:shadow-slate-200/80 dark:hover:shadow-[0_6px_24px_-4px_rgba(0,0,0,0.35)] hover:border-slate-300/70 dark:hover:border-white/[0.13]'
         }
       `}>
-        {/* Accent left bar — amber when pending, red when rejected */}
+        {/* Accent left bar */}
         <div className="w-[3px] shrink-0" style={{ background:
           isPendingReview
             ? 'linear-gradient(to bottom, #f59e0b, #f59e0b88)'
@@ -149,7 +149,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
         }} />
 
         {/* Card body */}
-        <div className="flex-1 min-w-0 px-5 py-4">
+        <div className="flex-1 min-w-0 px-5 py-4 flex flex-col">
 
           {/* Banner thông báo cho poll chờ duyệt / bị từ chối */}
           {isPendingReview && (
@@ -292,6 +292,17 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
             </div>
           )}
 
+          {/* ── Inline Cover Image (Twitter/Facebook Style) ──── */}
+          {poll.imageUrl && (
+            <div className="mb-4 relative w-full rounded-xl overflow-hidden border border-slate-200/50 dark:border-white/10" style={{ maxHeight: '300px' }}>
+              <img
+                src={poll.imageUrl}
+                alt={poll.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+          )}
+
           {/* ── Row 5: All Poll Options ───────────────────────── */}
           <div className="space-y-1.5 mb-3">
             {sortedOptions.map((option, idx) => {
@@ -415,3 +426,4 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
     </Wrapper>
   );
 }
+

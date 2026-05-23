@@ -8,6 +8,7 @@ export interface Poll {
     id: number;
     title: string;
     description: string;
+    imageUrl?: string;       // URL ảnh bìa từ Cloudinary (có thể null)
     tags: string[];
     isAnonymous: boolean;
     startTime: string;
@@ -25,6 +26,7 @@ export interface Poll {
     visibility?: 'PUBLIC' | 'PRIVATE'; // Poll visibility type
     category?: Category;
     moderationStatus?: 'SAFE' | 'SUSPICIOUS' | 'DANGEROUS'; // Moderation state
+    moderationReason?: string;
 }
 
 export interface PollOption {
