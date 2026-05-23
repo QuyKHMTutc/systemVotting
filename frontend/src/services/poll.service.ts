@@ -24,6 +24,7 @@ export interface Poll {
     judgeIds?: number[];
     visibility?: 'PUBLIC' | 'PRIVATE'; // Poll visibility type
     category?: Category;
+    moderationStatus?: 'SAFE' | 'SUSPICIOUS' | 'DANGEROUS'; // Moderation state
 }
 
 export interface PollOption {

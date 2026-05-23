@@ -11,6 +11,7 @@ import { categoryService } from '../services/category.service';
 import type { Category } from '../services/category.service';
 import { moderationService } from '../services/moderation.service';
 import type { PendingPoll, FlaggedComment, ModerationCount } from '../services/moderation.service';
+import { useAdminModerationWebSocket } from '../hooks/useAdminModerationWebSocket';
 import {
   LayoutDashboard, Users, BarChart3, ShieldAlert,
   Lock, Unlock, Trash2, Search,
@@ -187,6 +188,24 @@ const AdminPanel = () => {
   }, [user, navigate, tab, fetchOverviewData, fetchUsers, pageUsers, fetchPolls, pagePolls, fetchPayments, pagePayments, fetchCategories, fetchPendingPolls, fetchFlaggedComments, fetchModerationCount]);
 
   useEffect(() => { fetchAll(); }, [tab]);
+
+  // Real-time: nhận COUNT_UPDATED từ AdminPanel WebSocket khi có admin khác hoạt động
+  const handleAdminModerationEvent = useCallback((event: import('../hooks/useAdminModerationWebSocket').AdminModerationEvent) => {
+    if (event.type === 'COUNT_UPDATED') {
+      setModerationCount({
+        pendingPolls: event.pendingPolls,
+        flaggedComments: event.flaggedComments,
+        total: event.total,
+      });
+      // Nếu đang ở tab MODERATION thì tự refresh danh sách
+      if (tab === 'MODERATION') {
+        fetchPendingPolls(pagePendingPolls);
+        fetchFlaggedComments(pageFlaggedComments);
+      }
+    }
+  }, [tab, pagePendingPolls, pageFlaggedComments, fetchPendingPolls, fetchFlaggedComments]);
+
+  useAdminModerationWebSocket({ onEvent: handleAdminModerationEvent });
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();

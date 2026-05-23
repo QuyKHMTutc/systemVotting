@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { Poll } from '../../services/poll.service';
 import {
   Users, MessageCircle, Share2, Check, Lock,
-  Trash2, MoreVertical, Scale, Clock,
+  Trash2, MoreVertical, Scale, Clock, AlertTriangle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { timeAgo } from '../../utils/date';
@@ -104,28 +104,66 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
 
   const showResults = hasVoted || isCreator;
 
+  // Poll đang chờ Admin duyệt — chỉ creator thấy, không thể click
+  const isPendingReview = poll.moderationStatus === 'SUSPICIOUS';
+  // Poll bị từ chối — chỉ creator thấy
+  const isRejected = poll.moderationStatus === 'DANGEROUS';
+
   // For progress bar width, use relative to winner (makes small % still visible)
   const maxRawScore = sortedOptions.length > 0
     ? (hasWeightedVoting ? getWeightedScore(sortedOptions[0]) : (sortedOptions[0].voteCount ?? 0))
     : 1;
 
+  // Wrapper: poll chờ duyệt / bị từ chối không cho click
+  const Wrapper = (isPendingReview || isRejected)
+    ? ({ children }: { children: React.ReactNode }) => (
+        <div className="block group cursor-default">{children}</div>
+      )
+    : ({ children }: { children: React.ReactNode }) => (
+        <Link to={`/poll/${poll.id}`} className="block group">{children}</Link>
+      );
+
   return (
-    <Link to={`/poll/${poll.id}`} className="block group">
-      <article className="
+    <Wrapper>
+      <article className={`
         flex gap-0 overflow-hidden
         bg-white dark:bg-[#13112a]
-        border border-slate-200/60 dark:border-white/[0.07]
-        rounded-2xl
+        border rounded-2xl
         shadow-sm dark:shadow-none
-        hover:shadow-md hover:shadow-slate-200/80 dark:hover:shadow-[0_6px_24px_-4px_rgba(0,0,0,0.35)]
-        hover:border-slate-300/70 dark:hover:border-white/[0.13]
         transition-all duration-200
-      ">
-        {/* Accent left bar */}
-        <div className="w-[3px] shrink-0" style={{ background: `linear-gradient(to bottom, ${categoryStyle.accent}, ${categoryStyle.accent}88)` }} />
+        ${
+          isPendingReview
+            ? 'border-amber-300/60 dark:border-amber-500/30 opacity-80'
+            : isRejected
+              ? 'border-red-300/50 dark:border-red-500/20 opacity-60'
+              : 'border-slate-200/60 dark:border-white/[0.07] hover:shadow-md hover:shadow-slate-200/80 dark:hover:shadow-[0_6px_24px_-4px_rgba(0,0,0,0.35)] hover:border-slate-300/70 dark:hover:border-white/[0.13]'
+        }
+      `}>
+        {/* Accent left bar — amber when pending, red when rejected */}
+        <div className="w-[3px] shrink-0" style={{ background:
+          isPendingReview
+            ? 'linear-gradient(to bottom, #f59e0b, #f59e0b88)'
+            : isRejected
+              ? 'linear-gradient(to bottom, #ef4444, #ef444488)'
+              : `linear-gradient(to bottom, ${categoryStyle.accent}, ${categoryStyle.accent}88)`
+        }} />
 
         {/* Card body */}
         <div className="flex-1 min-w-0 px-5 py-4">
+
+          {/* Banner thông báo cho poll chờ duyệt / bị từ chối */}
+          {isPendingReview && (
+            <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 text-amber-700 dark:text-amber-400 text-[12px] font-semibold">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>Bài đang chờ Admin kiểm duyệt — chưa công khai</span>
+            </div>
+          )}
+          {isRejected && (
+            <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/25 text-red-600 dark:text-red-400 text-[12px] font-semibold">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>Bài bị từ chối — không được xuất hiện công khai</span>
+            </div>
+          )}
 
           {/* ── Row 1: Meta bar ─────────────────────────────── */}
           <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -179,6 +217,13 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
             {poll.visibility === 'PRIVATE' && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/35">
                 <Lock className="w-3 h-3" />{t('pollDetail.privateLabel')}
+              </span>
+            )}
+
+            {/* Badge chờ duyệt — chỉ hiện với creator khi poll đang SUSPICIOUS */}
+            {isCreator && poll.moderationStatus === 'SUSPICIOUS' && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
+                <AlertTriangle className="w-3 h-3" />Chờ duyệt
               </span>
             )}
 
@@ -367,6 +412,6 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
 
         </div>
       </article>
-    </Link>
+    </Wrapper>
   );
 }

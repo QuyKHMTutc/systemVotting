@@ -16,6 +16,8 @@ import { getTagPillClass } from '../utils/tagPills';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../contexts/AuthContext';
 import { usePollWebSocket } from '../hooks/usePollWebSocket';
+import { usePollEventsWebSocket } from '../hooks/usePollEventsWebSocket';
+import type { PollEventPayload } from '../hooks/usePollEventsWebSocket';
 import { useTranslation } from 'react-i18next';
 import PollLiveChartModal from '../components/poll/PollLiveChartModal';
 import { getAnonymousCreatorName } from '../utils/anonymous';
@@ -179,6 +181,32 @@ const PollDetail = () => {
     onVoteUpdate: handleWsVoteUpdate,
     onNewComment: handleWsNewComment,
   });
+
+  const handleGlobalPollEvent = useCallback((payload: PollEventPayload) => {
+    if (!id || payload.pollId !== Number(id)) return;
+
+    if (payload.type === 'DELETED') {
+      // Poll was deleted or rejected by admin, leave the page
+      navigate('/', { replace: true });
+    } else if (payload.type === 'COMMENT_DELETED' && payload.commentId) {
+      setComments(prev => {
+        const targetId = Number(payload.commentId);
+        // Try to filter out root comment
+        let updated = prev.filter(c => Number(c.id) !== targetId);
+        // Also remove if it's a nested reply
+        updated = updated.map(root => ({
+          ...root,
+          replies: root.replies ? root.replies.filter(r => Number(r.id) !== targetId) : []
+        }));
+        return updated;
+      });
+      if (payload.commentCount !== undefined) {
+        setTotalAllComments(payload.commentCount);
+      }
+    }
+  }, [id, navigate]);
+
+  usePollEventsWebSocket({ onEvent: handleGlobalPollEvent });
 
   const handleCommentSubmit = async (content: string, isAnonymous: boolean) => {
     if (!poll) return;

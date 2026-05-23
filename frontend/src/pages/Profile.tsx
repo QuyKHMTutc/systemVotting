@@ -7,13 +7,14 @@ import { ExplorePollCard } from '../components/explore/ExplorePollCard';
 import {
   ListPlus, CheckSquare, PenLine, MessageSquare,
   CreditCard, Crown, Zap, ArrowLeft, ChevronLeft, ChevronRight,
-  MoreVertical, Trash2, User
+  MoreVertical, Trash2, User, CheckCircle2, XCircle,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import UserProfileModal from '../components/UserProfileModal';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
+import { useModerationWebSocket, type ModerationEvent } from '../hooks/useModerationWebSocket';
 import { useTranslation } from 'react-i18next';
 import { paymentService, type PaymentHistory } from '../services/payment.service';
 
@@ -53,6 +54,17 @@ export const Profile = () => {
   const [error, setError] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const initialLoaded = useRef(false); // chỉ show spinner lần đầu tiên
+
+  // Toast thông báo real-time kiểm duyệt
+  const [moderationToast, setModerationToast] = useState<{
+    type: 'approved' | 'rejected' | 'comment_approved' | 'comment_blocked';
+    title: string;
+  } | null>(null);
+
+  const showModerationToast = useCallback((type: typeof moderationToast extends null ? never : (NonNullable<typeof moderationToast>)['type'], title: string) => {
+    setModerationToast({ type, title });
+    setTimeout(() => setModerationToast(null), 5000);
+  }, []);
 
   const handleDeletePoll = async (pollId: number) => {
     if (!window.confirm(t('profile.deleteConfirm'))) return;
@@ -213,6 +225,36 @@ export const Profile = () => {
 
   usePollEventsWebSocket({ onEvent: handlePollEvent });
 
+  // Real-time kiểm duyệt: nhận event khi admin duyệt / từ chối
+  const handleModerationEvent = useCallback((event: ModerationEvent) => {
+    if (event.type === 'POLL_APPROVED' && event.pollId != null) {
+      // Cập nhật moderationStatus của poll trong state — card tự đổi thành link
+      setCreatedPolls(prev =>
+        prev.map(p =>
+          p.id === event.pollId ? { ...p, moderationStatus: 'SAFE' as const } : p
+        )
+      );
+      showModerationToast('approved', event.title || 'Bài của bạn');
+    } else if (event.type === 'POLL_REJECTED' && event.pollId != null) {
+      setCreatedPolls(prev =>
+        prev.map(p =>
+          p.id === event.pollId ? { ...p, moderationStatus: 'DANGEROUS' as const } : p
+        )
+      );
+      showModerationToast('rejected', event.title || 'Bài của bạn');
+    } else if (event.type === 'COMMENT_APPROVED' && event.commentId != null) {
+      showModerationToast('comment_approved', event.content || 'Bình luận của bạn');
+    } else if (event.type === 'COMMENT_BLOCKED' && event.commentId != null) {
+      // Xóa comment bị chặn khỏi list hiển thị
+      const targetId = Number(event.commentId);
+      setMyComments(prev => prev.filter(c => Number(c.id) !== targetId));
+      setCommentsTotal(prev => Math.max(0, prev - 1));
+      showModerationToast('comment_blocked', event.content || 'Bình luận của bạn');
+    }
+  }, [showModerationToast]);
+
+  useModerationWebSocket({ onEvent: handleModerationEvent });
+
   /* ── helpers ── */
   const avatarSrc = user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== ''
     ? (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')
@@ -245,9 +287,36 @@ export const Profile = () => {
 
   if (loading) return <LoadingSpinner />;
 
+  // Config toast theo loại sự kiện
+  const toastConfig = moderationToast ? {
+    approved:         { icon: <CheckCircle2 className="w-5 h-5 text-emerald-400" />, bg: 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/30', text: 'text-emerald-800 dark:text-emerald-300', headline: 'Bài của bạn đã được phê duyệt 🎉', sub: `"${moderationToast.title}" giờ đã công khai` },
+    rejected:         { icon: <XCircle className="w-5 h-5 text-red-400" />,     bg: 'bg-red-50 dark:bg-red-500/15 border-red-200 dark:border-red-500/30',     text: 'text-red-800 dark:text-red-300',     headline: 'Bài của bạn bị từ chối', sub: `"${moderationToast.title}" không đáp ứng tiêu chuẩn nội dung` },
+    comment_approved: { icon: <CheckCircle2 className="w-5 h-5 text-blue-400" />,  bg: 'bg-blue-50 dark:bg-blue-500/15 border-blue-200 dark:border-blue-500/30',  text: 'text-blue-800 dark:text-blue-300',  headline: 'Bình luận được xác nhận an toàn', sub: `Admin đã xem xét và xác nhận bình luận của bạn` },
+    comment_blocked:  { icon: <XCircle className="w-5 h-5 text-orange-400" />, bg: 'bg-orange-50 dark:bg-orange-500/15 border-orange-200 dark:border-orange-500/30', text: 'text-orange-800 dark:text-orange-300', headline: 'Bình luận của bạn bị chặn', sub: `Bình luận vi phạm tiêu chuẩn và đã bị ẩn` },
+  }[moderationToast.type] : null;
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#07050f]">
       <Navbar />
+
+      {/* ══ Real-time Moderation Toast ══ */}
+      {moderationToast && toastConfig && (
+        <div className={`fixed top-20 right-5 z-[999] max-w-sm w-full animate-fade-in-up
+          flex items-start gap-3 p-4 rounded-2xl border shadow-xl backdrop-blur-md
+          ${toastConfig.bg}`}>
+          <div className="shrink-0 mt-0.5">{toastConfig.icon}</div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-bold ${toastConfig.text}`}>{toastConfig.headline}</p>
+            <p className={`text-xs mt-0.5 opacity-80 ${toastConfig.text}`}>{toastConfig.sub}</p>
+          </div>
+          <button
+            onClick={() => setModerationToast(null)}
+            className={`shrink-0 p-0.5 rounded-full opacity-50 hover:opacity-100 transition-opacity ${toastConfig.text}`}
+          >
+            <XCircle className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* ══════════════════ HERO COVER ══════════════════ */}
       <div className="relative w-full h-56 sm:h-72 overflow-hidden">
