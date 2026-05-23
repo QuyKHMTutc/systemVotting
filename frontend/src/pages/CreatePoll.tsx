@@ -30,6 +30,7 @@ const CreatePoll = () => {
     const [endTime, setEndTime] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [pendingMessage, setPendingMessage] = useState<string | null>(null);
     const [enableJudges, setEnableJudges] = useState(false);
     const [judges, setJudges] = useState<JudgeCandidate[]>([]);
     const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
@@ -63,10 +64,10 @@ const CreatePoll = () => {
         if (!selectedCategoryId) { setError('Vui lòng chọn danh mục cho cuộc bình chọn.'); return; }
         if (tags.length === 0) { setError('Vui lòng thêm ít nhất một thẻ (tag).'); return; }
 
-        setLoading(true); setError('');
+        setLoading(true); setError(''); setPendingMessage(null);
         try {
             const formattedEndTime = endTime.length === 16 ? `${endTime}:00` : endTime;
-            await pollService.createPoll({
+            const result = await pollService.createPoll({
                 title: question,
                 description: description.trim() || undefined,
                 tags: tags,
@@ -81,9 +82,15 @@ const CreatePoll = () => {
                 categoryId: selectedCategoryId,
             });
             sessionStorage.removeItem('explore_scroll_cache');
-            navigate('/explore');
+            // HTTP 202 = SUSPICIOUS — bài đang chờ Admin duyệt
+            if (result?.moderationStatus === 'SUSPICIOUS') {
+                setPendingMessage(result?.moderationReason || 'Nội dung của bạn đang chờ được kiểm duyệt bởi Admin.');
+            } else {
+                navigate('/explore');
+            }
         } catch (err: any) {
-            setError(err.response?.data?.message || t('createPoll.errorFailed'));
+            const msg = err.response?.data?.message;
+            setError(msg || t('createPoll.errorFailed'));
         } finally { setLoading(false); }
     };
 
@@ -99,6 +106,21 @@ const CreatePoll = () => {
                     <p className="text-slate-500 dark:text-indigo-200/80 mb-8">{t('createPoll.subtitle')}</p>
 
                     {error && <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-xl mb-6">{error}</div>}
+
+                    {/* Moderation pending banner */}
+                    {pendingMessage && (
+                        <div className="mb-6 p-4 rounded-xl border border-amber-400/40 bg-amber-400/10 flex items-start gap-3">
+                            <span className="text-2xl flex-shrink-0">⏳</span>
+                            <div>
+                                <p className="text-amber-300 font-semibold text-sm mb-1">Bài đăng đang chờ kiểm duyệt</p>
+                                <p className="text-amber-200/70 text-xs leading-relaxed">{pendingMessage}</p>
+                                <p className="text-amber-200/50 text-xs mt-2">Bài đăng sẽ tự động xuất hiện sau khi Admin xét duyệt. Bạn có thể xem trạng thái trong hồ sơ của mình.</p>
+                                <button onClick={() => navigate('/explore')} className="mt-3 px-4 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-xs font-semibold transition-all border border-amber-400/30">
+                                    Về trang chủ
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-6">
 

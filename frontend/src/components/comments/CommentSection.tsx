@@ -23,6 +23,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState('');
+    const [toast, setToast] = useState<{ msg: string; type: 'warn' | 'error' } | null>(null);
+
+    const showToast = (msg: string, type: 'warn' | 'error' = 'error') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 5000);
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -49,7 +55,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
 
     const handleSubmit = async (content: string, isAnonymous: boolean) => {
         setError('');
-
         try {
             await commentService.createComment({ pollId, content, isAnonymous });
             const data = await commentService.getCommentsByPollId(pollId, 0, PAGE_SIZE);
@@ -57,16 +62,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
             setPage(0);
             setTotalAllComments(data.totalAllComments);
             setHasMore(data.page.currentPage + 1 < data.page.totalPages);
-        } catch (err) {
-            const caught = err as Error | { response?: { data?: { message?: string } } };
-            const msg =
-                typeof caught === 'object' &&
-                    caught !== null &&
-                    'response' in caught &&
-                    caught.response?.data?.message
-                    ? caught.response.data.message
-                    : 'Failed to post comment';
-            setError(msg);
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'Không thể đăng bình luận';
+            // CONTENT_DANGEROUS — nội dung bị chặn toàn bộ
+            if (err?.response?.status === 400 && msg.toLowerCase().includes('vi phạm')) {
+                showToast(msg, 'error');
+            } else {
+                setError(msg);
+            }
         }
     };
 
@@ -122,11 +125,23 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
     };
 
     return (
-        <div className="mt-8 glass-panel p-6 rounded-2xl shadow-lg border border-white/10">
+        <div className="mt-8 glass-panel p-6 rounded-2xl shadow-lg border border-white/10 relative">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-indigo-400" />
                 Discussion ({totalAllComments})
             </h3>
+
+            {/* Moderation Toast */}
+            {toast && (
+                <div className={`mb-4 p-3 rounded-xl text-sm font-medium flex items-start gap-2 border ${
+                    toast.type === 'error'
+                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                        : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                }`}>
+                    <span className="flex-shrink-0">{toast.type === 'error' ? '🚫' : '⚠️'}</span>
+                    <span>{toast.msg}</span>
+                </div>
+            )}
 
             <div className="mb-6">
                 {error && <div className="text-red-400 text-sm mb-2 ml-12">{error}</div>}
