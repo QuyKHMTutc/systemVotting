@@ -62,6 +62,9 @@ public record PollCreateRequestDTO(
     @NotNull(message = "Category is required")
     Long categoryId,
 
+    @Schema(description = "URL ảnh bìa của Poll từ Cloudinary (tùy chọn)", example = "https://res.cloudinary.com/demo/image/upload/v1/polls/img.jpg")
+    String imageUrl,
+
     /**
      * Injected by the controller from the JWT — never from the client request body.
      * Hidden from Swagger to avoid confusion.

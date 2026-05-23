@@ -36,6 +36,7 @@ public interface PollMapper {
     @Mapping(target = "category",           ignore = true)   // set in service
     @Mapping(target = "moderationStatus",   ignore = true)   // set in service after AI check
     @Mapping(target = "moderationReason",   ignore = true)   // set in service after AI check
+    @Mapping(target = "imageUrl",           ignore = true)   // set in service after Cloudinary upload
     @Mapping(target = "isAnonymous", source = "anonymous")
     Poll toEntity(PollCreateRequestDTO dto);
 

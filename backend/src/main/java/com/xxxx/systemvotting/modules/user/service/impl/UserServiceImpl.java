@@ -11,6 +11,7 @@ import com.xxxx.systemvotting.modules.user.service.UserService;
 import com.xxxx.systemvotting.modules.user.enums.Role;
 import com.xxxx.systemvotting.common.dto.PageResponse;
 import com.xxxx.systemvotting.common.service.imp.FileStorageService;
+import com.xxxx.systemvotting.common.service.imp.CloudinaryService;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.common.service.imp.EmailService;
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
+    private final CloudinaryService cloudinaryService;
     private final EmailService emailService;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
@@ -157,8 +159,13 @@ public class UserServiceImpl implements UserService {
         }
 
         if (avatarFile != null && !avatarFile.isEmpty()) {
-            String avatarUrl = fileStorageService.storeFile(avatarFile);
-            user.setAvatarUrl(avatarUrl);
+            try {
+                String avatarUrl = cloudinaryService.uploadAvatarImage(avatarFile, userId);
+                user.setAvatarUrl(avatarUrl);
+            } catch (Exception e) {
+                log.error("Lỗi khi upload avatar lên Cloudinary", e);
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
         }
 
         User updatedUser = userRepository.save(user);

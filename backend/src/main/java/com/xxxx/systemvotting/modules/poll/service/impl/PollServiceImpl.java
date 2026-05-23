@@ -81,6 +81,7 @@ public class PollServiceImpl implements PollService {
     private final PollMemberRepository pollMemberRepository;
     private final AsyncNotificationService asyncNotificationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.xxxx.systemvotting.common.service.imp.CloudinaryService cloudinaryService;
 
     private Map<Long, Integer> getCommentCountsForPolls(List<Long> pollIds) {
         Map<Long, Integer> commentCountMap = new HashMap<>();
@@ -240,10 +241,32 @@ public class PollServiceImpl implements PollService {
                 contentParts[2 + optionCount + i] = requestDTO.tags().get(i);
             }
         }
-        AiModerationService.ModerationResult modResult = aiModerationService.moderateMultiple(requestDTO.creatorId(), contentParts);
+
+        // Xây dựng nội dung văn bản tổng hợp
+        StringBuilder combined = new StringBuilder();
+        for (int i = 0; i < contentParts.length; i++) {
+            if (contentParts[i] != null && !contentParts[i].isBlank()) {
+                combined.append("[Phần ").append(i + 1).append("]: ").append(contentParts[i]).append("\n");
+            }
+        }
+        String combinedText = combined.toString();
+
+        // Kiểm duyệt: nếu có ảnh thì gọi multimodal, không có thì text-only
+        AiModerationService.ModerationResult modResult;
+        String imageUrl = requestDTO.imageUrl();
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            modResult = aiModerationService.moderateWithImage(combinedText, imageUrl, requestDTO.creatorId());
+        } else {
+            modResult = aiModerationService.moderateMultiple(requestDTO.creatorId(), contentParts);
+        }
 
         if (modResult.status() == ModerationStatus.DANGEROUS) {
             log.warn("[Moderation] Poll bị chặn - DANGEROUS. Lý do: {}", modResult.reason());
+            // Xóa ảnh đã upload lên Cloudinary để tránh lãng phí tài nguyên
+            if (imageUrl != null && !imageUrl.isBlank()) {
+                cloudinaryService.deletePollImage(imageUrl);
+                log.info("[Cloudinary] Đã xóa ảnh của poll bị chặn: {}", imageUrl);
+            }
             throw new AppException(ErrorCode.CONTENT_DANGEROUS);
         }
 
@@ -277,6 +300,10 @@ public class PollServiceImpl implements PollService {
         // Set moderation status from AI result
         poll.setModerationStatus(modResult.status());
         poll.setModerationReason(modResult.reason());
+        // Set ảnh bìa từ Cloudinary (nếu có)
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            poll.setImageUrl(imageUrl);
+        }
 
         // Handle tags dynamic creation/mapping
         if (requestDTO.tags() != null) {

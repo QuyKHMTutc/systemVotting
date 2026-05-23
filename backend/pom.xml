@@ -138,6 +138,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Cloudinary SDK — lưu trữ ảnh đám mây -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http45</artifactId>
+            <version>1.39.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

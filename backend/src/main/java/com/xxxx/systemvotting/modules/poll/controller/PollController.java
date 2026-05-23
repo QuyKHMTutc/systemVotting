@@ -61,6 +61,7 @@ public class PollController {
                 requestDTO.visibility(),
                 requestDTO.invitedEmails(),
                 requestDTO.categoryId(),
+                requestDTO.imageUrl(),
                 Long.valueOf(jwt.getSubject())
         );
         PollResponseDTO createdPoll = pollService.createPoll(withCreator);

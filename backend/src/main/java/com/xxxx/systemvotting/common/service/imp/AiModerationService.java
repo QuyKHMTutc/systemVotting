@@ -10,9 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -84,7 +88,28 @@ public class AiModerationService {
             ================================
 
             Trả về JSON hợp lệ theo đúng cấu trúc sau (KHÔNG thêm bất kỳ thứ gì khác):
-            {"status":"SAFE","reason":"lý do ngắn gọn bằng tiếng Việt"}
+            {"status":"SAFE","reason":"ý do ngắn gọn bằng tiếng Việt"}
+            """;
+
+    private static final String PROMPT_TEMPLATE_WITH_IMAGE = """
+            Bạn là hệ thống kiểm duyệt nội dung đa phương thức cho một nền tảng bình chọn cộng đồng.
+            Hãy phân tích CẢ nội dung văn bản VÀ hình ảnh đính kèm, sau đó phân loại vào ĐÚNG 1 trong 3 loại:
+
+            1. SAFE — nội dung văn bản và hình ảnh đều an toàn, không vi phạm.
+            2. SUSPICIOUS — một trong hai có dấu hiệu đáng ngờ (có thể spam, quảng cáo, chưa rõ mức độ vi phạm).
+            3. DANGEROUS — một trong hai chứa nội dung 18+, bạo lực, xúc phạm nặng, lừa đảo, hoặc spam rõ ràng.
+
+            Kiểm duyệt hình ảnh cần chú ý:
+            - Nội dung nhạy cảm (khỏa thân, khiêu dâm, bạo lực, máu me)
+            - Biểu ngữ/chữ viết trên ảnh có tính chất xúc phạm hoặc quảng cáo rác
+            - Hình ảnh mạo danh thương hiệu hoặc phishing
+
+            === NỘI DUNG VĂN BẢN CẦN KIỂM DUYỆT ===
+            %s
+            =============================================
+
+            Trả về JSON hợp lệ (KHÔNG thêm bất kỳ thứ gì khác):
+            {"status":"SAFE","reason":"ý do ngắn gọn bằng tiếng Việt"}
             """;
 
     /**
@@ -130,7 +155,59 @@ public class AiModerationService {
     }
 
     /**
-     * Overload tiện lợi: không cần userId (bỏ qua rate limiting).
+     * Kiểm duyệt nội dung có đính kèm ảnh (multimodal).
+     * Tải ảnh từ URL Cloudinary, mã hóa Base64 và gửi đồng thời với nội dung văn bản lên Gemini.
+     *
+     * @param content   Nội dung văn bản (title + description + options)
+     * @param imageUrl  URL ảnh Cloudinary
+     * @param userId    ID người dùng (dùng cho rate limiting)
+     * @return ModerationResult với kết quả kiểm duyệt tổng hợp
+     */
+    public ModerationResult moderateWithImage(String content, String imageUrl, Long userId) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return moderateContent(content, userId);
+        }
+
+        // Rate limiting check
+        if (userId != null && isRateLimited(userId)) {
+            log.warn("[Moderation] User {} bị rate-limit", userId);
+            return new ModerationResult(ModerationStatus.SUSPICIOUS, "Rate limit — cần Admin xét duyệt");
+        }
+
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("[Moderation] AI_API_KEY chưa được cấu hình — Fail-Open.");
+            return new ModerationResult(ModerationStatus.SAFE, "API key chưa cấu hình");
+        }
+
+        try {
+            // Tải ảnh từ Cloudinary và mã hóa Base64
+            byte[] imageBytes = downloadImageBytes(imageUrl);
+            if (imageBytes == null) {
+                log.warn("[Moderation] Không thể tải ảnh từ {} — fallback sang kiểm duyệt text thường", imageUrl);
+                return moderateContent(content, userId);
+            }
+
+            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+            String mimeType    = detectMimeType(imageUrl);
+
+            ModerationResult result = callGeminiApiWithImage(content, base64Image, mimeType);
+            log.info("[Moderation] Kết quả đa phương thức: {} — {}", result.status(), result.reason());
+            return result;
+        } catch (Exception e) {
+            log.error("[Moderation] Lỗi kiểm duyệt ảnh: {} — fallback sang text", e.getMessage());
+            return moderateContent(content, userId);
+        }
+    }
+
+    /**
+     * Overload không cần userId.
+     */
+    public ModerationResult moderateWithImage(String content, String imageUrl) {
+        return moderateWithImage(content, imageUrl, null);
+    }
+
+    /**
+     * Overload không cần userId (backward compat).
      */
     public ModerationResult moderateContent(String content) {
         return moderateContent(content, null);
@@ -373,4 +450,94 @@ public class AiModerationService {
      * @param reason Lý do ngắn gọn bằng tiếng Việt (từ AI)
      */
     public record ModerationResult(ModerationStatus status, String reason) {}
+
+    // ── Multimodal helpers ───────────────────────────────────────────────────
+
+    /**
+     * Gọi Gemini API với nội dung đa phương thức (text + ảnh Base64).
+     */
+    @SuppressWarnings("unchecked")
+    private ModerationResult callGeminiApiWithImage(String content, String base64Image, String mimeType) {
+        try {
+            RestTemplate restTemplate = buildRestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            String prompt = PROMPT_TEMPLATE_WITH_IMAGE.formatted(content.strip());
+
+            // Gemini multimodal request: parts[0] = text prompt, parts[1] = inlineData (ảnh Base64)
+            Map<String, Object> requestBody = Map.of(
+                "contents", List.of(
+                    Map.of("parts", List.of(
+                        Map.of("text", prompt),
+                        Map.of("inlineData", Map.of(
+                            "mimeType", mimeType,
+                            "data",     base64Image
+                        ))
+                    ))
+                ),
+                "generationConfig", Map.of(
+                    "temperature",    0.1,
+                    "maxOutputTokens", 200,
+                    "thinkingConfig",  Map.of("thinkingBudget", 0)
+                )
+            );
+
+            String urlWithKey = apiUrl + "?key=" + apiKey;
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<Map<String, Object>> response =
+                    (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate
+                            .postForEntity(urlWithKey, entity, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return parseGeminiResponse(response.getBody());
+            }
+
+            log.warn("[Moderation] Gemini multimodal API trả về status không thành công: {}", response.getStatusCode());
+            return new ModerationResult(ModerationStatus.SAFE, "API không phản hồi đúng — Fail-Open");
+
+        } catch (ResourceAccessException e) {
+            log.warn("[Moderation] Timeout khi gọi Gemini multimodal — Fail-Open: {}", e.getMessage());
+            return new ModerationResult(ModerationStatus.SAFE, "Kết nối thất bại — Fail-Open");
+        } catch (Exception e) {
+            log.error("[Moderation] Lỗi khi gọi Gemini multimodal: {}", e.getMessage(), e);
+            return new ModerationResult(ModerationStatus.SAFE, "Lỗi hệ thống — Fail-Open");
+        }
+    }
+
+    /**
+     * Tải ảnh từ URL (Cloudinary HTTPS) về dưới dạng mảng byte.
+     * Timeout 5 giây để không làm chậm hệ thống.
+     * @return byte[] hoặc null nếu không thể tải
+     */
+    private byte[] downloadImageBytes(String imageUrl) {
+        try {
+            java.net.URLConnection connection = new java.net.URL(imageUrl).openConnection();
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            try (java.io.InputStream is = connection.getInputStream()) {
+                return is.readAllBytes();
+            }
+        } catch (Exception e) {
+            log.warn("[Moderation] Không thể tải ảnh từ URL {}: {}", imageUrl, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Phát hiện MIME type từ phần mở rộng của URL ảnh.
+     */
+    private String detectMimeType(String imageUrl) {
+        if (imageUrl == null) return "image/jpeg";
+        String lower = imageUrl.toLowerCase();
+        // Cloudinary có thể thêm transformation, lấy phần trước query string
+        int qIdx = lower.indexOf('?');
+        if (qIdx > 0) lower = lower.substring(0, qIdx);
+        if (lower.endsWith(".png"))  return "image/png";
+        if (lower.endsWith(".gif"))  return "image/gif";
+        if (lower.endsWith(".webp")) return "image/webp";
+        if (lower.endsWith(".avif")) return "image/avif";
+        return "image/jpeg"; // default
+    }
 }

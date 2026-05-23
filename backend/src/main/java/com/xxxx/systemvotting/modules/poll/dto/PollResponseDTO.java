@@ -25,6 +25,9 @@ public class PollResponseDTO implements Serializable {
     @Schema(description = "Mô tả chi tiết về cuộc bình chọn", example = "Cuộc khảo sát nhỏ về sở thích ngôn ngữ lập trình năm 2024")
     private String description;
 
+    @Schema(description = "URL ảnh bìa từ Cloudinary (có thể null)")
+    private String imageUrl;
+
     @Schema(description = "Danh mục của cuộc bình chọn")
     private CategoryDTO category;
 

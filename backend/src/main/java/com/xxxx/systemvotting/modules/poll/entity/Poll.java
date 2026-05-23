@@ -58,6 +58,10 @@ public class Poll {
 
     private String description;
 
+    /** URL ảnh bìa của Poll (từ Cloudinary). Tùy chọn, có thể null. */
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     @ToString.Exclude
