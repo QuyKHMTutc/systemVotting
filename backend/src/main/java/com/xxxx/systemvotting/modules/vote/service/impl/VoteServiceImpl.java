@@ -13,6 +13,7 @@ import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.enums.PlanType;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.common.service.RealTimeService;
+import com.xxxx.systemvotting.common.constant.WebSocketTopics;
 import com.xxxx.systemvotting.modules.vote.dto.VoteEventDTO;
 import com.xxxx.systemvotting.modules.vote.dto.response.VoteCheckResponseDTO;
 import com.xxxx.systemvotting.modules.vote.dto.response.VoteResponseDTO;
@@ -241,7 +242,7 @@ public class VoteServiceImpl implements VoteService {
         String pollVotesKey  = RedisKeyUtils.getPollVotesKey(poll.getId());
         String userVotesKey  = RedisKeyUtils.getPollUserVotesKey(poll.getId());
         String queueKey      = RedisKeyUtils.getVoteEventQueueKey();
-        String maxLimit      = resolveVoteLimit(poll.getCreator().getPlan());
+        String maxLimit      = String.valueOf(poll.getCreator().getPlan().getVoteLimit());
         int    baselineTotal = computeBaselineTotal(poll, maxLimit);
 
         // Determine user role and weight for this poll
@@ -272,18 +273,7 @@ public class VoteServiceImpl implements VoteService {
         return result;
     }
 
-    /**
-     * Maps creator's subscription plan to maximum allowed votes.
-     * Returns "0" to indicate unlimited (PRO or unknown plans).
-     */
-    private String resolveVoteLimit(PlanType plan) {
-        return switch (plan) {
-            case FREE -> "100";
-            case GO   -> "300";
-            case PLUS -> "1000";
-            case PRO  -> "2000";  // unlimited
-        };
-    }
+
 
     /**
      * Computes the DB-side vote baseline (used by Lua to enforce capacity on first votes).
@@ -388,8 +378,8 @@ public class VoteServiceImpl implements VoteService {
 
         // Global channel (explore/dashboard page)
         realTimeService.broadcast(
-                "/topic/polls/events",
-                Map.of("type", "VOTED", "pollId", poll.getId(), "userId", userId, "options", optionUpdates)
+                WebSocketTopics.GLOBAL_POLL_EVENTS,
+                Map.of("type", WebSocketTopics.EVENT_TYPE_VOTED, "pollId", poll.getId(), "userId", userId, "options", optionUpdates)
         );
     }
 

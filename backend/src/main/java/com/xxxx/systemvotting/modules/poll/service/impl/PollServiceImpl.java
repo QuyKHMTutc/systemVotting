@@ -33,6 +33,7 @@ import com.xxxx.systemvotting.modules.poll.enums.PollRole;
 import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import com.xxxx.systemvotting.modules.poll.repository.PollMemberRepository;
 import com.xxxx.systemvotting.modules.notification.service.AsyncNotificationService;
+import com.xxxx.systemvotting.common.constant.WebSocketTopics;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -105,6 +106,20 @@ public class PollServiceImpl implements PollService {
                 RedisKeyUtils.getPollUserVotesKey(pollId)));
     }
 
+    private OptionResponseDTO buildEnrichedOption(OptionResponseDTO option, int audienceCount, int judgeCount) {
+        int redisTotal = audienceCount + judgeCount;
+        int dbVoteCount = option.voteCount() != null ? option.voteCount() : 0;
+        int finalVoteCount = Math.max(dbVoteCount, redisTotal);
+
+        return new OptionResponseDTO(
+                option.id(),
+                option.text(),
+                finalVoteCount,
+                audienceCount,
+                judgeCount
+        );
+    }
+
     /**
      * Enriches a SINGLE poll DTO with live vote counts from Redis.
      * Used only for getPollById (single item — no pipeline needed).
@@ -125,18 +140,7 @@ public class PollServiceImpl implements PollService {
                     int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal.toString()) : 0;
                     int redisTotal = audienceCount + judgeCount;
 
-                    // Use max(DB baseline, Redis total) so we never show a count lower than
-                    // what VoteEventConsumer already flushed to DB.
-                    int dbVoteCount = option.voteCount() != null ? option.voteCount() : 0;
-                    int finalVoteCount = Math.max(dbVoteCount, redisTotal);
-
-                    return new OptionResponseDTO(
-                            option.id(),
-                            option.text(),
-                            finalVoteCount,
-                            audienceCount,
-                            judgeCount
-                    );
+                    return buildEnrichedOption(option, audienceCount, judgeCount);
                 })
                 .collect(Collectors.toList());
 
@@ -203,18 +207,7 @@ public class PollServiceImpl implements PollService {
                         int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal) : 0;
                         int redisTotal = audienceCount + judgeCount;
 
-                        // Use max(DB baseline, Redis total): if Redis pipeline returned partial/stale
-                        // data (e.g. after a restart), the DB count is the safe floor.
-                        int dbVoteCount = option.voteCount() != null ? option.voteCount() : 0;
-                        int finalVoteCount = Math.max(dbVoteCount, redisTotal);
-
-                        return new OptionResponseDTO(
-                                option.id(),
-                                option.text(),
-                                finalVoteCount,
-                                audienceCount,
-                                judgeCount
-                        );
+                        return buildEnrichedOption(option, audienceCount, judgeCount);
                     })
                     .collect(Collectors.toList());
             dto.getOptions().clear();
@@ -225,7 +218,63 @@ public class PollServiceImpl implements PollService {
     @Override
     @Transactional
     public PollResponseDTO createPoll(PollCreateRequestDTO requestDTO) {
-        // --- AI Moderation: kiểm duyệt tất cả nội dung: tiêu đề, mô tả, lựa chọn, thẻ ---
+        AiModerationService.ModerationResult modResult = checkAiModeration(requestDTO);
+
+        User creator = userRepository.findById(requestDTO.creatorId())
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        validateCreatorLimits(creator);
+
+        Poll poll = pollMapper.toEntity(requestDTO);
+        poll.setCreator(creator);
+        setupPollTimes(poll);
+
+        poll.setModerationStatus(modResult.status());
+        poll.setModerationReason(modResult.reason());
+        if (requestDTO.imageUrl() != null && !requestDTO.imageUrl().isBlank()) {
+            poll.setImageUrl(requestDTO.imageUrl());
+        }
+
+        processAndAttachTags(requestDTO, poll);
+
+        if (requestDTO.categoryId() != null) {
+            categoryRepository.findById(requestDTO.categoryId()).ifPresent(poll::setCategory);
+        }
+
+        processAndAttachOptions(requestDTO, poll);
+        processJudgesSetup(requestDTO, poll, creator);
+
+        PollVisibility visibility = requestDTO.visibility() != null ? requestDTO.visibility() : PollVisibility.PUBLIC;
+        poll.setVisibility(visibility);
+        processInvitedEmailsSetup(requestDTO, poll, creator, visibility);
+        
+        Poll savedPoll = pollRepository.save(poll);
+        boolean isSafe = modResult.status() == ModerationStatus.SAFE;
+
+        if (isSafe && requestDTO.judgeIds() != null && !requestDTO.judgeIds().isEmpty()) {
+            processJudgesAndNotify(requestDTO, savedPoll, creator);
+        }
+
+        clearPollVoteStateInRedis(savedPoll.getId());
+
+        PollResponseDTO dto = pollMapper.toDto(savedPoll);
+        dto.setJudgeIds(requestDTO.judgeIds());
+        dto.setCommentCount(0);
+        if (savedPoll.getCategory() != null) {
+            dto.setCategory(categoryServiceImpl.toDTO(savedPoll.getCategory()));
+        }
+
+        if (isSafe) {
+            broadcastPollCreation(savedPoll, dto, visibility, creator);
+        } else {
+            log.info("[Moderation] Poll #{} của user #{} đang chờ duyệt. Lý do: {}",
+                    savedPoll.getId(), requestDTO.creatorId(), modResult.reason());
+        }
+
+        return dto;
+    }
+
+    private AiModerationService.ModerationResult checkAiModeration(PollCreateRequestDTO requestDTO) {
         int optionCount = requestDTO.options() != null ? requestDTO.options().size() : 0;
         int tagCount    = requestDTO.tags()    != null ? requestDTO.tags().size()    : 0;
         String[] contentParts = new String[2 + optionCount + tagCount];
@@ -242,39 +291,33 @@ public class PollServiceImpl implements PollService {
             }
         }
 
-        // Xây dựng nội dung văn bản tổng hợp
         StringBuilder combined = new StringBuilder();
         for (int i = 0; i < contentParts.length; i++) {
             if (contentParts[i] != null && !contentParts[i].isBlank()) {
                 combined.append("[Phần ").append(i + 1).append("]: ").append(contentParts[i]).append("\n");
             }
         }
-        String combinedText = combined.toString();
 
-        // Kiểm duyệt: nếu có ảnh thì gọi multimodal, không có thì text-only
         AiModerationService.ModerationResult modResult;
         String imageUrl = requestDTO.imageUrl();
         if (imageUrl != null && !imageUrl.isBlank()) {
-            modResult = aiModerationService.moderateWithImage(combinedText, imageUrl, requestDTO.creatorId());
+            modResult = aiModerationService.moderateWithImage(combined.toString(), imageUrl, requestDTO.creatorId());
         } else {
             modResult = aiModerationService.moderateMultiple(requestDTO.creatorId(), contentParts);
         }
 
         if (modResult.status() == ModerationStatus.DANGEROUS) {
             log.warn("[Moderation] Poll bị chặn - DANGEROUS. Lý do: {}", modResult.reason());
-            // Xóa ảnh đã upload lên Cloudinary để tránh lãng phí tài nguyên
             if (imageUrl != null && !imageUrl.isBlank()) {
                 cloudinaryService.deletePollImage(imageUrl);
                 log.info("[Cloudinary] Đã xóa ảnh của poll bị chặn: {}", imageUrl);
             }
             throw new AppException(ErrorCode.CONTENT_DANGEROUS);
         }
+        return modResult;
+    }
 
-        // Validate creator
-        User creator = userRepository.findById(requestDTO.creatorId())
-                .orElseThrow(
-                        () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
-
+    private void validateCreatorLimits(User creator) {
         if (creator.getRole() != Role.ADMIN) {
             Integer maxRooms = PlanPollLimits.maxRooms(creator.getPlan());
             if (maxRooms != null) {
@@ -284,9 +327,9 @@ public class PollServiceImpl implements PollService {
                 }
             }
         }
+    }
 
-        Poll poll = pollMapper.toEntity(requestDTO);
-        poll.setCreator(creator);
+    private void setupPollTimes(Poll poll) {
         LocalDateTime startTime = poll.getStartTime();
         LocalDateTime endTime = poll.getEndTime();
         if (startTime == null) {
@@ -296,16 +339,9 @@ public class PollServiceImpl implements PollService {
         if (endTime != null && !endTime.isAfter(startTime)) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
+    }
 
-        // Set moderation status from AI result
-        poll.setModerationStatus(modResult.status());
-        poll.setModerationReason(modResult.reason());
-        // Set ảnh bìa từ Cloudinary (nếu có)
-        if (imageUrl != null && !imageUrl.isBlank()) {
-            poll.setImageUrl(imageUrl);
-        }
-
-        // Handle tags dynamic creation/mapping
+    private void processAndAttachTags(PollCreateRequestDTO requestDTO, Poll poll) {
         if (requestDTO.tags() != null) {
             for (String tagName : requestDTO.tags()) {
                 String trimmedName = tagName.trim();
@@ -316,27 +352,22 @@ public class PollServiceImpl implements PollService {
                 }
             }
         }
+    }
 
-        // Link category if provided
-        if (requestDTO.categoryId() != null) {
-            categoryRepository.findById(requestDTO.categoryId())
-                    .ifPresent(poll::setCategory);
-        }
-
-        // Map and add options
+    private void processAndAttachOptions(PollCreateRequestDTO requestDTO, Poll poll) {
         for (OptionRequestDTO optionRequest : requestDTO.options()) {
             Option option = pollMapper.toOptionEntity(optionRequest);
             option.setVoteCount(0);
             poll.addOption(option);
         }
+    }
 
-        // Handle Judges and Weighting
+    private void processJudgesSetup(PollCreateRequestDTO requestDTO, Poll poll, User creator) {
         if (requestDTO.judgeIds() != null && !requestDTO.judgeIds().isEmpty()) {
             int maxJudges = PlanPollLimits.maxJudges(creator.getPlan());
             if (requestDTO.judgeIds().size() > maxJudges) {
                 throw new AppException(ErrorCode.INVALID_REQUEST);
             }
-            
             int weight = requestDTO.judgeWeight() != null ? requestDTO.judgeWeight() : PlanPollLimits.judgeWeight(creator.getPlan());
             if (weight < 1 || weight > 99) {
                 throw new AppException(ErrorCode.INVALID_REQUEST);
@@ -345,106 +376,69 @@ public class PollServiceImpl implements PollService {
         } else {
             poll.setJudgeWeight(0);
         }
+    }
 
-        // Set visibility — default PUBLIC if not specified
-        PollVisibility visibility = requestDTO.visibility() != null
-                ? requestDTO.visibility()
-                : PollVisibility.PUBLIC;
-        poll.setVisibility(visibility);
-
-        // Set invited emails for PRIVATE polls
-        if (visibility == PollVisibility.PRIVATE
-                && requestDTO.invitedEmails() != null
-                && !requestDTO.invitedEmails().isEmpty()) {
-            
+    private void processInvitedEmailsSetup(PollCreateRequestDTO requestDTO, Poll poll, User creator, PollVisibility visibility) {
+        if (visibility == PollVisibility.PRIVATE && requestDTO.invitedEmails() != null && !requestDTO.invitedEmails().isEmpty()) {
             int maxInvites = PlanPollLimits.maxInvites(creator.getPlan());
             if (requestDTO.invitedEmails().size() > maxInvites) {
                 throw new AppException(ErrorCode.INVALID_REQUEST);
             }
-            
             poll.setInvitedEmails(new java.util.ArrayList<>(requestDTO.invitedEmails()));
         } else if (visibility == PollVisibility.PRIVATE) {
             poll.setInvitedEmails(new java.util.ArrayList<>());
         }
-        
-        Poll savedPoll = pollRepository.save(poll);
+    }
 
-        // Chỉ gửi thông báo và broadcast realtime nếu poll được SAFE (duyệt ngay)
-        boolean isSafe = modResult.status() == ModerationStatus.SAFE;
+    private void processJudgesAndNotify(PollCreateRequestDTO requestDTO, Poll savedPoll, User creator) {
+        for (Long judgeId : requestDTO.judgeIds()) {
+            userRepository.findById(judgeId).ifPresent(judge -> {
+                PollMember member = PollMember.builder()
+                        .poll(savedPoll)
+                        .user(judge)
+                        .role(PollRole.JUDGE)
+                        .weight(1)
+                        .build();
+                pollMemberRepository.save(member);
 
-        // Save PollMembers (Judges) and send notifications
-        if (isSafe && requestDTO.judgeIds() != null && !requestDTO.judgeIds().isEmpty()) {
-            for (Long judgeId : requestDTO.judgeIds()) {
-                userRepository.findById(judgeId).ifPresent(judge -> {
-                    PollMember member = PollMember.builder()
-                            .poll(savedPoll)
-                            .user(judge)
-                            .role(PollRole.JUDGE)
-                            .weight(1) // Weight here is relative within the judge group, usually 1
-                            .build();
-                    pollMemberRepository.save(member);
+                int weightPct = savedPoll.getJudgeWeight();
+                String actorName = savedPoll.isAnonymous() 
+                        ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId()) 
+                        : creator.getUsername();
+                String actorAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
+                
+                asyncNotificationService.createNotificationAsync(
+                        judge.getId(), actorName, actorAvatar, "JUDGE_INVITATION",
+                        String.format("đã mời bạn làm Giám khảo (trọng số %d%%) cho cuộc bình chọn: %s", weightPct, savedPoll.getTitle()),
+                        savedPoll.getId(), null
+                );
+            });
+        }
+    }
 
-                    // Send notification to judge
-                    int weightPct = savedPoll.getJudgeWeight();
-                    String actorName = savedPoll.isAnonymous() 
-                            ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId()) 
-                            : creator.getUsername();
-                    String actorAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
-                    
-                    asyncNotificationService.createNotificationAsync(
-                            judge.getId(),
-                            actorName,
-                            actorAvatar,
-                            "JUDGE_INVITATION",
-                            String.format("đã mời bạn làm Giám khảo (trọng số %d%%) cho cuộc bình chọn: %s", 
-                                    weightPct, savedPoll.getTitle()),
-                            savedPoll.getId(),
-                            null
+    private void broadcastPollCreation(Poll savedPoll, PollResponseDTO dto, PollVisibility visibility, User creator) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", WebSocketTopics.EVENT_TYPE_CREATED);
+        payload.put("poll", dto);
+
+        if (visibility == PollVisibility.PUBLIC) {
+            realTimeService.broadcast(WebSocketTopics.GLOBAL_POLL_EVENTS, payload);
+        } else if (visibility == PollVisibility.PRIVATE) {
+            if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
+                List<String> emails = savedPoll.getInvitedEmails();
+                List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
+                for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
+                    messagingTemplate.convertAndSendToUser(
+                            invitedUser.getId().toString(),
+                            WebSocketTopics.PRIVATE_POLL_EVENTS,
+                            payload
                     );
-                });
-            }
-        }
-
-        clearPollVoteStateInRedis(savedPoll.getId());
-
-        PollResponseDTO dto = pollMapper.toDto(savedPoll);
-        dto.setJudgeIds(requestDTO.judgeIds());
-        dto.setCommentCount(0);
-        if (savedPoll.getCategory() != null) {
-            dto.setCategory(categoryServiceImpl.toDTO(savedPoll.getCategory()));
-        }
-
-        // Broadcast realtime và gửi thông báo mời PRIVATE chỉ khi poll đã SAFE
-        if (isSafe) {
-            if (visibility == PollVisibility.PUBLIC) {
-                Map<String, Object> payload = new HashMap<>();
-                payload.put("type", "CREATED");
-                payload.put("poll", dto);
-                realTimeService.broadcast("/topic/polls/events", payload);
-            } else if (visibility == PollVisibility.PRIVATE) {
-                Map<String, Object> payload = new HashMap<>();
-                payload.put("type", "CREATED");
-                payload.put("poll", dto);
-                if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
-                    List<String> emails = savedPoll.getInvitedEmails();
-                    List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
-                    for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
-                        messagingTemplate.convertAndSendToUser(
-                                invitedUser.getId().toString(),
-                                "/queue/polls/events",
-                                payload
-                        );
-                    }
                 }
             }
 
-            // Gửi PRIVATE_POLL_INVITATION cho email được mời
-            if (visibility == PollVisibility.PRIVATE
-                    && savedPoll.getInvitedEmails() != null
-                    && !savedPoll.getInvitedEmails().isEmpty()) {
+            if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
                 List<String> emails = savedPoll.getInvitedEmails();
-                List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers =
-                        userRepository.findByEmailIn(emails);
+                List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
 
                 for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
                     String inviterName = savedPoll.isAnonymous()
@@ -453,23 +447,13 @@ public class PollServiceImpl implements PollService {
                     String inviterAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
 
                     asyncNotificationService.createNotificationAsync(
-                            invitedUser.getId(),
-                            inviterName,
-                            inviterAvatar,
-                            "PRIVATE_POLL_INVITATION",
+                            invitedUser.getId(), inviterName, inviterAvatar, "PRIVATE_POLL_INVITATION",
                             String.format("đã mời bạn tham gia cuộc bình chọn riêng tư: \"%s\"", savedPoll.getTitle()),
-                            savedPoll.getId(),
-                            null
+                            savedPoll.getId(), null
                     );
                 }
             }
-        } else {
-            // SUSPICIOUS: thông báo người dùng rằng bài đang chờ duyệt
-            log.info("[Moderation] Poll #{} của user #{} đang chờ duyệt. Lý do: {}",
-                    savedPoll.getId(), requestDTO.creatorId(), modResult.reason());
         }
-
-        return dto;
     }
 
     @Override
@@ -588,9 +572,9 @@ public class PollServiceImpl implements PollService {
 
         // Broadcast deletion event to dashboard
         Map<String, Object> payload = new HashMap<>();
-        payload.put("type", "DELETED");
+        payload.put("type", WebSocketTopics.EVENT_TYPE_DELETED);
         payload.put("pollId", pollId);
-        realTimeService.broadcast("/topic/polls/events", payload);
+        realTimeService.broadcast(WebSocketTopics.GLOBAL_POLL_EVENTS, payload);
     }
 
     private static final int MAX_PROFILE_POLL_PAGE_SIZE = 100;
