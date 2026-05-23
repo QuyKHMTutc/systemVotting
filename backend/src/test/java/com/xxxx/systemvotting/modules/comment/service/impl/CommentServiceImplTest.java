@@ -69,7 +69,7 @@ class CommentServiceImplTest {
         when(pollRepository.findById(10L)).thenReturn(Optional.of(requestedPoll));
         when(userRepository.findById(2L)).thenReturn(Optional.of(actor));
         when(commentRepository.findFirstByUserIdAndPollIdOrderByCreatedAtAsc(2L, 10L)).thenReturn(Optional.empty());
-        when(aiModerationService.isToxicContent("reply")).thenReturn(false);
+       // when(aiModerationService .isToxicContent("reply")).thenReturn(false);
         when(commentRepository.findById(50L)).thenReturn(Optional.of(parentInOtherPoll));
 
         assertThrows(AppException.class, () -> commentService.createComment(request, 2L));

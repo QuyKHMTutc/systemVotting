@@ -462,6 +462,19 @@ public class PollServiceImpl implements PollService {
         Poll poll = pollRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
+        // Kiểm tra trạng thái kiểm duyệt:
+        // - SUSPICIOUS (chờ duyệt): chỉ creator mới xem được — người khác không thể truy cập dù có link
+        // - DANGEROUS (bị từ chối):  chỉ creator mới xem được
+        if (poll.getModerationStatus() == ModerationStatus.SUSPICIOUS
+                || poll.getModerationStatus() == ModerationStatus.DANGEROUS) {
+            boolean isCreator = callerEmail != null
+                    && poll.getCreator().getEmail() != null
+                    && poll.getCreator().getEmail().equalsIgnoreCase(callerEmail);
+            if (!isCreator) {
+                throw new AppException(ErrorCode.RESOURCE_NOT_FOUND);
+            }
+        }
+
         if (poll.getVisibility() == PollVisibility.PRIVATE) {
             boolean isCreator = callerEmail != null
                     && poll.getCreator().getEmail() != null
@@ -561,7 +574,8 @@ public class PollServiceImpl implements PollService {
         int pageNumber = Math.max(0, page);
         int pageSize = Math.min(Math.max(1, size), MAX_PROFILE_POLL_PAGE_SIZE);
         Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("id").descending());
-        Page<Poll> pollPage = pollRepository.findByCreatorId(userId, pageable);
+        // Dùng query loại trừ DANGEROUS: creator chỉ thấy SAFE + SUSPICIOUS (chờ duyệt)
+        Page<Poll> pollPage = pollRepository.findByCreatorIdExcludingDangerous(userId, pageable);
 
         List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toList());
         Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);

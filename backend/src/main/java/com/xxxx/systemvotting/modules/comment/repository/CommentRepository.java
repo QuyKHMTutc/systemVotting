@@ -52,6 +52,14 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     Page<Comment> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     /**
+     * Lấy comment của user trong trang Profile, loại trừ comment bị DANGEROUS (admin chặn).
+     * Comment SUSPICIOUS (chờ duyệt) vẫn hiển để user biết trạng thái.
+     */
+    @EntityGraph(attributePaths = {"user", "poll"})
+    @Query("SELECT c FROM Comment c WHERE c.user.id = :userId AND (c.moderationStatus IS NULL OR c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS) ORDER BY c.createdAt DESC")
+    Page<Comment> findByUserIdExcludingDangerous(@Param("userId") Long userId, Pageable pageable);
+
+    /**
      * Used for identity-consistency checks (anonymous vs named).
      * Fetches first comment in chronological order (LIMIT 1).
      */

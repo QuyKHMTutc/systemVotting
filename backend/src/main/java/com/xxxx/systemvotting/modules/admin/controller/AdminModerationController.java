@@ -128,6 +128,22 @@ public class AdminModerationController {
             );
         }
 
+        // ── Real-time: thông báo creator poll đã được duyệt ──────────────────
+        Long creatorId = poll.getCreator().getId();
+        Map<String, Object> moderationEvent = new HashMap<>();
+        moderationEvent.put("type", "POLL_APPROVED");
+        moderationEvent.put("pollId", poll.getId());
+        moderationEvent.put("title", poll.getTitle());
+        messagingTemplate.convertAndSendToUser(
+                creatorId.toString(),
+                "/queue/moderation",
+                moderationEvent
+        );
+        log.info("[Moderation WS] Sent POLL_APPROVED to creator userId={}, pollId={}", creatorId, poll.getId());
+
+        // ── Real-time: cập nhật badge count cho AdminPanel ───────────────────
+        broadcastAdminModerationCount();
+
         // Gửi thông báo mời giám khảo nếu có
         if (poll.getMembers() != null) {
             poll.getMembers().forEach(member -> {
@@ -166,6 +182,31 @@ public class AdminModerationController {
         poll.setModerationStatus(ModerationStatus.DANGEROUS);
         poll.setModerationReason("Admin từ chối: " + reason);
         pollRepository.save(poll);
+
+        // ── Real-time: thông báo creator poll bị từ chối ─────────────────────
+        Long creatorId = poll.getCreator().getId();
+        Map<String, Object> moderationEvent = new HashMap<>();
+        moderationEvent.put("type", "POLL_REJECTED");
+        moderationEvent.put("pollId", poll.getId());
+        moderationEvent.put("title", poll.getTitle());
+        moderationEvent.put("reason", reason);
+        messagingTemplate.convertAndSendToUser(
+                creatorId.toString(),
+                "/queue/moderation",
+                moderationEvent
+        );
+        log.info("[Moderation WS] Sent POLL_REJECTED to creator userId={}, pollId={}", creatorId, poll.getId());
+
+        // ── Real-time: xóa poll khỏi màn hình những người đang xem (public) ──
+        if (poll.getVisibility() == PollVisibility.PUBLIC) {
+            Map<String, Object> deleteEvent = new HashMap<>();
+            deleteEvent.put("type", "DELETED");
+            deleteEvent.put("pollId", poll.getId());
+            realTimeService.broadcast("/topic/polls/events", deleteEvent);
+        }
+
+        // ── Real-time: cập nhật badge count cho AdminPanel ───────────────────
+        broadcastAdminModerationCount();
 
         log.info("[Moderation] Admin đã TỪ CHỐI poll #{}: {}", poll.getId(), poll.getTitle());
         return ApiResponse.<Void>builder()
@@ -214,6 +255,26 @@ public class AdminModerationController {
         comment.setModerationStatus(ModerationStatus.SAFE);
         comment.setModerationReason("Đã được Admin xác nhận an toàn");
         commentRepository.save(comment);
+
+        // ── Real-time: thông báo owner comment được duyệt ────────────────────
+        if (comment.getUser() != null) {
+            Long userId = comment.getUser().getId();
+            Map<String, Object> moderationEvent = new HashMap<>();
+            moderationEvent.put("type", "COMMENT_APPROVED");
+            moderationEvent.put("commentId", comment.getId());
+            moderationEvent.put("pollId", comment.getPoll() != null ? comment.getPoll().getId() : null);
+            moderationEvent.put("content", comment.getContent().length() > 80
+                    ? comment.getContent().substring(0, 80) + "..." : comment.getContent());
+            messagingTemplate.convertAndSendToUser(
+                    userId.toString(),
+                    "/queue/moderation",
+                    moderationEvent
+            );
+        }
+
+        // ── Real-time: cập nhật badge count cho AdminPanel ───────────────────
+        broadcastAdminModerationCount();
+
         log.info("[Moderation] Admin đã XÁC NHẬN AN TOÀN comment #{}", id);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
@@ -233,11 +294,56 @@ public class AdminModerationController {
         comment.setModerationStatus(ModerationStatus.DANGEROUS);
         comment.setModerationReason("Admin chặn: " + reason);
         commentRepository.save(comment);
+
+        // ── Real-time: thông báo owner comment bị chặn ───────────────────────
+        if (comment.getUser() != null) {
+            Long userId = comment.getUser().getId();
+            Map<String, Object> moderationEvent = new HashMap<>();
+            moderationEvent.put("type", "COMMENT_BLOCKED");
+            moderationEvent.put("commentId", comment.getId());
+            moderationEvent.put("pollId", comment.getPoll() != null ? comment.getPoll().getId() : null);
+            moderationEvent.put("reason", reason);
+            moderationEvent.put("content", comment.getContent().length() > 80
+                    ? comment.getContent().substring(0, 80) + "..." : comment.getContent());
+            messagingTemplate.convertAndSendToUser(
+                    userId.toString(),
+                    "/queue/moderation",
+                    moderationEvent
+            );
+        }
+
+        // ── Real-time: xóa comment khỏi màn hình những người đang xem poll ───
+        if (comment.getPoll() != null) {
+            long freshCommentCount = commentRepository.countVisibleByPollId(comment.getPoll().getId());
+            Map<String, Object> deleteEvent = new HashMap<>();
+            deleteEvent.put("type", "COMMENT_DELETED");
+            deleteEvent.put("pollId", comment.getPoll().getId());
+            deleteEvent.put("commentId", comment.getId());
+            deleteEvent.put("commentCount", freshCommentCount);
+            realTimeService.broadcast("/topic/polls/events", deleteEvent);
+        }
+
+        // ── Real-time: cập nhật badge count cho AdminPanel ───────────────────
+        broadcastAdminModerationCount();
+
         log.info("[Moderation] Admin đã CHẶN comment #{}", id);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("Bình luận đã bị chặn")
                 .build();
+    }
+
+    // ── Helper: broadcast updated moderation count to all admin sessions ─────
+
+    private void broadcastAdminModerationCount() {
+        long pendingPolls = pollRepository.countSuspiciousPolls();
+        long flaggedComments = commentRepository.countSuspiciousComments();
+        Map<String, Object> countPayload = new HashMap<>();
+        countPayload.put("type", "COUNT_UPDATED");
+        countPayload.put("pendingPolls", pendingPolls);
+        countPayload.put("flaggedComments", flaggedComments);
+        countPayload.put("total", pendingPolls + flaggedComments);
+        realTimeService.broadcast("/topic/admin/moderation", countPayload);
     }
 
     // ── DTO nội bộ ───────────────────────────────────────────────────────────

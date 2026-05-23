@@ -265,7 +265,8 @@ public class CommentServiceImpl implements CommentService {
         int pageNumber = Math.max(0, page);
         int pageSize = Math.min(Math.max(1, size), MAX_MY_COMMENTS_PAGE_SIZE);
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
-        Page<Comment> commentPage = commentRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        // Dùng query loại trừ DANGEROUS: user chỉ thấy comment SAFE + SUSPICIOUS (chờ duyệt)
+        Page<Comment> commentPage = commentRepository.findByUserIdExcludingDangerous(userId, pageable);
         if (commentPage.isEmpty()) {
             return PageResponse.from(new PageImpl<>(List.of(), pageable, 0));
         }

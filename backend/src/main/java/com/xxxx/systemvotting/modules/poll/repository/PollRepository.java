@@ -86,6 +86,14 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
     Page<Poll> findByCreatorId(Long creatorId, Pageable pageable);
 
+    /**
+     * Lấy poll của creator, loại trừ poll bị DANGEROUS (admin từ chối).
+     * Poll SUSPICIOUS (chờ duyệt) vẫn hiển thị để người tạo biết trạng thái.
+     */
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    @Query("SELECT p FROM Poll p WHERE p.creator.id = :creatorId AND (p.moderationStatus IS NULL OR p.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS) ORDER BY p.id DESC")
+    Page<Poll> findByCreatorIdExcludingDangerous(@Param("creatorId") Long creatorId, Pageable pageable);
+
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query("SELECT p FROM Poll p JOIN Vote v ON p.id = v.poll.id WHERE v.user.id = :userId ORDER BY v.createdAt DESC")
     Page<Poll> findPollsVotedByUser(@Param("userId") Long userId, Pageable pageable);
