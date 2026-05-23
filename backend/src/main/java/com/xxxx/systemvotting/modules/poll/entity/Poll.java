@@ -1,6 +1,7 @@
 package com.xxxx.systemvotting.modules.poll.entity;
 
 import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
+import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -90,6 +91,20 @@ public class Poll {
     @Column(name = "visibility", nullable = false)
     @Builder.Default
     private PollVisibility visibility = PollVisibility.PUBLIC;
+
+    /**
+     * Trạng thái kiểm duyệt nội dung của bài đăng.
+     * SAFE = đã duyệt, SUSPICIOUS = chờ admin xét duyệt, DANGEROUS = bị chặn.
+     * Mặc định SAFE để đảm bảo tương thích ngược với dữ liệu cũ.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false)
+    @Builder.Default
+    private ModerationStatus moderationStatus = ModerationStatus.SAFE;
+
+    /** Lý do kiểm duyệt (từ AI), dùng để Admin tham khảo. */
+    @Column(name = "moderation_reason", length = 500)
+    private String moderationReason;
 
     /**
      * Danh sách email được mời tham gia bình chọn (chỉ áp dụng cho PRIVATE poll).

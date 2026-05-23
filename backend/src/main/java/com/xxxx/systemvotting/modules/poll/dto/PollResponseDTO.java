@@ -64,4 +64,10 @@ public class PollResponseDTO implements Serializable {
 
     @Schema(description = "Thời gian cập nhật", example = "2024-03-15T09:00:00")
     private LocalDateTime updatedAt;
+
+    @Schema(description = "Trạng thái kiểm duyệt AI: SAFE | SUSPICIOUS | DANGEROUS")
+    private String moderationStatus;
+
+    @Schema(description = "Lý do kiểm duyệt từ AI (dành cho Admin)")
+    private String moderationReason;
 }

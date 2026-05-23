@@ -1,9 +1,13 @@
 package com.xxxx.systemvotting.modules.comment.entity;
 
+import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
+
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,6 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Index;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -57,6 +62,20 @@ public class Comment {
 
     @Column(name = "is_anonymous", nullable = false)
     private boolean isAnonymous;
+
+    /**
+     * Trạng thái kiểm duyệt của bình luận.
+     * SAFE = hiển thị ngay, SUSPICIOUS = hiển thị nhưng gắc cờ cho Admin, DANGEROUS = bị chặn.
+     * Mặc định SAFE để tương thích ngược với bình luận cũ.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false)
+    @Builder.Default
+    private ModerationStatus moderationStatus = ModerationStatus.SAFE;
+
+    /** Lý do kiểm duyệt (từ AI). */
+    @Column(name = "moderation_reason", length = 500)
+    private String moderationReason;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

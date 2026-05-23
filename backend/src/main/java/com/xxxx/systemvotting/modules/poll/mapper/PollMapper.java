@@ -23,17 +23,19 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { UserMapper.class })
 public interface PollMapper {
 
-    @Mapping(target = "id",            ignore = true)
-    @Mapping(target = "createdAt",     ignore = true)
-    @Mapping(target = "updatedAt",     ignore = true)
-    @Mapping(target = "creator",       ignore = true)   // set in service
-    @Mapping(target = "options",       ignore = true)   // bidirectional relation, set in service
-    @Mapping(target = "tags",          ignore = true)   // set in service
-    @Mapping(target = "judgeWeight",   ignore = true)   // set in service based on plan
-    @Mapping(target = "visibility",    ignore = true)   // set in service
-    @Mapping(target = "invitedEmails", ignore = true)   // set in service
-    @Mapping(target = "members",       ignore = true)   // set in service
-    @Mapping(target = "category",      ignore = true)   // set in service
+    @Mapping(target = "id",                 ignore = true)
+    @Mapping(target = "createdAt",          ignore = true)
+    @Mapping(target = "updatedAt",          ignore = true)
+    @Mapping(target = "creator",            ignore = true)   // set in service
+    @Mapping(target = "options",            ignore = true)   // bidirectional relation, set in service
+    @Mapping(target = "tags",              ignore = true)   // set in service
+    @Mapping(target = "judgeWeight",        ignore = true)   // set in service based on plan
+    @Mapping(target = "visibility",         ignore = true)   // set in service
+    @Mapping(target = "invitedEmails",      ignore = true)   // set in service
+    @Mapping(target = "members",            ignore = true)   // set in service
+    @Mapping(target = "category",           ignore = true)   // set in service
+    @Mapping(target = "moderationStatus",   ignore = true)   // set in service after AI check
+    @Mapping(target = "moderationReason",   ignore = true)   // set in service after AI check
     @Mapping(target = "isAnonymous", source = "anonymous")
     Poll toEntity(PollCreateRequestDTO dto);
 
@@ -42,8 +44,10 @@ public interface PollMapper {
      * Anonymous-poll masking and Redis vote enrichment are handled in the service layer.
      * category is intentionally ignored here — set manually in service using CategoryServiceImpl.toDTO()
      */
-    @Mapping(target = "judgeIds", source = "members")
-    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "judgeIds",          source = "members")
+    @Mapping(target = "category",          ignore = true)
+    @Mapping(target = "moderationStatus",  expression = "java(entity.getModerationStatus() != null ? entity.getModerationStatus().name() : null)")
+    @Mapping(target = "moderationReason",  source = "moderationReason")
     PollResponseDTO toDto(Poll entity);
 
     List<PollResponseDTO> toDtoList(List<Poll> entities);

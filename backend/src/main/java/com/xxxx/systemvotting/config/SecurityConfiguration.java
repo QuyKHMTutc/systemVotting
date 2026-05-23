@@ -67,6 +67,7 @@ public class SecurityConfiguration {
                             .requestMatchers(HttpMethod.GET, "/api/v1/polls", "/api/v1/polls/**", "/api/v1/comments/poll/**").permitAll()
                             .requestMatchers("/api/v1/users/me").authenticated()
                             .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
+                            .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                             .requestMatchers("/actuator/**").hasRole("ADMIN")
                             .anyRequest().authenticated();
                 })

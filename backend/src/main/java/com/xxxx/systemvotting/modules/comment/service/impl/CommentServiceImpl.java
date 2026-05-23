@@ -22,6 +22,7 @@ import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.common.service.RealTimeService;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
+import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -90,15 +91,21 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
-        if (aiModerationService.isToxicContent(request.content())) {
-            throw new AppException(ErrorCode.TOXIC_CONTENT);
+        // --- AI Moderation: kiểm duyệt nội dung bình luận (có cache + rate limiting) ---
+        AiModerationService.ModerationResult modResult = aiModerationService.moderateContent(request.content(), userId);
+
+        if (modResult.status() == ModerationStatus.DANGEROUS) {
+            log.warn("[Moderation] Comment bị chặn - DANGEROUS. Nội dung: '{}'", request.content().substring(0, Math.min(50, request.content().length())));
+            throw new AppException(ErrorCode.CONTENT_DANGEROUS);
         }
 
         Comment.CommentBuilder commentBuilder = Comment.builder()
                 .poll(poll)
                 .user(currentUser)
                 .content(request.content())
-                .isAnonymous(request.isAnonymous());
+                .isAnonymous(request.isAnonymous())
+                .moderationStatus(modResult.status())
+                .moderationReason(modResult.reason());
 
         Comment originalParent = null;
 

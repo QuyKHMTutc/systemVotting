@@ -22,6 +22,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE " +
            "(p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) AND " +
+           "(p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) AND " +
            "(:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
            "(:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) AND " +
            "(:status IS NULL OR :status = 'ALL' OR " +
@@ -40,6 +41,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
            "LEFT JOIN p.tags t " +
            "LEFT JOIN p.category c " +
            "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
            "AND (:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
            "AND (:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) " +
            "AND (:categorySlug IS NULL OR :categorySlug = '' OR c.slug = :categorySlug) " +
@@ -51,6 +53,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
            "LEFT JOIN p.tags t " +
            "LEFT JOIN p.category c " +
            "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
            "AND (:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
            "AND (:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) " +
            "AND (:categorySlug IS NULL OR :categorySlug = '' OR c.slug = :categorySlug) " +
@@ -92,6 +95,7 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query("SELECT DISTINCT p FROM Poll p " +
            "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
            "AND p.endTime > :currentTime " +
            "AND p.createdAt >= :since " +
            "ORDER BY p.createdAt DESC")
@@ -103,8 +107,16 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @Query("SELECT COUNT(p) FROM Poll p WHERE p.creator.id = :creatorId AND (p.endTime IS NULL OR p.endTime > :now)")
     long countActiveByCreator(@Param("creatorId") Long creatorId, @Param("now") java.time.LocalDateTime now);
 
-    @Query("SELECT COUNT(p) FROM Poll p WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) AND p.endTime > :now")
+    @Query("SELECT COUNT(p) FROM Poll p WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) AND p.endTime > :now AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE)")
     long countPublicActivePolls(@Param("now") java.time.LocalDateTime now);
+
+    /** Queries for Admin Moderation: get polls pending review (SUSPICIOUS status). */
+    @EntityGraph(attributePaths = { "options", "creator", "tags" })
+    @Query("SELECT p FROM Poll p WHERE p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS ORDER BY p.createdAt DESC")
+    Page<Poll> findSuspiciousPolls(Pageable pageable);
+
+    @Query("SELECT COUNT(p) FROM Poll p WHERE p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS")
+    long countSuspiciousPolls();
 
     @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL AND (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) GROUP BY p.category.id")
     List<Object[]> countPollsByCategory();

@@ -32,7 +32,9 @@ public enum ErrorCode {
     IDENTITY_CONFLICT(400, "Bạn đã chọn danh tính để bình luận trong bài viết này, không thể thay đổi.", HttpStatus.BAD_REQUEST),
     POLL_LIMIT_EXCEEDED(403, "Vote limit exceeded for this poll according to the creator's plan", HttpStatus.FORBIDDEN),
     POLL_ROOM_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số phòng khảo sát theo gói của bạn. Nâng cấp gói hoặc xóa phòng cũ để tạo thêm.", HttpStatus.FORBIDDEN),
-    POLL_ACCESS_DENIED(403, "Bạn không có quyền truy cập vào cuộc bình chọn riêng tư này.", HttpStatus.FORBIDDEN);
+    POLL_ACCESS_DENIED(403, "Bạn không có quyền truy cập vào cuộc bình chọn riêng tư này.", HttpStatus.FORBIDDEN),
+    CONTENT_DANGEROUS(400, "Nội dung của bạn vi phạm nghiêm trọng tiêu chuẩn cộng đồng và đã bị chặn.", HttpStatus.BAD_REQUEST),
+    CONTENT_SUSPICIOUS(202, "Nội dung của bạn đang chờ được kiểm duyệt bởi Admin trước khi xuất hiện công khai.", HttpStatus.ACCEPTED);
 
     private final int code;
     private final String message;

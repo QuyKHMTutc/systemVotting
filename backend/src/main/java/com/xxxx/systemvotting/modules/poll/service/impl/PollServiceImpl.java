@@ -27,6 +27,7 @@ import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentLikeRepository;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
+import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.poll.entity.PollMember;
 import com.xxxx.systemvotting.modules.poll.enums.PollRole;
 import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
@@ -223,9 +224,27 @@ public class PollServiceImpl implements PollService {
     @Override
     @Transactional
     public PollResponseDTO createPoll(PollCreateRequestDTO requestDTO) {
-        // AI Toxicity Check for Poll Title
-        if (aiModerationService.isToxicContent(requestDTO.title())) {
-            throw new AppException(ErrorCode.TOXIC_CONTENT);
+        // --- AI Moderation: kiểm duyệt tất cả nội dung: tiêu đề, mô tả, lựa chọn, thẻ ---
+        int optionCount = requestDTO.options() != null ? requestDTO.options().size() : 0;
+        int tagCount    = requestDTO.tags()    != null ? requestDTO.tags().size()    : 0;
+        String[] contentParts = new String[2 + optionCount + tagCount];
+        contentParts[0] = requestDTO.title();
+        contentParts[1] = requestDTO.description();
+        if (requestDTO.options() != null) {
+            for (int i = 0; i < requestDTO.options().size(); i++) {
+                contentParts[2 + i] = requestDTO.options().get(i).text();
+            }
+        }
+        if (requestDTO.tags() != null) {
+            for (int i = 0; i < requestDTO.tags().size(); i++) {
+                contentParts[2 + optionCount + i] = requestDTO.tags().get(i);
+            }
+        }
+        AiModerationService.ModerationResult modResult = aiModerationService.moderateMultiple(requestDTO.creatorId(), contentParts);
+
+        if (modResult.status() == ModerationStatus.DANGEROUS) {
+            log.warn("[Moderation] Poll bị chặn - DANGEROUS. Lý do: {}", modResult.reason());
+            throw new AppException(ErrorCode.CONTENT_DANGEROUS);
         }
 
         // Validate creator
@@ -255,6 +274,10 @@ public class PollServiceImpl implements PollService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
+        // Set moderation status from AI result
+        poll.setModerationStatus(modResult.status());
+        poll.setModerationReason(modResult.reason());
+
         // Handle tags dynamic creation/mapping
         if (requestDTO.tags() != null) {
             for (String tagName : requestDTO.tags()) {
@@ -273,13 +296,8 @@ public class PollServiceImpl implements PollService {
                     .ifPresent(poll::setCategory);
         }
 
-        // Map and add options while preserving bidirectional relationship
+        // Map and add options
         for (OptionRequestDTO optionRequest : requestDTO.options()) {
-            // AI Toxicity Check for each Option
-            if (aiModerationService.isToxicContent(optionRequest.text())) {
-                throw new AppException(ErrorCode.TOXIC_CONTENT);
-            }
-
             Option option = pollMapper.toOptionEntity(optionRequest);
             option.setVoteCount(0);
             poll.addOption(option);
@@ -324,8 +342,11 @@ public class PollServiceImpl implements PollService {
         
         Poll savedPoll = pollRepository.save(poll);
 
+        // Chỉ gửi thông báo và broadcast realtime nếu poll được SAFE (duyệt ngay)
+        boolean isSafe = modResult.status() == ModerationStatus.SAFE;
+
         // Save PollMembers (Judges) and send notifications
-        if (requestDTO.judgeIds() != null && !requestDTO.judgeIds().isEmpty()) {
+        if (isSafe && requestDTO.judgeIds() != null && !requestDTO.judgeIds().isEmpty()) {
             for (Long judgeId : requestDTO.judgeIds()) {
                 userRepository.findById(judgeId).ifPresent(judge -> {
                     PollMember member = PollMember.builder()
@@ -361,59 +382,64 @@ public class PollServiceImpl implements PollService {
 
         PollResponseDTO dto = pollMapper.toDto(savedPoll);
         dto.setJudgeIds(requestDTO.judgeIds());
-        dto.setCommentCount(0); // Brand new poll has 0 comments
+        dto.setCommentCount(0);
         if (savedPoll.getCategory() != null) {
             dto.setCategory(categoryServiceImpl.toDTO(savedPoll.getCategory()));
         }
 
-        // Broadcast new poll to dashboard — ONLY for PUBLIC polls
-        if (visibility == PollVisibility.PUBLIC) {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("type", "CREATED");
-            payload.put("poll", dto);
-            realTimeService.broadcast("/topic/polls/events", payload);
-        } else if (visibility == PollVisibility.PRIVATE) {
-            // For PRIVATE polls, only broadcast to the specific invited users
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("type", "CREATED");
-            payload.put("poll", dto);
-            if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
+        // Broadcast realtime và gửi thông báo mời PRIVATE chỉ khi poll đã SAFE
+        if (isSafe) {
+            if (visibility == PollVisibility.PUBLIC) {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("type", "CREATED");
+                payload.put("poll", dto);
+                realTimeService.broadcast("/topic/polls/events", payload);
+            } else if (visibility == PollVisibility.PRIVATE) {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("type", "CREATED");
+                payload.put("poll", dto);
+                if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
+                    List<String> emails = savedPoll.getInvitedEmails();
+                    List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
+                    for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
+                        messagingTemplate.convertAndSendToUser(
+                                invitedUser.getId().toString(),
+                                "/queue/polls/events",
+                                payload
+                        );
+                    }
+                }
+            }
+
+            // Gửi PRIVATE_POLL_INVITATION cho email được mời
+            if (visibility == PollVisibility.PRIVATE
+                    && savedPoll.getInvitedEmails() != null
+                    && !savedPoll.getInvitedEmails().isEmpty()) {
                 List<String> emails = savedPoll.getInvitedEmails();
-                List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
+                List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers =
+                        userRepository.findByEmailIn(emails);
+
                 for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
-                    messagingTemplate.convertAndSendToUser(
-                            invitedUser.getId().toString(),
-                            "/queue/polls/events",
-                            payload
+                    String inviterName = savedPoll.isAnonymous()
+                            ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId())
+                            : creator.getUsername();
+                    String inviterAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
+
+                    asyncNotificationService.createNotificationAsync(
+                            invitedUser.getId(),
+                            inviterName,
+                            inviterAvatar,
+                            "PRIVATE_POLL_INVITATION",
+                            String.format("đã mời bạn tham gia cuộc bình chọn riêng tư: \"%s\"", savedPoll.getTitle()),
+                            savedPoll.getId(),
+                            null
                     );
                 }
             }
-        }
-
-        // Send PRIVATE_POLL_INVITATION notifications to invited users who have accounts
-        if (visibility == PollVisibility.PRIVATE
-                && savedPoll.getInvitedEmails() != null
-                && !savedPoll.getInvitedEmails().isEmpty()) {
-            List<String> emails = savedPoll.getInvitedEmails();
-            List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers =
-                    userRepository.findByEmailIn(emails);
-
-            for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
-                String inviterName = savedPoll.isAnonymous()
-                        ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId())
-                        : creator.getUsername();
-                String inviterAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
-
-                asyncNotificationService.createNotificationAsync(
-                        invitedUser.getId(),
-                        inviterName,
-                        inviterAvatar,
-                        "PRIVATE_POLL_INVITATION",
-                        String.format("đã mời bạn tham gia cuộc bình chọn riêng tư: \"%s\"", savedPoll.getTitle()),
-                        savedPoll.getId(),
-                        null
-                );
-            }
+        } else {
+            // SUSPICIOUS: thông báo người dùng rằng bài đang chờ duyệt
+            log.info("[Moderation] Poll #{} của user #{} đang chờ duyệt. Lý do: {}",
+                    savedPoll.getId(), requestDTO.creatorId(), modResult.reason());
         }
 
         return dto;
