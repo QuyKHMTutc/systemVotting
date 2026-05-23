@@ -123,10 +123,10 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
       {/* Immersive Background Image (Cinematic Netflix Style) */}
       {featured.imageUrl && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <img 
-            src={featured.imageUrl} 
-            alt={featured.title} 
-            className="w-full h-full object-cover scale-105" 
+          <img
+            src={featured.imageUrl}
+            alt={featured.title}
+            className="w-full h-full object-cover scale-105"
           />
           {/* Heavy gradient overlays for perfect text readability (fades to transparent on the right so image is original) */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0710] via-[#0a0710]/80 to-transparent" />

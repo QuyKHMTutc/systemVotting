@@ -11,6 +11,7 @@ import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import { ExploreRightSidebar } from '../components/explore/ExploreRightSidebar';
 import { ExplorePollCard } from '../components/explore/ExplorePollCard';
 import { Flame, Menu } from 'lucide-react';
+import { ScrollReveal } from '../components/ScrollReveal';
 
 
 interface DashboardCache {
@@ -602,22 +603,25 @@ const Dashboard = () => {
         <main
           className={`min-w-0 flex flex-col items-center pt-2 px-1 xl:mr-[calc(296px+0.5rem)] transition-[margin-left] duration-500 ease-in-out ${sidebarOpen ? 'xl:ml-[calc(240px+1rem)]' : 'xl:ml-6'}`}
         >
-          <div className="w-full max-w-5xl space-y-6 transition-all duration-300">
+          <div className="w-full max-w-5xl space-y-6 transition-all duration-300 pb-12">
             {/* Hero trending */}
-            <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
-
+            <ScrollReveal direction="down">
+              <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
+            </ScrollReveal>
 
             {/* Section title */}
-            <div id="explore-polls-grid" className="flex items-center justify-between scroll-mt-28">
-              <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-orange-400" />
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('dashboard.exploreSectionTitle')}</h2>
-                <span className="text-slate-400 dark:text-white/35 text-sm ml-1">{totalPolls > 0 ? `(${totalPolls})` : ''}</span>
+            <ScrollReveal direction="up" delay={100}>
+              <div id="explore-polls-grid" className="flex items-center justify-between scroll-mt-28">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-orange-400" />
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('dashboard.exploreSectionTitle')}</h2>
+                  <span className="text-slate-400 dark:text-white/35 text-sm ml-1">{totalPolls > 0 ? `(${totalPolls})` : ''}</span>
+                </div>
+                <button type="button" onClick={resetExplore} className="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
+                  {t('dashboard.seeAll')}
+                </button>
               </div>
-              <button type="button" onClick={resetExplore} className="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
-                {t('dashboard.seeAll')}
-              </button>
-            </div>
+            </ScrollReveal>
 
             {/* Poll grid */}
             {filterStatus === 'TRENDING' ? (
@@ -638,7 +642,7 @@ const Dashboard = () => {
               ) : (
                 <div className="flex flex-col gap-3">
                   {trendingPolls.map((poll, idx) => (
-                    <div key={poll.id} className={shouldRestore && idx < initialCache!.trendingPolls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.trendingPolls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
+                    <ScrollReveal key={poll.id} direction="up" delay={shouldRestore && idx < initialCache!.trendingPolls.length ? 0 : (idx % 10) * 50}>
                       <ExplorePollCard
                         poll={poll}
                         hasVoted={votedPollIds.includes(poll.id)}
@@ -646,7 +650,7 @@ const Dashboard = () => {
                         onDelete={canDelete(poll) ? handleDelete : undefined}
                         showDeleteButton={canDelete(poll)}
                       />
-                    </div>
+                    </ScrollReveal>
                   ))}
                 </div>
               )
@@ -676,7 +680,7 @@ const Dashboard = () => {
               <>
                 <div className="flex flex-col gap-3">
                   {displayPolls.map((poll, idx) => (
-                    <div key={poll.id} className={shouldRestore && idx < initialCache!.polls.length ? "" : "animate-fade-in-up"} style={shouldRestore && idx < initialCache!.polls.length ? {} : { animationDelay: `${(idx % 10) * 40}ms` }}>
+                    <ScrollReveal key={poll.id} direction="up" delay={shouldRestore && idx < initialCache!.polls.length ? 0 : (idx % 10) * 50}>
                       <ExplorePollCard
                         poll={poll}
                         hasVoted={votedPollIds.includes(poll.id)}
@@ -684,7 +688,7 @@ const Dashboard = () => {
                         onDelete={canDelete(poll) ? handleDelete : undefined}
                         showDeleteButton={canDelete(poll)}
                       />
-                    </div>
+                    </ScrollReveal>
                   ))}
                 </div>
 

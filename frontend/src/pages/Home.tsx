@@ -7,6 +7,7 @@ import { ShieldCheck, Activity, Settings, MessageSquare, BarChart3, Lock, PieCha
 import createMockup from '../assets/mockups/create.png';
 import voteMockup from '../assets/mockups/vote.png';
 import commentMockup from '../assets/mockups/comment.png';
+import { ScrollReveal } from '../components/ScrollReveal';
 
 const Home = () => {
     const { t } = useTranslation();
@@ -18,6 +19,7 @@ const Home = () => {
 
             <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-6">
                 {/* Hero Section */}
+                <ScrollReveal direction="down" delay={100}>
                 <div className="relative rounded-[2rem] overflow-hidden bg-[#180A47] pb-16 pt-20 px-8 sm:px-16 shadow-2xl flex flex-col md:flex-row items-center border border-white/5">
                     {/* Content */}
                     <div className="relative z-10 max-w-2xl lg:w-[60%]">
@@ -59,8 +61,10 @@ const Home = () => {
                         />
                     </div>
                 </div>
+                </ScrollReveal>
 
                 {/* Statistics Section */}
+                <ScrollReveal direction="up" delay={200}>
                 <div className="mt-16 text-center">
                     <h3 className="text-slate-800 dark:text-white/60 font-bold text-sm tracking-[0.1em] uppercase mb-12 transition-colors">
                         {t('home.trustedBy')}
@@ -95,22 +99,26 @@ const Home = () => {
                         </div>
                     </div>
                 </div>
+                </ScrollReveal>
 
                 {/* Features / Intro Section */}
                 <div className="mt-20 mb-20 text-center px-4">
-                    <h4 className="text-purple-600 dark:text-purple-400 font-bold text-sm tracking-widest uppercase mb-4 transition-colors">
-                        {t('home.featPreTitle')}
-                    </h4>
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight transition-colors">
-                        {t('home.featTitle')}
-                    </h2>
-                    <p className="max-w-3xl mx-auto text-slate-600 dark:text-white/70 text-lg leading-relaxed mb-20 transition-colors">
-                        {t('home.featDesc')}
-                    </p>
+                    <ScrollReveal direction="up">
+                        <h4 className="text-purple-600 dark:text-purple-400 font-bold text-sm tracking-widest uppercase mb-4 transition-colors">
+                            {t('home.featPreTitle')}
+                        </h4>
+                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight transition-colors">
+                            {t('home.featTitle')}
+                        </h2>
+                        <p className="max-w-3xl mx-auto text-slate-600 dark:text-white/70 text-lg leading-relaxed mb-20 transition-colors">
+                            {t('home.featDesc')}
+                        </p>
+                    </ScrollReveal>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
                         {/* Feature 1 */}
-                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                        <ScrollReveal direction="up" delay={0}>
+                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group h-full">
                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                                 <ShieldCheck className="w-6 h-6 text-white" />
                             </div>
@@ -119,9 +127,11 @@ const Home = () => {
                                 {t('home.f1Desc')}
                             </p>
                         </div>
+                        </ScrollReveal>
 
                         {/* Feature 2 */}
-                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                        <ScrollReveal direction="up" delay={100}>
+                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group h-full">
                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                                 <Activity className="w-6 h-6 text-white" />
                             </div>
@@ -130,9 +140,11 @@ const Home = () => {
                                 {t('home.f2Desc')}
                             </p>
                         </div>
+                        </ScrollReveal>
 
                         {/* Feature 3 */}
-                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                        <ScrollReveal direction="up" delay={200}>
+                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group h-full">
                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                                 <Settings className="w-6 h-6 text-white" />
                             </div>
@@ -141,9 +153,11 @@ const Home = () => {
                                 {t('home.f3Desc')}
                             </p>
                         </div>
+                        </ScrollReveal>
 
                         {/* Feature 4 */}
-                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                        <ScrollReveal direction="up" delay={0}>
+                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group h-full">
                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                                 <MessageSquare className="w-6 h-6 text-white" />
                             </div>
@@ -152,9 +166,11 @@ const Home = () => {
                                 {t('home.f4Desc')}
                             </p>
                         </div>
+                        </ScrollReveal>
 
                         {/* Feature 5 */}
-                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                        <ScrollReveal direction="up" delay={100}>
+                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group h-full">
                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                                 <BarChart3 className="w-6 h-6 text-white" />
                             </div>
@@ -163,9 +179,11 @@ const Home = () => {
                                 {t('home.f5Desc')}
                             </p>
                         </div>
+                        </ScrollReveal>
 
                         {/* Feature 6 */}
-                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group">
+                        <ScrollReveal direction="up" delay={200}>
+                        <div className="relative bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 pt-12 hover:shadow-lg dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all group h-full">
                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
                                 <Lock className="w-6 h-6 text-white" />
                             </div>
@@ -174,13 +192,14 @@ const Home = () => {
                                 {t('home.f6Desc')}
                             </p>
                         </div>
+                        </ScrollReveal>
                     </div>
                 </div>
 
                 {/* --- Showcase Section 1: Create Poll --- */}
-                <div className="py-20 border-t border-slate-200 dark:border-white/10 mt-10">
+                <div className="py-20 border-t border-slate-200 dark:border-white/10 mt-10 overflow-hidden">
                     <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 px-4">
-                        <div className="lg:w-1/2">
+                        <ScrollReveal direction="right" className="lg:w-1/2">
                             <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30">
                                 <PieChart className="w-8 h-8 text-white" />
                             </div>
@@ -198,26 +217,26 @@ const Home = () => {
                                     {t('home.btnViewExample')}
                                 </Link>
                             </div>
-                        </div>
-                        <div className="lg:w-1/2 w-full">
+                        </ScrollReveal>
+                        <ScrollReveal direction="left" delay={200} className="lg:w-1/2 w-full">
                             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 group transform transition-transform hover:-translate-y-2 duration-500">
                                 <img src={createMockup} alt="Create Poll Mockup" className="w-full h-auto object-cover" />
                                 <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 rounded-[2rem] pointer-events-none"></div>
                             </div>
-                        </div>
+                        </ScrollReveal>
                     </div>
                 </div>
 
                 {/* --- Showcase Section 2: Vote Poll (Image Left) --- */}
-                <div className="py-20 border-t border-slate-200 dark:border-white/10">
+                <div className="py-20 border-t border-slate-200 dark:border-white/10 overflow-hidden">
                     <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-20 px-4">
-                        <div className="lg:w-1/2 w-full">
+                        <ScrollReveal direction="right" delay={200} className="lg:w-1/2 w-full">
                             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 group transform transition-transform hover:-translate-y-2 duration-500">
                                 <img src={voteMockup} alt="Vote Mockup" className="w-full h-auto object-cover" />
                                 <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 rounded-[2rem] pointer-events-none"></div>
                             </div>
-                        </div>
-                        <div className="lg:w-1/2">
+                        </ScrollReveal>
+                        <ScrollReveal direction="left" className="lg:w-1/2">
                             <div className="w-16 h-16 bg-pink-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-pink-500/30">
                                 <MousePointerClick className="w-8 h-8 text-white" />
                             </div>
@@ -232,14 +251,14 @@ const Home = () => {
                                     {t('home.btnExplorePolls')}
                                 </Link>
                             </div>
-                        </div>
+                        </ScrollReveal>
                     </div>
                 </div>
 
                 {/* --- Showcase Section 3: Comments --- */}
-                <div className="py-20 border-t border-slate-200 dark:border-white/10">
+                <div className="py-20 border-t border-slate-200 dark:border-white/10 overflow-hidden">
                     <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 px-4">
-                        <div className="lg:w-1/2">
+                        <ScrollReveal direction="right" className="lg:w-1/2">
                             <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/30">
                                 <MessageCircle className="w-8 h-8 text-white" />
                             </div>
@@ -254,13 +273,13 @@ const Home = () => {
                                     {t('home.btnJoinDiscussion')}
                                 </Link>
                             </div>
-                        </div>
-                        <div className="lg:w-1/2 w-full">
+                        </ScrollReveal>
+                        <ScrollReveal direction="left" delay={200} className="lg:w-1/2 w-full">
                             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 group transform transition-transform hover:-translate-y-2 duration-500">
                                 <img src={commentMockup} alt="Comment Mockup" className="w-full h-auto object-cover" />
                                 <div className="absolute inset-0 ring-1 ring-inset ring-black/10 dark:ring-white/10 rounded-[2rem] pointer-events-none"></div>
                             </div>
-                        </div>
+                        </ScrollReveal>
                     </div>
                 </div>
 
