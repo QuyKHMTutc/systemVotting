@@ -22,7 +22,7 @@ interface WebSocketContextType {
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
 
 export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
-    const { isAuthenticated, token } = useAuth();
+    const { isAuthenticated } = useAuth();
     const [client, setClient] = useState<Client | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);

@@ -17,6 +17,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import { ChatbotWidget } from './components/chat/ChatbotWidget';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode, requireRole?: string }) => {
@@ -101,6 +102,7 @@ function App() {
             </Routes>
             </div>
             <ScrollToTop />
+            <ChatbotWidget />
             <ConditionalFooter />
           </div>
           </WebSocketProvider>
