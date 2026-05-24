@@ -9,8 +9,8 @@ export interface Comment {
     content: string;
     isAnonymous: boolean;
     createdAt: string;
-    voteStatus: string;
-    parentId?: number;
+    voteStatus: string | null;
+    parentId: number | null;
     pollId?: number;
     pollTitle?: string;
     replies?: Comment[];

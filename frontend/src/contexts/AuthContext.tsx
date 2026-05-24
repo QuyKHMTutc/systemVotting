@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = (accessToken: string, _refreshToken: string | null, userData: User) => {
         setMemoryToken(accessToken);
         setToken(accessToken);
+        localStorage.setItem('accessToken', accessToken); // Persist so reload doesn't lose auth state
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
         if (userData.role === 'ADMIN') {
@@ -66,16 +67,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const handleLogoutState = () => {
         setMemoryToken(null);
         setToken(null);
+        localStorage.removeItem('accessToken'); // Remove token so reload won't restore a blacklisted session
         localStorage.removeItem('user');
         localStorage.removeItem('votedPolls');
         setUser(null);
-        navigate('/login');
     };
 
     const logout = () => {
         authService.logout()
             .catch(console.error)
-            .finally(handleLogoutState);
+            .finally(() => {
+                handleLogoutState();
+                navigate('/login');
+            });
     };
 
     const updateUser = (userData: User) => {
@@ -91,10 +95,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const interceptLogout = () => {
             handleLogoutState();
+            // We only forcefully navigate to login if the current path is a protected one.
+            // But since ProtectedRoute already handles it, we don't need to do it here.
+            // However, to be safe for cases where they were on a protected action,
+            // we let React re-render and ProtectedRoute will catch it.
         };
         window.addEventListener('auth-logout', interceptLogout);
         return () => window.removeEventListener('auth-logout', interceptLogout);
-    }, [navigate]);
+    }, []);
 
     useEffect(() => {
         const syncUser = () => {

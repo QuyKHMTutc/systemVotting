@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link, NavLink, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PenLine, ListPlus, MessageSquare, CheckSquare, LogOut, ChevronDown, Sun, Moon, Crown, CreditCard, Search, SquarePlus, KeyRound, User } from 'lucide-react';
+import { LogOut, ChevronDown, Sun, Moon, Crown, Search, SquarePlus, KeyRound, User, Menu, X } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UpgradeModal from './payment/UpgradeModal';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -15,6 +15,7 @@ const Navbar = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(() => typeof window !== 'undefined' ? window.scrollY > 20 : false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [searchParams] = useSearchParams();
@@ -64,9 +65,16 @@ const Navbar = () => {
             }`}>
             <div className="w-full pl-4 pr-4 flex items-center justify-between relative max-w-[1920px] mx-auto">
 
-                {/* Left: Logo — 220px to align with explore sidebar */}
-                <div className="flex items-center justify-center shrink-0 w-[220px]">
-                    <Link to="/" className="text-3xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 pr-1 drop-shadow-sm hover:scale-[1.02] transition-transform">
+                {/* Left: Hamburger & Logo */}
+                <div className="flex items-center gap-2 lg:gap-0 lg:w-[220px] shrink-0">
+                    <button
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="lg:hidden p-2 -ml-2 text-slate-600 dark:text-white/80 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-xl transition-colors focus:outline-none"
+                        aria-label="Toggle mobile menu"
+                    >
+                        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
+                    <Link to="/" className="text-2xl sm:text-3xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 pr-1 drop-shadow-sm hover:scale-[1.02] transition-transform">
                         Voting
                     </Link>
                 </div>
@@ -267,6 +275,43 @@ const Navbar = () => {
                         >
                             {t('navbar.login')}
                         </Link>
+                    )}
+                </div>
+            </div>
+
+            {/* Mobile Menu Dropdown */}
+            <div className={`lg:hidden absolute top-full left-0 w-full bg-slate-50 dark:bg-[#0b0a18] shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'max-h-[32rem] opacity-100 border-b border-slate-200 dark:border-white/10' : 'max-h-0 opacity-0 border-transparent'}`}>
+                <div className="flex flex-col px-4 py-4 gap-3">
+                    {/* Search inside mobile menu */}
+                    <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileMenuOpen(false); }} className="relative w-full group md:hidden mb-2">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30" />
+                        <input
+                            type="text"
+                            placeholder={t('dashboard.searchPlaceholder') || "Tìm kiếm..."}
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-200/60 dark:bg-white/10 rounded-xl text-slate-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                        />
+                    </form>
+
+                    <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-slate-700 dark:text-white uppercase tracking-wider text-sm p-3 hover:bg-slate-200/50 dark:hover:bg-white/5 rounded-xl transition-colors">
+                        {t('navbar.home')}
+                    </Link>
+                    <Link to="/explore" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-slate-700 dark:text-white uppercase tracking-wider text-sm p-3 hover:bg-slate-200/50 dark:hover:bg-white/5 rounded-xl transition-colors">
+                        {t('navbar.explore')}
+                    </Link>
+                    <Link to="/create-poll" onClick={() => setIsMobileMenuOpen(false)} className="sm:hidden font-bold text-slate-700 dark:text-white uppercase tracking-wider text-sm p-3 hover:bg-slate-200/50 dark:hover:bg-white/5 rounded-xl flex items-center gap-2 transition-colors">
+                        <SquarePlus className="w-5 h-5" />
+                        {t('navbar.create')}
+                    </Link>
+                    
+                    {user && user.plan && user.plan !== 'FREE' && (
+                         <div className="md:hidden mt-2 p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/30 flex items-center gap-2">
+                             <Crown className="w-5 h-5 text-amber-500" />
+                             <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400">
+                                 {t('navbar.currentPlan', { plan: user.plan })}
+                             </span>
+                         </div>
                     )}
                 </div>
             </div>

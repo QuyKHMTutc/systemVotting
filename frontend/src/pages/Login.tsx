@@ -38,7 +38,7 @@ const Login = () => {
     const validateEmail = (emailStr: string) => {
         const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr);
         if (!isValid && emailStr.length > 0) {
-            setEmailError('Vui lòng nhập email hợp lệ (vd: name@example.com)');
+            setEmailError(t('auth.invalidEmail', 'Vui lòng nhập email hợp lệ (vd: name@example.com)'));
         } else {
             setEmailError('');
         }
@@ -120,11 +120,15 @@ const Login = () => {
             }
         } catch (err: any) {
             const msg: string = err.response?.data?.message || '';
-            if (msg.toLowerCase().includes('disabled') || msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('verified')) {
+            const msgLower = msg.toLowerCase();
+            
+            if (msgLower.includes('disabled') || msgLower.includes('not enabled') || msgLower.includes('verified')) {
                 setNeedsVerification(true);
-                setError('Your email is not verified yet. Please check your email for the OTP code.');
+                setError(t('auth.errorUnverified', 'Tài khoản chưa được xác thực. Vui lòng kiểm tra email để lấy mã OTP.'));
+            } else if (msgLower.includes('invalid') || msgLower.includes('credentials') || msgLower.includes('unauthorized') || msg === 'Unauthorized') {
+                setError(t('auth.errorInvalidCredentials', 'Email hoặc mật khẩu không chính xác.'));
             } else {
-                setError(msg || 'Invalid username or password');
+                setError(msg || t('auth.errorGeneric', 'Đăng nhập thất bại. Vui lòng thử lại.'));
             }
             triggerShake();
         } finally {
@@ -295,11 +299,11 @@ const Login = () => {
                                                     // AuthContext.login() handles role-based redirect
                                                     login(res.data.accessToken, res.data.refreshToken, userData);
                                                 } else {
-                                                    setError(res.message || 'Google login failed');
+                                                    setError(res.message || t('auth.errorGoogle', 'Đăng nhập bằng Google thất bại.'));
                                                     triggerShake();
                                                 }
                                             } catch (err: any) {
-                                                setError(err.response?.data?.message || 'Google login failed');
+                                                setError(err.response?.data?.message || t('auth.errorGoogle', 'Đăng nhập bằng Google thất bại.'));
                                                 triggerShake();
                                             } finally {
                                                 setLoading(false);
@@ -307,7 +311,7 @@ const Login = () => {
                                         }
                                     }}
                                     onError={() => {
-                                        setError('Google login failed');
+                                        setError(t('auth.errorGoogle', 'Đăng nhập bằng Google thất bại.'));
                                         triggerShake();
                                     }}
                                     useOneTap

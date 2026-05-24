@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Client } from '@stomp/stompjs';
 import { useAuth } from './AuthContext';
-import { getMemoryToken } from '../services/api';
+import { getMemoryToken, forceRefreshToken } from '../services/api';
 import { notificationService } from '../services/notification.service';
 import type { Notification } from '../services/notification.service';
 import type { IMessage } from '@stomp/stompjs';
@@ -47,7 +47,25 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
             reconnectDelay: 5000,
             // Always read the latest token at connection time (including reconnects)
             beforeConnect: async () => {
-                const currentToken = getMemoryToken();
+                let currentToken = getMemoryToken();
+                
+                // Decode token and check expiration before connecting to avoid server warnings
+                if (currentToken) {
+                    try {
+                        const payloadBase64 = currentToken.split('.')[1];
+                        const decodedJson = atob(payloadBase64);
+                        const decoded = JSON.parse(decodedJson);
+                        // Refresh if token is expired or expiring in the next 10 seconds
+                        if (Date.now() >= (decoded.exp * 1000 - 10000)) {
+                            console.log('[WS] Token is expired or expiring soon, refreshing before connect...');
+                            currentToken = await forceRefreshToken();
+                        }
+                    } catch (e) {
+                        console.error('[WS] Failed to parse token or refresh:', e);
+                        currentToken = null; // Let it connect unauthenticated or fail
+                    }
+                }
+
                 if (currentToken) {
                     newClient.connectHeaders = { Authorization: `Bearer ${currentToken}` };
                 } else {
@@ -99,7 +117,8 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
             stompClientRef.current = null;
             setClient(null);
         };
-    }, [isAuthenticated, token]); // Re-connect when auth state or token changes
+    }, [isAuthenticated]); // Re-connect only when authentication state changes, not on every token refresh
+    // Note: beforeConnect() reads the latest token at connection time, so 'token' dependency is unnecessary.
 
     // Fetch notifications from server when authenticated
     useEffect(() => {

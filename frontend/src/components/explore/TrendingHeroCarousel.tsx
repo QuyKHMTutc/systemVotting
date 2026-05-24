@@ -37,9 +37,10 @@ function getAccentColor(pollId: number): string {
 export interface TrendingHeroCarouselProps {
   polls: Poll[];
   loading: boolean;
+  votedPollIds?: number[];
 }
 
-export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselProps) {
+export function TrendingHeroCarousel({ polls, loading, votedPollIds = [] }: TrendingHeroCarouselProps) {
   const { t } = useTranslation();
   const [index, setIndex] = useState(0);
 
@@ -208,7 +209,7 @@ export function TrendingHeroCarousel({ polls, loading }: TrendingHeroCarouselPro
               to={`/poll/${featured.id}`}
               className={`inline-flex items-center justify-center px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r ${accent} shadow-lg hover:opacity-95 active:scale-[0.98] transition-all text-sm`}
             >
-              {t('dashboard.trendingJoinNow')}
+              {votedPollIds.includes(featured.id) ? (t('i18n.language')?.startsWith('vi') || navigator.language.startsWith('vi') ? 'Xem kết quả' : 'View Results') : t('dashboard.trendingJoinNow')}
             </Link>
             {/* Avatars */}
             <div className="flex items-center gap-2">

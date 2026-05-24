@@ -92,7 +92,14 @@ export default function CommentItem({
   // But wait, CommentItem doesn't know its index. 
   // Let's use a simpler visual approach: the parent draws the vertical line and each child has an absolute curve.
 
-  const handleReplyClick = () => setIsReplying(!isReplying);
+  const handleReplyClick = () => {
+    if (!user) {
+      // Redirect to login when guest tries to reply
+      window.location.href = '/login';
+      return;
+    }
+    setIsReplying(!isReplying);
+  };
   const handleLikeClick = async () => {
     if (!user || liking) return;
     // Optimistic update
@@ -218,19 +225,24 @@ export default function CommentItem({
           </button>
           <button
             onClick={handleReplyClick}
-            className="text-xs font-medium text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80 transition-colors"
+            className={`text-xs font-medium transition-colors ${
+              !user
+                ? 'text-slate-400 dark:text-white/30 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer'
+                : 'text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80'
+            }`}
           >
             {t('pollDetail.reply')}
           </button>
-          {comment.voteStatus !== 'Chưa vote' && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300">
+          {comment.voteStatus && (
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600/90 dark:text-indigo-300/90 font-medium border border-indigo-100 dark:border-indigo-500/20 shadow-sm shadow-indigo-100/20 dark:shadow-none flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400"></span>
               {comment.voteStatus}
             </span>
           )}
         </div>
 
         {/* Reply form */}
-        {isReplying && (
+        {isReplying && user && (
           <div className="mt-3">
             <CommentInput
               onSubmit={(content, isAnonymous) => {

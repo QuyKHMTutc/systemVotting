@@ -168,10 +168,13 @@ const Dashboard = () => {
           const apiIds = vp.content.map((p) => p.id);
           // MERGE rather than replace: the vote backend uses Redis → async DB write,
           // so the DB may not yet contain a vote the user just cast in PollDetail.
-          // Keeping local IDs that aren't in the API response preserves those
-          // pending votes so the percentage bars appear immediately on return.
+          // Also re-read localStorage here to capture any votes that were written
+          // to storage after the component mounted (e.g. user returned very quickly
+          // from PollDetail before the first state init propagated).
           setVotedPollIds((current) => {
-            const merged = [...new Set([...apiIds, ...current])];
+            let localIds: number[] = [];
+            try { localIds = JSON.parse(localStorage.getItem('votedPolls') || '[]'); } catch { /* noop */ }
+            const merged = [...new Set([...apiIds, ...current, ...localIds])];
             localStorage.setItem('votedPolls', JSON.stringify(merged));
             return merged;
           });
@@ -606,7 +609,7 @@ const Dashboard = () => {
           <div className="w-full max-w-5xl space-y-6 transition-all duration-300 pb-12">
             {/* Hero trending */}
             <ScrollReveal direction="down">
-              <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} />
+              <TrendingHeroCarousel polls={trendingPolls} loading={trendingLoading} votedPollIds={votedPollIds} />
             </ScrollReveal>
 
             {/* Section title */}

@@ -92,13 +92,13 @@ const Register = () => {
         }
 
         if (password !== confirmPassword) {
-            setError('Passwords do not match.');
+            setError(t('auth.errorPasswordMismatch', 'Mật khẩu không khớp.'));
             triggerShake();
             return;
         }
 
         if (!agreeTerms) {
-            setError('You must agree to the Terms of Service and Privacy Policy.');
+            setError(t('auth.errorTerms', 'Bạn phải đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật.'));
             triggerShake();
             return;
         }
@@ -117,7 +117,14 @@ const Register = () => {
                 triggerShake();
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed. Try a different username/email.');
+            const msg: string = err.response?.data?.message || '';
+            const msgLower = msg.toLowerCase();
+            
+            if (msgLower.includes('exists') || msgLower.includes('tồn tại') || msgLower.includes('duplicate')) {
+                setError(t('auth.errorUserExists', 'Tài khoản đã tồn tại. Vui lòng sử dụng email hoặc tên khác.'));
+            } else {
+                setError(msg || t('auth.errorRegisterFailed', 'Đăng ký thất bại. Vui lòng thử lại.'));
+            }
             triggerShake();
         } finally {
             setLoading(false);
@@ -151,7 +158,14 @@ const Register = () => {
                 triggerShake();
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Invalid or expired OTP. Please try again.');
+            const msg: string = err.response?.data?.message || '';
+            const msgLower = msg.toLowerCase();
+            
+            if (msgLower.includes('otp') || msgLower.includes('expired') || msgLower.includes('invalid')) {
+                setError(t('auth.errorInvalidOtp', 'Mã OTP không hợp lệ hoặc đã hết hạn.'));
+            } else {
+                setError(msg || t('auth.errorVerifyFailed', 'Xác thực thất bại.'));
+            }
             triggerShake();
         } finally {
             setLoading(false);

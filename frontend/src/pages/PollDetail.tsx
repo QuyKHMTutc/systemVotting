@@ -20,6 +20,7 @@ import { usePollEventsWebSocket } from '../hooks/usePollEventsWebSocket';
 import type { PollEventPayload } from '../hooks/usePollEventsWebSocket';
 import { useTranslation } from 'react-i18next';
 import PollLiveChartModal from '../components/poll/PollLiveChartModal';
+import PollAnalyticsModal from '../components/poll/PollAnalyticsModal';
 import { getAnonymousCreatorName } from '../utils/anonymous';
 
 const COMMENT_PAGE_SIZE = 20;
@@ -60,8 +61,9 @@ const PollDetail = () => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [trendingPolls, setTrendingPolls] = useState<Poll[]>([]);
+  const [similarPolls, setSimilarPolls] = useState<Poll[]>([]);
 
   const [identityLocked, setIdentityLocked] = useState(false);
   const [lockedIsAnonymous, setLockedIsAnonymous] = useState(false);
@@ -154,24 +156,25 @@ const PollDetail = () => {
   }, []);
 
   const handleWsNewComment = useCallback((newComment: Comment) => {
-    let inserted = false;
+    let wasInserted = false;
     setComments((prev) => {
       if (newComment.parentId) {
-        return prev.map((root) => {
-          if (root.id === newComment.parentId) {
-            const alreadyExists = root.replies?.some((r) => r.id === newComment.id);
-            if (alreadyExists) return root;
-            inserted = true;
-            return { ...root, replies: [...(root.replies || []), newComment] };
-          }
-          return root;
+        // It's a reply — find the parent root comment
+        let newPrev = prev.map((root) => {
+          if (root.id !== newComment.parentId) return root;
+          if (root.replies?.some((r) => r.id === newComment.id)) return root; // already present
+          wasInserted = true;
+          return { ...root, replies: [...(root.replies || []), newComment] };
         });
+        return newPrev;
       }
-      if (prev.some((c) => c.id === newComment.id)) return prev;
-      inserted = true;
+      // Root comment
+      if (prev.some((c) => c.id === newComment.id)) return prev; // already present
+      wasInserted = true;
       return [{ ...newComment, replies: newComment.replies || [] }, ...prev];
     });
-    if (inserted) {
+    // Increment count only if the comment was genuinely new (not a duplicate from our own HTTP insert)
+    if (wasInserted) {
       setTotalAllComments((t) => t + 1);
     }
   }, []);
@@ -183,7 +186,9 @@ const PollDetail = () => {
   });
 
   const handleGlobalPollEvent = useCallback((payload: PollEventPayload) => {
-    if (!id || payload.pollId !== Number(id)) return;
+    if (!id) return;
+    const targetPollId = payload.type === 'CREATED' ? payload.poll.id : payload.pollId;
+    if (targetPollId !== Number(id)) return;
 
     if (payload.type === 'DELETED') {
       // Poll was deleted or rejected by admin, leave the page
@@ -212,12 +217,15 @@ const PollDetail = () => {
     if (!poll) return;
     setCommentError('');
     try {
-      await commentService.createComment({ pollId: poll.id, content, isAnonymous });
-      const data = await commentService.getCommentsByPollId(poll.id, 0, COMMENT_PAGE_SIZE);
-      setComments(data.page.content);
-      setCommentPage(0);
-      setTotalAllComments(data.totalAllComments);
-      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
+      const newComment = await commentService.createComment({ pollId: poll.id, content, isAnonymous });
+      // WebSocket (handleWsNewComment) will receive the broadcast and insert the comment
+      // into state. We call setComments here as a fallback in case WS is slow / disconnected,
+      // guarding against duplicates with an id check.
+      setComments((prev) => {
+        if (prev.some((c) => c.id === newComment.id)) return prev;
+        return [{ ...newComment, replies: newComment.replies || [] }, ...prev];
+      });
+      setTotalAllComments((t) => t + 1);
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post comment');
     }
@@ -226,12 +234,16 @@ const PollDetail = () => {
   const handleReplySubmit = async (parentId: number, content: string, isAnonymous: boolean) => {
     if (!poll) return;
     try {
-      await commentService.createComment({ pollId: poll.id, parentId, content, isAnonymous });
-      const data = await commentService.getCommentsByPollId(poll.id, 0, COMMENT_PAGE_SIZE);
-      setComments(data.page.content);
-      setCommentPage(0);
-      setTotalAllComments(data.totalAllComments);
-      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
+      const newReply = await commentService.createComment({ pollId: poll.id, parentId, content, isAnonymous });
+      // Insert reply immediately; WS broadcast will also arrive (guard against duplicate in handleWsNewComment)
+      setComments((prev) =>
+        prev.map((root) => {
+          if (root.id !== parentId) return root;
+          if (root.replies?.some((r) => r.id === newReply.id)) return root;
+          return { ...root, replies: [...(root.replies || []), newReply] };
+        })
+      );
+      setTotalAllComments((t) => t + 1);
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post reply');
       console.error('Failed to post reply:', err);
@@ -243,22 +255,27 @@ const PollDetail = () => {
     if (!window.confirm(t('pollDetail.deleteConfirm', 'Bạn có chắc chắn muốn xóa bình luận này không?'))) return;
     try {
       await commentService.deleteComment(commentId);
-      // Reload comments
-      const data = await commentService.getCommentsByPollId(poll.id, 0, COMMENT_PAGE_SIZE);
-      setComments(data.page.content);
-      setCommentPage(0);
-      setTotalAllComments(data.totalAllComments);
-      setHasMoreComments(data.page.currentPage + 1 < data.page.totalPages);
+      // Update local state optimistically — WebSocket COMMENT_DELETED event will also fire
+      // but handleGlobalPollEvent already guards against double-removal
+      setComments((prev) => {
+        const targetId = Number(commentId);
+        let updated = prev.filter((c) => Number(c.id) !== targetId);
+        updated = updated.map((root) => ({
+          ...root,
+          replies: root.replies ? root.replies.filter((r) => Number(r.id) !== targetId) : [],
+        }));
+        return updated;
+      });
+      setTotalAllComments((t) => Math.max(0, t - 1));
     } catch (err: any) {
       console.error('Failed to delete comment:', err);
-      alert('Failed to delete comment');
+      setCommentError(err.response?.data?.message || 'Failed to delete comment');
     }
   };
 
   const checkVoteStatus = async (pollId: number) => {
+    if (!user) return; // Only check vote status when authenticated (api.ts attaches token automatically)
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) return;
       const response = await api.get(`/votes/check?pollId=${pollId}`);
       if (response.data?.data?.hasVoted) {
         setHasVoted(true);
@@ -306,7 +323,8 @@ const PollDetail = () => {
     setError('');
     try {
       await api.post('/votes', { pollId: poll?.id, optionId: selectedOption });
-      if (poll) await fetchPoll(poll.id);
+      // WebSocket broadcast (handleWsVoteUpdate) will update the options live.
+      // No need to fetchPoll() — that would load from cache and overwrite correct WS counts.
       const voted = JSON.parse(localStorage.getItem('votedPolls') || '[]');
       if (poll?.id && !voted.includes(poll.id)) {
         voted.push(poll.id);
@@ -318,8 +336,8 @@ const PollDetail = () => {
       const msg = err.response?.data?.message || 'Failed to submit vote. You might have already voted.';
       setError(msg);
       if (err.response?.status === 400) {
+        // Already voted (e.g. stale localStorage miss) — mark as voted, WS has live counts
         setHasVoted(true);
-        if (poll) await fetchPoll(poll.id);
       }
     } finally {
       setVoting(false);
@@ -363,18 +381,18 @@ const PollDetail = () => {
   }, [hasVoted, poll]);
 
   useEffect(() => {
-    const fetchTrending = async () => {
+    const fetchSimilar = async () => {
       try {
-        const response = await pollService.getTrendingPolls(5);
+        const response = await pollService.getSimilarPolls(Number(id));
         if (response) {
-          const filtered = response.filter((p: Poll) => p.id !== Number(id)).slice(0, 3);
-          setTrendingPolls(filtered);
+          const filtered = response.slice(0, 3);
+          setSimilarPolls(filtered);
         }
       } catch (err) {
-        console.error('Failed to fetch trending polls:', err);
+        console.error('Failed to fetch similar polls:', err);
       }
     };
-    fetchTrending();
+    if (id) fetchSimilar();
   }, [id]);
 
   if (loading) {
@@ -926,15 +944,24 @@ const PollDetail = () => {
                       </span>
                     </div>
                   </div>
+                  {isCreator && (
+                    <button
+                      onClick={() => setIsAnalyticsOpen(true)}
+                      className="w-full mt-4 py-2 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                      Xem phân tích & CSV
+                    </button>
+                  )}
                 </div>
 
-                {trendingPolls.length > 0 && (
+                {similarPolls.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white px-1 mb-2">
-                      {t('pollDetail.trendingPollsTitle', 'Bình chọn nổi bật khác')}
+                      Các bình chọn tương tự
                     </h3>
                     <div className="space-y-3">
-                      {trendingPolls.map((tp) => (
+                      {similarPolls.map((tp) => (
                         <div
                           key={tp.id}
                           onClick={() => navigate(`/poll/${tp.id}`)}
@@ -962,13 +989,24 @@ const PollDetail = () => {
       </div>
 
       {poll && (
-        <PollLiveChartModal
-          isOpen={isLiveChartOpen}
-          onClose={() => setIsLiveChartOpen(false)}
-          options={poll.options}
-          pollTitle={poll.title}
-          judgeWeight={poll.judgeWeight ?? 0}
-        />
+        <>
+          <PollLiveChartModal
+            isOpen={isLiveChartOpen}
+            onClose={() => setIsLiveChartOpen(false)}
+            options={poll.options}
+            pollTitle={poll.title}
+            judgeWeight={poll.judgeWeight ?? 0}
+          />
+          {isCreator && (
+            <PollAnalyticsModal
+              isOpen={isAnalyticsOpen}
+              onClose={() => setIsAnalyticsOpen(false)}
+              pollId={poll.id}
+              pollTitle={poll.title}
+              options={poll.options}
+            />
+          )}
+        </>
       )}
     </div>
   );

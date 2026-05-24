@@ -92,5 +92,20 @@ export const pollService = {
     getMyVotedPolls: async (page = 0, size = 100): Promise<PollPageResponse> => {
         const response = await api.get('/polls/my-voted', { params: { page, size } });
         return response.data.data;
+    },
+
+    getSimilarPolls: async (id: number): Promise<Poll[]> => {
+        const response = await api.get(`/polls/${id}/similar`);
+        return response.data.data;
+    },
+
+    getPollAnalytics: async (id: number): Promise<any[]> => {
+        const response = await api.get(`/polls/${id}/analytics`);
+        return response.data.data;
+    },
+
+    exportPollVotes: async (id: number): Promise<Blob> => {
+        const response = await api.get(`/polls/${id}/export`, { responseType: 'blob' });
+        return response.data;
     }
 };

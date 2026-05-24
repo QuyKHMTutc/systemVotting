@@ -18,7 +18,7 @@ import {
   Activity, LogOut, X,
   CreditCard, CheckCircle2, XCircle, Clock, Tag,
   ArrowUpRight, ArrowDownRight, Plus, Edit3, Save, Smile,
-  Calendar, MoreVertical, Settings, Bell, FileText, Shield, AlertTriangle, Eye, ThumbsUp, Ban
+  Calendar, MoreVertical, Bell, Shield, AlertTriangle, Eye, ThumbsUp, Ban
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 
