@@ -43,7 +43,8 @@ public class SecurityConfiguration {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/uploads/**",
-            "/avatars/**"
+            "/avatars/**",
+            "/api/v1/chatbot/**"
     };
 
     private final CustomUserDetailService userDetailService;
