@@ -29,6 +29,7 @@ import lombok.Setter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -75,6 +76,7 @@ public class Poll {
         joinColumns = @JoinColumn(name = "poll_id"),
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @BatchSize(size = 30)
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
@@ -117,6 +119,7 @@ public class Poll {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "poll_invited_emails", joinColumns = @JoinColumn(name = "poll_id"))
     @Column(name = "email")
+    @BatchSize(size = 30)
     @Builder.Default
     private java.util.List<String> invitedEmails = new java.util.ArrayList<>();
 
@@ -127,12 +130,14 @@ public class Poll {
     private User creator;
 
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 30)
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Option> options = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 30)
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

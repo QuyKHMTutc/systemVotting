@@ -29,6 +29,11 @@ public final class RedisKeyUtils {
         return "rate_limit:vote:user:" + userId;
     }
 
+    /** String: sliding-window INCR counter for rate limiting comment submissions. */
+    public static String getCommentRateLimitKey(Long userId) {
+        return "rate_limit:comment:user:" + userId;
+    }
+
     /** ZSet: pollId → score. Sorted set backing the "Hot Polls" ranking feature. */
     public static String getPollRankingKey() {
         return "ranking:polls:hot";
@@ -37,5 +42,14 @@ public final class RedisKeyUtils {
     /** List: JSON-serialized VoteEventDTO strings queued for async DB persistence. */
     public static String getVoteEventQueueKey() {
         return "queue:vote_events";
+    }
+
+    /**
+     * Set: pollId strings. Tracks all polls a specific user has voted on (pending DB flush).
+     * Written atomically in the Lua vote script alongside the per-poll user_votes hash.
+     * Used by getVotedPolls to include Redis-pending votes not yet flushed to DB.
+     */
+    public static String getUserVotedPollsKey(Long userId) {
+        return "user:" + userId + ":voted_polls";
     }
 }

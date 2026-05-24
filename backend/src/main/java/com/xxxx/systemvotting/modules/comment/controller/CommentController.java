@@ -107,7 +107,7 @@ public class CommentController {
                 .build();
     }
 
-    @Operation(summary = "Xóa bình luận", description = "Cho phép người dùng xóa bình luận của chính mình")
+    @Operation(summary = "Xóa bình luận", description = "Cho phép người dùng xóa bình luận của chính mình. Admin có thể xóa bình luận của bất kỳ ai.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xóa thành công"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền xóa")
@@ -122,7 +122,9 @@ public class CommentController {
                     .message("Unauthorized")
                     .build();
         }
-        commentService.deleteComment(id, Long.valueOf(jwt.getSubject()));
+        boolean isAdmin = jwt.getClaimAsStringList("roles") != null
+                && jwt.getClaimAsStringList("roles").contains("ADMIN");
+        commentService.deleteComment(id, Long.valueOf(jwt.getSubject()), isAdmin);
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("Comment deleted successfully")

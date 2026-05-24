@@ -4,7 +4,6 @@ import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,16 +15,30 @@ import java.util.Optional;
 @Repository
 public interface PollRepository extends JpaRepository<Poll, Long> {
 
-    @EntityGraph(attributePaths = { "options", "creator" })
-    Page<Poll> findAll(Pageable pageable);
+    // ─── Phân trang chính ─────────────────────────────────────────────────────
+    // Quy tắc: KHÔNG dùng JOIN FETCH với collection (OneToMany / ManyToMany) khi có Pageable.
+    // Thay vào đó, dùng @BatchSize trên entity để Hibernate batch-load collection sau khi phân trang.
+    // Chỉ được JOIN FETCH với ManyToOne (ví dụ creator) vì không nhân dòng.
 
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
-    @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE " +
-           "(p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) AND " +
-           "(p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) AND " +
-           "(:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
-           "(:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) AND " +
-           "(:status IS NULL OR :status = 'ALL' OR " +
+    @Query(value =
+           "SELECT DISTINCT p FROM Poll p " +
+           "LEFT JOIN FETCH p.creator " +
+           "LEFT JOIN p.tags t " +
+           "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
+           "AND (:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
+           "AND (:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) " +
+           "AND (:status IS NULL OR :status = 'ALL' OR " +
+           "(:status = 'ACTIVE' AND p.endTime > :currentTime) OR " +
+           "(:status = 'ENDED' AND p.endTime <= :currentTime))",
+           countQuery =
+           "SELECT COUNT(DISTINCT p) FROM Poll p " +
+           "LEFT JOIN p.tags t " +
+           "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
+           "AND (:title IS NULL OR :title = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
+           "AND (:tag IS NULL OR :tag = 'ALL' OR :tag = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :tag, '%'))) " +
+           "AND (:status IS NULL OR :status = 'ALL' OR " +
            "(:status = 'ACTIVE' AND p.endTime > :currentTime) OR " +
            "(:status = 'ENDED' AND p.endTime <= :currentTime))")
     Page<Poll> findWithFilters(
@@ -35,9 +48,9 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
             @Param("currentTime") java.time.LocalDateTime currentTime,
             Pageable pageable);
 
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query(value =
            "SELECT DISTINCT p FROM Poll p " +
+           "LEFT JOIN FETCH p.creator " +
            "LEFT JOIN p.tags t " +
            "LEFT JOIN p.category c " +
            "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
@@ -70,38 +83,55 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     /**
      * Đếm số poll PUBLIC để kiểm tra limit của creator (chỉ tính poll PUBLIC trong limit).
+     * Không cần fetch collection — chỉ cần danh sách đơn giản.
      */
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
     @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN p.tags t WHERE " +
            "p.visibility = :visibility AND p.creator.id = :creatorId")
     List<Poll> findByVisibilityAndCreatorId(
             @Param("visibility") PollVisibility visibility,
             @Param("creatorId") Long creatorId);
 
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
     Optional<Poll> findById(Long id);
 
     void deleteByCreator(com.xxxx.systemvotting.modules.user.entity.User creator);
 
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
     Page<Poll> findByCreatorId(Long creatorId, Pageable pageable);
 
     /**
      * Lấy poll của creator, loại trừ poll bị DANGEROUS (admin từ chối).
      * Poll SUSPICIOUS (chờ duyệt) vẫn hiển thị để người tạo biết trạng thái.
+     * Không JOIN FETCH collection — để @BatchSize xử lý.
      */
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
-    @Query("SELECT p FROM Poll p WHERE p.creator.id = :creatorId AND (p.moderationStatus IS NULL OR p.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS) ORDER BY p.id DESC")
+    @Query(value =
+           "SELECT p FROM Poll p LEFT JOIN FETCH p.creator " +
+           "WHERE p.creator.id = :creatorId " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS) " +
+           "ORDER BY p.id DESC",
+           countQuery =
+           "SELECT COUNT(p) FROM Poll p " +
+           "WHERE p.creator.id = :creatorId " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS)")
     Page<Poll> findByCreatorIdExcludingDangerous(@Param("creatorId") Long creatorId, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
-    @Query("SELECT p FROM Poll p JOIN Vote v ON p.id = v.poll.id WHERE v.user.id = :userId ORDER BY v.createdAt DESC")
+    @Query(value =
+           "SELECT p FROM Poll p LEFT JOIN FETCH p.creator " +
+           "JOIN Vote v ON p.id = v.poll.id WHERE v.user.id = :userId ORDER BY v.createdAt DESC",
+           countQuery =
+           "SELECT COUNT(DISTINCT p) FROM Poll p JOIN Vote v ON p.id = v.poll.id WHERE v.user.id = :userId")
     Page<Poll> findPollsVotedByUser(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT p.creator.id FROM Poll p WHERE p.id = :pollId")
+    Optional<Long> findCreatorIdByPollId(@Param("pollId") Long pollId);
+
+    List<Poll> findTop5ByCategoryIdAndIdNotOrderByCreatedAtDesc(Long categoryId, Long id);
 
     long countByCreator_Id(Long creatorId);
 
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
-    @Query("SELECT DISTINCT p FROM Poll p " +
+    /**
+     * Trending: trả về List (không phân trang theo offset), dùng Pageable chỉ để giới hạn size.
+     * Không cần JOIN FETCH collection vì đây là List, không phải Page — @BatchSize sẽ tự batch load.
+     */
+    @Query("SELECT DISTINCT p FROM Poll p LEFT JOIN FETCH p.creator " +
            "WHERE (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
            "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
            "AND p.endTime > :currentTime " +
@@ -119,8 +149,12 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     long countPublicActivePolls(@Param("now") java.time.LocalDateTime now);
 
     /** Queries for Admin Moderation: get polls pending review (SUSPICIOUS status). */
-    @EntityGraph(attributePaths = { "options", "creator", "tags" })
-    @Query("SELECT p FROM Poll p WHERE p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS ORDER BY p.createdAt DESC")
+    @Query(value =
+           "SELECT p FROM Poll p LEFT JOIN FETCH p.creator " +
+           "WHERE p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS " +
+           "ORDER BY p.createdAt DESC",
+           countQuery =
+           "SELECT COUNT(p) FROM Poll p WHERE p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS")
     Page<Poll> findSuspiciousPolls(Pageable pageable);
 
     @Query("SELECT COUNT(p) FROM Poll p WHERE p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS")

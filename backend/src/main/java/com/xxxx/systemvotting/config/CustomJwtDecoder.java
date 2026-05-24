@@ -60,7 +60,7 @@ public class CustomJwtDecoder implements JwtDecoder {
             // Check 1: Is the token blacklisted (logged out)?
             // Uses RedisTokenService to ensure key format consistency with @RedisHash("jwt_blocklist")
             if (redisTokenService.existsByJwtId(jwtId)) {
-                throw new JwtException("Token is expired");
+                throw new org.springframework.security.oauth2.jwt.BadJwtException("Token is expired");
             }
 
             // Check 2: Was the token issued before a forced-revoke timestamp (password change)?
@@ -70,13 +70,13 @@ public class CustomJwtDecoder implements JwtDecoder {
                 if (invalidBeforeStr != null) {
                     long invalidBefore = Long.parseLong(invalidBeforeStr);
                     if (iat.getTime() < invalidBefore) {
-                        throw new JwtException("Token revoked due to password change");
+                        throw new org.springframework.security.oauth2.jwt.BadJwtException("Token revoked due to password change");
                     }
                 }
             }
 
         } catch (ParseException e) {
-            throw new JwtException("Invalid token format: " + e.getMessage());
+            throw new org.springframework.security.oauth2.jwt.BadJwtException("Invalid token format: " + e.getMessage());
         }
 
         return nimbusJwtDecoder.decode(token);

@@ -96,12 +96,14 @@ public class VoteServiceImpl implements VoteService {
             local userVotesKey     = KEYS[1]
             local pollVotesKey     = KEYS[2]
             local queueKey         = KEYS[3]
+            local userVotedPollKey = KEYS[4]
             local userId           = ARGV[1]
             local newOptionId      = ARGV[2]
             local eventJson        = ARGV[3]
             local maxLimitStr      = ARGV[4]
             local baselineTotalStr = ARGV[5]
             local roleSuffix       = ARGV[6]
+            local pollId           = ARGV[7]
 
             local existingOptionId = redis.call('HGET', userVotesKey, userId)
 
@@ -127,12 +129,16 @@ public class VoteServiceImpl implements VoteService {
             local weightedKey = newOptionId .. ":" .. roleSuffix
             redis.call('HINCRBY', pollVotesKey, weightedKey, 1)
 
+            -- Track pollId in user's voted-polls set (for getVotedPolls fast lookup)
+            redis.call('SADD', userVotedPollKey, pollId)
+
             -- Push event to async queue (oldOptionId is always null — no vote change)
             local finalJson = string.gsub(eventJson, '"-999"', 'null')
             redis.call('LPUSH', queueKey, finalJson)
 
             return ''
             """;
+
 
     private final RedisScript<String> voteScript = new DefaultRedisScript<>(VOTE_LUA, String.class);
 
@@ -149,7 +155,7 @@ public class VoteServiceImpl implements VoteService {
      *   would exhaust a pool of 20 under 2000 concurrent requests.
      */
     @Override
-    @CacheEvict(value = "pollDetails", key = "#pollId")
+    @CacheEvict(value = "pollDetails_v2", key = "#pollId")
     public VoteResponseDTO submitVote(Long userId, Long pollId, Long optionId) {
 
         // Step 1 — Rate limit check (Redis, ~0.1ms)
@@ -239,11 +245,12 @@ public class VoteServiceImpl implements VoteService {
     }
 
     private String executeLuaVoteScript(Long userId, Poll poll, Option newOption) {
-        String pollVotesKey  = RedisKeyUtils.getPollVotesKey(poll.getId());
-        String userVotesKey  = RedisKeyUtils.getPollUserVotesKey(poll.getId());
-        String queueKey      = RedisKeyUtils.getVoteEventQueueKey();
-        String maxLimit      = String.valueOf(poll.getCreator().getPlan().getVoteLimit());
-        int    baselineTotal = computeBaselineTotal(poll, maxLimit);
+        String pollVotesKey       = RedisKeyUtils.getPollVotesKey(poll.getId());
+        String userVotesKey       = RedisKeyUtils.getPollUserVotesKey(poll.getId());
+        String queueKey           = RedisKeyUtils.getVoteEventQueueKey();
+        String userVotedPollKey   = RedisKeyUtils.getUserVotedPollsKey(userId);
+        String maxLimit           = String.valueOf(poll.getCreator().getPlan().getVoteLimit());
+        int    baselineTotal      = computeBaselineTotal(poll, maxLimit);
 
         // Determine user role and weight for this poll
         String roleSuffix = "AUDIENCE";
@@ -259,19 +266,21 @@ public class VoteServiceImpl implements VoteService {
 
         String result = stringRedisTemplate.execute(
                 voteScript,
-                Arrays.asList(userVotesKey, pollVotesKey, queueKey),
+                Arrays.asList(userVotesKey, pollVotesKey, queueKey, userVotedPollKey),
                 String.valueOf(userId),
                 String.valueOf(newOption.getId()),
                 eventJson,
                 maxLimit,
                 String.valueOf(baselineTotal),
-                roleSuffix
+                roleSuffix,
+                String.valueOf(poll.getId())
         );
 
         if ("-1".equals(result)) throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         if ("-2".equals(result)) throw new AppException(ErrorCode.POLL_LIMIT_EXCEEDED);
         return result;
     }
+
 
 
 

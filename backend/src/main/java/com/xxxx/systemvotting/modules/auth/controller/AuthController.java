@@ -49,7 +49,7 @@ public class AuthController {
                         .httpOnly(true)
                         .secure(true) // Required for SameSite=None
                         .path("/")
-                        .maxAge(7 * 24 * 60 * 60) // 7 days
+                        .maxAge(14 * 24 * 60 * 60) // 14 days — matches JWT refresh token TTL
                         .sameSite("None")
                         .build();
                 response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

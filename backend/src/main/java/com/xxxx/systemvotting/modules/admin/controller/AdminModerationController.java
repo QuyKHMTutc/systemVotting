@@ -52,6 +52,7 @@ public class AdminModerationController {
     private final RealTimeService realTimeService;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
     private final com.xxxx.systemvotting.modules.user.repository.UserRepository userRepository;
+    private final com.xxxx.systemvotting.modules.comment.cache.CommentCacheInvalidator commentCacheInvalidator;
 
     // ── Polls Moderation ─────────────────────────────────────────────────────
 
@@ -256,6 +257,11 @@ public class AdminModerationController {
         comment.setModerationReason("Đã được Admin xác nhận an toàn");
         commentRepository.save(comment);
 
+        // Evict cache so approved comment shows immediately without waiting for TTL
+        if (comment.getPoll() != null) {
+            commentCacheInvalidator.evictAllPagesForPoll(comment.getPoll().getId());
+        }
+
         // ── Real-time: thông báo owner comment được duyệt ────────────────────
         if (comment.getUser() != null) {
             Long userId = comment.getUser().getId();
@@ -294,6 +300,11 @@ public class AdminModerationController {
         comment.setModerationStatus(ModerationStatus.DANGEROUS);
         comment.setModerationReason("Admin chặn: " + reason);
         commentRepository.save(comment);
+
+        // Evict cache so blocked comment disappears immediately without waiting for 3-minute TTL
+        if (comment.getPoll() != null) {
+            commentCacheInvalidator.evictAllPagesForPoll(comment.getPoll().getId());
+        }
 
         // ── Real-time: thông báo owner comment bị chặn ───────────────────────
         if (comment.getUser() != null) {

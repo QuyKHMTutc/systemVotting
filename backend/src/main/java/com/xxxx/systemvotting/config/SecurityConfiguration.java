@@ -64,8 +64,11 @@ public class SecurityConfiguration {
                         authorize.requestMatchers("/api/test/**").permitAll();
                     }
                     authorize.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                            .requestMatchers(HttpMethod.GET, "/api/v1/polls", "/api/v1/polls/**", "/api/v1/comments/poll/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/polls/my-polls", "/api/v1/polls/my-voted").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/polls", "/api/v1/polls/**", "/api/v1/comments/poll/**", "/api/v1/categories", "/api/v1/categories/**").permitAll()
                             .requestMatchers("/api/v1/users/me").authenticated()
+                            .requestMatchers("/api/v1/users/me/password").authenticated()
+                            .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
                             .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
                             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                             .requestMatchers("/actuator/**").hasRole("ADMIN")

@@ -14,7 +14,7 @@ public interface CommentService {
 
     com.xxxx.systemvotting.modules.comment.dto.response.IdentityStatusDTO getIdentityStatus(Long pollId, Long userId);
 
-    void deleteComment(Long commentId, Long userId);
+    void deleteComment(Long commentId, Long userId, boolean isAdmin);
 
     /**
      * Toggle like on a comment. Returns true if liked, false if unliked.

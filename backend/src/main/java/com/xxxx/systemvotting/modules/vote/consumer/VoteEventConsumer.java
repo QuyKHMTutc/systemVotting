@@ -7,6 +7,7 @@ import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
+import com.xxxx.systemvotting.modules.poll.repository.OptionRepository;
 import com.xxxx.systemvotting.modules.vote.dto.VoteEventDTO;
 import com.xxxx.systemvotting.modules.vote.entity.Vote;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
@@ -46,7 +47,9 @@ public class VoteEventConsumer {
     private final ObjectMapper        objectMapper;
     private final VoteRepository      voteRepository;
     private final PollRepository      pollRepository;
+    private final OptionRepository    optionRepository;
     private final UserRepository      userRepository;
+    private final com.xxxx.systemvotting.modules.comment.cache.CommentCacheInvalidator commentCacheInvalidator;
 
     private static final String QUEUE_KEY = RedisKeyUtils.getVoteEventQueueKey();
 
@@ -89,13 +92,10 @@ public class VoteEventConsumer {
             return;
         }
 
-        Option newOption = poll.getOptions().stream()
-                .filter(o -> o.getId().equals(event.optionId()))
-                .findFirst()
-                .orElse(null);
+        Option newOption = optionRepository.findById(event.optionId()).orElse(null);
 
-        if (newOption == null) {
-            log.error("Skipping event — option {} not found in poll {}", event.optionId(), poll.getId());
+        if (newOption == null || !newOption.getPoll().getId().equals(poll.getId())) {
+            log.error("Skipping event — option {} not found or does not belong to poll {}", event.optionId(), poll.getId());
             return;
         }
 
@@ -115,6 +115,10 @@ public class VoteEventConsumer {
                 .option(newOption)
                 .weight(weight)
                 .build());
+        
+        // Evict comments cache so that the new vote badge appears on any existing comments by this user
+        commentCacheInvalidator.evictAllPagesForPoll(poll.getId());
+        
         log.debug("Inserted vote: userId={}, pollId={}, optionId={}, weight={}", user.getId(), poll.getId(), newOption.getId(), weight);
     }
 }

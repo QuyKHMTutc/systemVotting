@@ -194,4 +194,41 @@ public class PollController {
                 .data(results)
                 .build();
     }
+
+    @Operation(summary = "Bình chọn tương tự", description = "Lấy các bình chọn tương tự cùng danh mục")
+    @GetMapping("/{id}/similar")
+    public ApiResponse<List<PollResponseDTO>> getSimilarPolls(@PathVariable Long id) {
+        List<PollResponseDTO> polls = pollService.getSimilarPolls(id);
+        return ApiResponse.<List<PollResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(polls)
+                .build();
+    }
+
+    @Operation(summary = "Phân tích bình chọn", description = "Lấy dữ liệu thời gian cho biểu đồ (Chỉ creator)", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @GetMapping("/{id}/analytics")
+    public ApiResponse<List<com.xxxx.systemvotting.modules.poll.dto.TimePointDTO>> getPollAnalytics(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.valueOf(jwt.getSubject());
+        List<com.xxxx.systemvotting.modules.poll.dto.TimePointDTO> data = pollService.getPollAnalytics(id, userId);
+        return ApiResponse.<List<com.xxxx.systemvotting.modules.poll.dto.TimePointDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(data)
+                .build();
+    }
+
+    @Operation(summary = "Xuất dữ liệu bình chọn", description = "Trả về file CSV chứa danh sách lượt bình chọn (Chỉ creator)", security = { @SecurityRequirement(name = "Bearer Authentication") })
+    @GetMapping(value = "/{id}/export", produces = "text/csv")
+    public org.springframework.http.ResponseEntity<String> exportPollVotes(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.valueOf(jwt.getSubject());
+        String csv = pollService.exportPollVotes(id, userId);
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"poll_" + id + "_export.csv\"")
+                .body(csv);
+    }
 }

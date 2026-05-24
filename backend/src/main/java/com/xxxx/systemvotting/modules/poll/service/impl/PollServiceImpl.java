@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -99,11 +100,26 @@ public class PollServiceImpl implements PollService {
      * Removes live vote hashes for a poll. Required when DB ids are reused (e.g. dev reset,
      * {@code ddl-auto}, manual truncate) while Redis keeps old counters — otherwise a brand-new
      * poll inherits stale totals. Also call on delete so Redis cannot resurrect ghost counts.
+     *
+     * Also removes the pollId from each voter's {@code user:{userId}:voted_polls} Redis Set
+     * to keep voted-poll tracking accurate after deletion.
      */
     private void clearPollVoteStateInRedis(Long pollId) {
+        // Remove poll vote hashes
         stringRedisTemplate.delete(List.of(
                 RedisKeyUtils.getPollVotesKey(pollId),
                 RedisKeyUtils.getPollUserVotesKey(pollId)));
+
+        // Remove this pollId from every voter's voted-polls set
+        try {
+            List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollId(pollId);
+            for (com.xxxx.systemvotting.modules.vote.entity.Vote vote : votes) {
+                String userVotedPollKey = RedisKeyUtils.getUserVotedPollsKey(vote.getUser().getId());
+                stringRedisTemplate.opsForSet().remove(userVotedPollKey, String.valueOf(pollId));
+            }
+        } catch (Exception e) {
+            log.warn("Could not clean user voted_polls sets for pollId={}: {}", pollId, e.getMessage());
+        }
     }
 
     private OptionResponseDTO buildEnrichedOption(OptionResponseDTO option, int audienceCount, int judgeCount) {
@@ -121,24 +137,86 @@ public class PollServiceImpl implements PollService {
     }
 
     /**
+     * Rebuilds Redis vote counts from the database votes table on cache miss/flush.
+     */
+    private Map<Object, Object> rebuildRedisVoteState(Long pollId, List<Long> judgeIds) {
+        List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollId(pollId);
+        if (votes.isEmpty()) {
+            return Map.of();
+        }
+
+        String pollVotesKey = RedisKeyUtils.getPollVotesKey(pollId);
+        String userVotesKey = RedisKeyUtils.getPollUserVotesKey(pollId);
+
+        Map<String, String> pollVotesMap = new HashMap<>();
+        Map<String, String> userVotesMap = new HashMap<>();
+
+        for (com.xxxx.systemvotting.modules.vote.entity.Vote vote : votes) {
+            if (vote.getUser() == null || vote.getOption() == null) continue;
+
+            Long userId = vote.getUser().getId();
+            Long optionId = vote.getOption().getId();
+
+            boolean isJudge = judgeIds != null && judgeIds.contains(userId);
+            String roleSuffix = isJudge ? "JUDGE" : "AUDIENCE";
+            String weightedKey = optionId + ":" + roleSuffix;
+
+            int currentVal = 0;
+            if (pollVotesMap.containsKey(weightedKey)) {
+                try {
+                    currentVal = Integer.parseInt(pollVotesMap.get(weightedKey));
+                } catch (NumberFormatException ignored) {}
+            }
+            pollVotesMap.put(weightedKey, String.valueOf(currentVal + 1));
+            userVotesMap.put(String.valueOf(userId), String.valueOf(optionId));
+        }
+
+        if (!pollVotesMap.isEmpty()) {
+            try {
+                stringRedisTemplate.opsForHash().putAll(pollVotesKey, pollVotesMap);
+            } catch (Exception e) {
+                log.error("Failed to backfill poll votes to Redis: {}", e.getMessage());
+            }
+        }
+        if (!userVotesMap.isEmpty()) {
+            try {
+                stringRedisTemplate.opsForHash().putAll(userVotesKey, userVotesMap);
+            } catch (Exception e) {
+                log.error("Failed to backfill user votes to Redis: {}", e.getMessage());
+            }
+        }
+
+        return new HashMap<>(pollVotesMap);
+    }
+
+    /**
      * Enriches a SINGLE poll DTO with live vote counts from Redis.
      * Used only for getPollById (single item — no pipeline needed).
      */
     private void enrichPollWithRedisData(PollResponseDTO dto) {
         if (dto.getOptions() == null || dto.getOptions().isEmpty()) return;
         String redisCountKey = RedisKeyUtils.getPollVotesKey(dto.getId());
-        Map<Object, Object> redisMap = redisTemplate.opsForHash().entries(redisCountKey);
-        if (redisMap.isEmpty()) return;
+        Map<Object, Object> redisMap = null;
+        try {
+            redisMap = redisTemplate.opsForHash().entries(redisCountKey);
+        } catch (Exception e) {
+            log.warn("Redis read failed for single poll: {}, falling back to empty map", e.getMessage());
+        }
+
+        if (redisMap == null || redisMap.isEmpty()) {
+            redisMap = rebuildRedisVoteState(dto.getId(), dto.getJudgeIds());
+            if (redisMap.isEmpty()) return;
+        }
 
         // Records are immutable — rebuild each option with the updated vote count
+        Map<Object, Object> finalRedisMap = redisMap;
         List<OptionResponseDTO> enriched = dto.getOptions().stream()
                 .map(option -> {
-                    Object audienceVal = redisMap.get(option.id().toString() + ":AUDIENCE");
-                    Object judgeVal = redisMap.get(option.id().toString() + ":JUDGE");
+                    Object audienceVal = finalRedisMap.get(option.id().toString() + ":AUDIENCE");
+                    Object judgeVal = finalRedisMap.get(option.id().toString() + ":JUDGE");
 
                     int audienceCount = audienceVal != null ? Integer.parseInt(audienceVal.toString()) : 0;
                     int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal.toString()) : 0;
-                    int redisTotal = audienceCount + judgeCount;
 
                     return buildEnrichedOption(option, audienceCount, judgeCount);
                 })
@@ -162,40 +240,52 @@ public class PollServiceImpl implements PollService {
         // Use StringRedisTemplate for pipeline — its StringRedisSerializer means:
         // - Keys sent as raw UTF-8 bytes (matching how VoteEventConsumer stores them)
         // - executePipelined returns Map<byte[], byte[]> from raw connection commands
-        List<Object> pipelineResults = stringRedisTemplate.executePipelined(
-            (RedisCallback<Object>) connection -> {
-                for (PollResponseDTO dto : dtos) {
-                    String key = com.xxxx.systemvotting.common.utils.RedisKeyUtils.getPollVotesKey(dto.getId());
-                    connection.hashCommands().hGetAll(key.getBytes(StandardCharsets.UTF_8));
+        List<Object> pipelineResults = null;
+        try {
+            pipelineResults = stringRedisTemplate.executePipelined(
+                (RedisCallback<Object>) connection -> {
+                    for (PollResponseDTO dto : dtos) {
+                        String key = com.xxxx.systemvotting.common.utils.RedisKeyUtils.getPollVotesKey(dto.getId());
+                        connection.hashCommands().hGetAll(key.getBytes(StandardCharsets.UTF_8));
+                    }
+                    return null;
                 }
-                return null;
-            }
-        );
+            );
+        } catch (Exception e) {
+            log.warn("Redis pipeline read failed for poll list: {}", e.getMessage());
+        }
 
         for (int i = 0; i < dtos.size(); i++) {
             PollResponseDTO dto = dtos.get(i);
             if (dto.getOptions() == null) continue;
 
-            Object raw = pipelineResults.get(i);
-            if (raw == null) continue;
-
-            // StringRedisTemplate pipeline returns Map<byte[], byte[]> from raw hGetAll
             Map<String, String> redisMap = new HashMap<>();
-            if (raw instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<Object, Object> rawMap = (Map<Object, Object>) raw;
-                for (Map.Entry<Object, Object> entry : rawMap.entrySet()) {
-                    if (entry.getKey() == null || entry.getValue() == null) continue;
-                    String k = entry.getKey() instanceof byte[]
-                            ? new String((byte[]) entry.getKey(), StandardCharsets.UTF_8)
-                            : entry.getKey().toString();
-                    String v = entry.getValue() instanceof byte[]
-                            ? new String((byte[]) entry.getValue(), StandardCharsets.UTF_8)
-                            : entry.getValue().toString();
-                    redisMap.put(k, v);
+            if (pipelineResults != null && i < pipelineResults.size()) {
+                Object raw = pipelineResults.get(i);
+                if (raw instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<Object, Object> rawMap = (Map<Object, Object>) raw;
+                    for (Map.Entry<Object, Object> entry : rawMap.entrySet()) {
+                        if (entry.getKey() == null || entry.getValue() == null) continue;
+                        String k = entry.getKey() instanceof byte[]
+                                ? new String((byte[]) entry.getKey(), StandardCharsets.UTF_8)
+                                : entry.getKey().toString();
+                        String v = entry.getValue() instanceof byte[]
+                                ? new String((byte[]) entry.getValue(), StandardCharsets.UTF_8)
+                                : entry.getValue().toString();
+                        redisMap.put(k, v);
+                    }
                 }
             }
-            if (redisMap.isEmpty()) continue;
+
+            if (redisMap.isEmpty()) {
+                Map<Object, Object> rebuilt = rebuildRedisVoteState(dto.getId(), dto.getJudgeIds());
+                if (rebuilt.isEmpty()) continue;
+                for (Map.Entry<Object, Object> entry : rebuilt.entrySet()) {
+                    if (entry.getKey() == null || entry.getValue() == null) continue;
+                    redisMap.put(entry.getKey().toString(), entry.getValue().toString());
+                }
+            }
 
             // Records are immutable — rebuild each option with updated count
             List<OptionResponseDTO> enriched = dto.getOptions().stream()
@@ -205,7 +295,6 @@ public class PollServiceImpl implements PollService {
 
                         int audienceCount = audienceVal != null ? Integer.parseInt(audienceVal) : 0;
                         int judgeCount = judgeVal != null ? Integer.parseInt(judgeVal) : 0;
-                        int redisTotal = audienceCount + judgeCount;
 
                         return buildEnrichedOption(option, audienceCount, judgeCount);
                     })
@@ -426,26 +515,23 @@ public class PollServiceImpl implements PollService {
         } else if (visibility == PollVisibility.PRIVATE) {
             if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
                 List<String> emails = savedPoll.getInvitedEmails();
+                // Fetch invited users once — reuse for both WS push and notification
                 List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
+
+                String inviterName = savedPoll.isAnonymous()
+                        ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId())
+                        : creator.getUsername();
+                String inviterAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
+
                 for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
+                    // WS: push poll card to invited user's dashboard
                     messagingTemplate.convertAndSendToUser(
                             invitedUser.getId().toString(),
                             WebSocketTopics.PRIVATE_POLL_EVENTS,
                             payload
                     );
-                }
-            }
 
-            if (savedPoll.getInvitedEmails() != null && !savedPoll.getInvitedEmails().isEmpty()) {
-                List<String> emails = savedPoll.getInvitedEmails();
-                List<com.xxxx.systemvotting.modules.user.entity.User> invitedUsers = userRepository.findByEmailIn(emails);
-
-                for (com.xxxx.systemvotting.modules.user.entity.User invitedUser : invitedUsers) {
-                    String inviterName = savedPoll.isAnonymous()
-                            ? com.xxxx.systemvotting.common.utils.AnonymousIdentityUtil.getCreatorAnonymousName(savedPoll.getId())
-                            : creator.getUsername();
-                    String inviterAvatar = savedPoll.isAnonymous() ? null : creator.getAvatarUrl();
-
+                    // Notification: invite message
                     asyncNotificationService.createNotificationAsync(
                             invitedUser.getId(), inviterName, inviterAvatar, "PRIVATE_POLL_INVITATION",
                             String.format("đã mời bạn tham gia cuộc bình chọn riêng tư: \"%s\"", savedPoll.getTitle()),
@@ -665,6 +751,25 @@ public class PollServiceImpl implements PollService {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<Poll> pollPage = pollRepository.findPollsVotedByUser(userId, pageable);
 
+        // Merge Redis-pending votes (not yet flushed to DB by VoteEventConsumer)
+        // so the explore page immediately shows "Đã bình chọn" right after voting.
+        Set<Long> redisPendingIds = new java.util.HashSet<>();
+        try {
+            String userVotedPollKey = RedisKeyUtils.getUserVotedPollsKey(userId);
+            Set<String> redisMembers = stringRedisTemplate.opsForSet().members(userVotedPollKey);
+            if (redisMembers != null) {
+                for (String m : redisMembers) {
+                    try { redisPendingIds.add(Long.parseLong(m)); } catch (NumberFormatException ignored) { /* skip malformed */ }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Redis read failed for user voted polls key, userId={}: {}", userId, e.getMessage());
+        }
+
+        // Remove IDs already in DB result to avoid duplicates
+        Set<Long> dbIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toSet());
+        redisPendingIds.removeAll(dbIds);
+
         List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toList());
         Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
 
@@ -678,10 +783,30 @@ public class PollServiceImpl implements PollService {
                     return dto;
                 })
                 .collect(Collectors.toList());
+
+        // Append polls from Redis that aren't in DB yet — only on first page to keep pagination correct
+        long extraCount = 0;
+        if (pageNumber == 0 && !redisPendingIds.isEmpty()) {
+            List<Poll> pendingPolls = pollRepository.findAllById(redisPendingIds);
+            List<Long> pendingPollIds = pendingPolls.stream().map(Poll::getId).collect(Collectors.toList());
+            Map<Long, Integer> pendingCommentCounts = getCommentCountsForPolls(pendingPollIds);
+            for (Poll poll : pendingPolls) {
+                PollResponseDTO dto = pollMapper.toDto(poll);
+                dto.setCommentCount(pendingCommentCounts.getOrDefault(poll.getId(), 0));
+                if (poll.getCategory() != null) {
+                    dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+                }
+                votedPollDtos.add(dto);
+            }
+            extraCount = pendingPolls.size();
+        }
+
         enrichPollListWithRedisData(votedPollDtos);
-        Page<PollResponseDTO> resultPage = new PageImpl<>(votedPollDtos, pageable, pollPage.getTotalElements());
+        // Use DB page for pagination metadata; Redis extras are bonus entries on first page only
+        Page<PollResponseDTO> resultPage = new PageImpl<>(votedPollDtos, pageable, pollPage.getTotalElements() + extraCount);
         return PageResponse.from(resultPage);
     }
+
 
     /**
      * Parses a CSV text containing usernames or emails (one per line, or comma-separated).
@@ -754,5 +879,99 @@ public class PollServiceImpl implements PollService {
                 .map(u -> new JudgeCandidateDTO(
                         u.getId(), u.getUsername(), u.getEmail(), u.getAvatarUrl(), keyword, true))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PollResponseDTO> getSimilarPolls(Long id) {
+        Poll poll = pollRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (poll.getCategory() == null) {
+            return List.of();
+        }
+        List<Poll> similarPolls = pollRepository.findTop5ByCategoryIdAndIdNotOrderByCreatedAtDesc(poll.getCategory().getId(), id);
+        List<PollResponseDTO> dtos = pollMapper.toDtoList(similarPolls);
+        for (PollResponseDTO dto : dtos) {
+            if (poll.getCategory() != null) {
+                dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+            }
+        }
+        enrichPollListWithRedisData(dtos);
+        return dtos;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.xxxx.systemvotting.modules.poll.dto.TimePointDTO> getPollAnalytics(Long id, Long userId) {
+        Poll poll = pollRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (!poll.getCreator().getId().equals(userId)) {
+            throw new AppException(ErrorCode.POLL_ACCESS_DENIED);
+        }
+
+        List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollId(id);
+
+        boolean groupByHour = false;
+        if (poll.getStartTime() != null && poll.getEndTime() != null) {
+            long days = java.time.Duration.between(poll.getStartTime(), poll.getEndTime()).toDays();
+            if (days <= 3) groupByHour = true;
+        } else if (poll.getCreatedAt() != null) {
+            long days = java.time.Duration.between(poll.getCreatedAt(), java.time.LocalDateTime.now()).toDays();
+            if (days <= 3) groupByHour = true;
+        }
+
+        java.time.format.DateTimeFormatter formatter = groupByHour ?
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00") :
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        java.util.Map<String, java.util.Map<String, Integer>> analyticsMap = new java.util.TreeMap<>();
+
+        for (com.xxxx.systemvotting.modules.vote.entity.Vote vote : votes) {
+            if (vote.getCreatedAt() == null || vote.getOption() == null) continue;
+            String timeKey = vote.getCreatedAt().format(formatter);
+            String optionId = vote.getOption().getId().toString();
+
+            analyticsMap.putIfAbsent(timeKey, new java.util.HashMap<>());
+            java.util.Map<String, Integer> optionCounts = analyticsMap.get(timeKey);
+            optionCounts.put(optionId, optionCounts.getOrDefault(optionId, 0) + 1);
+        }
+
+        List<com.xxxx.systemvotting.modules.poll.dto.TimePointDTO> result = new ArrayList<>();
+        for (java.util.Map.Entry<String, java.util.Map<String, Integer>> entry : analyticsMap.entrySet()) {
+            result.add(new com.xxxx.systemvotting.modules.poll.dto.TimePointDTO(entry.getKey(), entry.getValue()));
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String exportPollVotes(Long id, Long userId) {
+        Poll poll = pollRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (!poll.getCreator().getId().equals(userId)) {
+            throw new AppException(ErrorCode.POLL_ACCESS_DENIED);
+        }
+
+        List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollId(id);
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("Username,Email,Option,Role,Time\n");
+
+        List<Long> judgeIds = pollMapper.mapMembersToJudgeIds(poll.getMembers());
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        for (com.xxxx.systemvotting.modules.vote.entity.Vote vote : votes) {
+            String username = vote.getUser() != null ? vote.getUser().getUsername() : "Anonymous";
+            String email = vote.getUser() != null && vote.getUser().getEmail() != null ? vote.getUser().getEmail() : "";
+            String optionText = vote.getOption() != null ? vote.getOption().getText() : "Unknown";
+            boolean isJudge = vote.getUser() != null && judgeIds.contains(vote.getUser().getId());
+            String role = isJudge ? "JUDGE" : "AUDIENCE";
+            String time = vote.getCreatedAt() != null ? vote.getCreatedAt().format(formatter) : "";
+
+            username = username.replace("\"", "\"\"");
+            optionText = optionText.replace("\"", "\"\"");
+
+            csv.append(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                    username, email, optionText, role, time));
+        }
+
+        return csv.toString();
     }
 }

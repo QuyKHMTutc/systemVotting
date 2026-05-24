@@ -29,4 +29,10 @@ public interface PollService {
     List<JudgeCandidateDTO> parseJudgesFromCsv(String csvContent);
 
     List<JudgeCandidateDTO> searchUsers(String keyword);
+
+    List<PollResponseDTO> getSimilarPolls(Long id);
+
+    List<com.xxxx.systemvotting.modules.poll.dto.TimePointDTO> getPollAnalytics(Long id, Long userId);
+
+    String exportPollVotes(Long id, Long userId);
 }

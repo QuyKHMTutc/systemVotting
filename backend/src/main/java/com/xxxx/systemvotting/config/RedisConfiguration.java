@@ -181,8 +181,8 @@ public class RedisConfiguration implements CachingConfigurer {
                         .fromSerializer(valueSerializer));
 
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
-        // DB snapshot only for poll detail; live vote counts merged after cache (see PollDetailsCacheLoader)
-        cacheConfigs.put("pollDetails",      defaultConfig.entryTtl(Duration.ofMinutes(15)));
+        // DB snapshot + live Redis count overlay for poll detail page
+        cacheConfigs.put("pollDetails_v2",   defaultConfig.entryTtl(Duration.ofMinutes(15)));
         cacheConfigs.put("comments",         defaultConfig.entryTtl(Duration.ofMinutes(3)));
         cacheConfigs.put("userProfile",      defaultConfig.entryTtl(Duration.ofMinutes(15)));
         cacheConfigs.put("users",            defaultConfig.entryTtl(Duration.ofMinutes(15)));

@@ -14,20 +14,22 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Enforces a sliding-window rate limit on vote submissions per user.
+ * Enforces sliding-window rate limits on vote and comment submissions per user.
  *
  * Strategy: Atomic Redis INCR + EXPIRE via Lua to avoid TOCTOU race conditions.
- * Config:   Max 5 votes per 60-second window per user.
+ * Vote:    Max 5 per 60-second window.
+ * Comment: Max 10 per 60-second window.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RateLimitService {
 
-    private final StringRedisTemplate stringRedisTemplate;   // ← explicit type, no FQCN inline
+    private final StringRedisTemplate stringRedisTemplate;
 
-    private static final int      MAX_VOTES_PER_WINDOW = 5;
-    private static final Duration WINDOW_DURATION      = Duration.ofMinutes(1);
+    private static final int      MAX_VOTES_PER_WINDOW    = 5;
+    private static final int      MAX_COMMENTS_PER_WINDOW = 10;
+    private static final Duration WINDOW_DURATION         = Duration.ofMinutes(1);
 
     /**
      * Lua ensures INCR + EXPIRE are atomic (no race between two concurrent first-voters).
@@ -46,8 +48,7 @@ public class RateLimitService {
             new DefaultRedisScript<>(RATE_LIMIT_LUA, Long.class);
 
     /**
-     * Increments the user's attempt counter and throws {@link AppException}
-     * with {@code RATE_LIMIT_EXCEEDED} if the limit is breached.
+     * Increments the user's vote attempt counter and throws if limit is breached.
      *
      * @param userId the authenticated user's ID
      * @throws AppException if the user has exceeded the vote rate limit
@@ -61,7 +62,28 @@ public class RateLimitService {
         );
 
         if (count != null && count > MAX_VOTES_PER_WINDOW) {
-            log.warn("Rate limit exceeded: userId={}, count={}/{}", userId, count, MAX_VOTES_PER_WINDOW);
+            log.warn("Vote rate limit exceeded: userId={}, count={}/{}", userId, count, MAX_VOTES_PER_WINDOW);
+            throw new AppException(ErrorCode.RATE_LIMIT_EXCEEDED);
+        }
+    }
+
+    /**
+     * Increments the user's comment attempt counter and throws if limit is breached.
+     * Limit: {@value MAX_COMMENTS_PER_WINDOW} comments per minute.
+     *
+     * @param userId the authenticated user's ID
+     * @throws AppException if the user has exceeded the comment rate limit
+     */
+    public void checkAndRecordCommentAttempt(Long userId) {
+        String key   = RedisKeyUtils.getCommentRateLimitKey(userId);
+        Long   count = stringRedisTemplate.execute(
+                rateLimitScript,
+                List.of(key),
+                String.valueOf(WINDOW_DURATION.getSeconds())
+        );
+
+        if (count != null && count > MAX_COMMENTS_PER_WINDOW) {
+            log.warn("Comment rate limit exceeded: userId={}, count={}/{}", userId, count, MAX_COMMENTS_PER_WINDOW);
             throw new AppException(ErrorCode.RATE_LIMIT_EXCEEDED);
         }
     }
