@@ -39,8 +39,8 @@ public class PaymentService {
     private static final long GO_PRICE_VND = 50_000L;
     private static final long PLUS_PRICE_VND = 200_000L;
     private static final long PRO_PRICE_VND = 500_000L;
-   // private static final int PLAN_DURATION_DAYS = 30;
-    private static final int PLAN_DURATION_MINUTES = 500;
+    private static final int PLAN_DURATION_DAYS = 30;
+    //private static final int PLAN_DURATION_MINUTES = 500;
 
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final UserRepository userRepository;
@@ -250,7 +250,7 @@ public class PaymentService {
                         txn.getStatus(),
                         txn.getCreatedAt(),
                         //txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(PLAN_DURATION_DAYS) : null
-                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_MINUTES) : null
+                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_DAYS) : null
                 ))
                 .collect(Collectors.toList());
 
@@ -279,7 +279,7 @@ public class PaymentService {
                         txn.getTargetPlan(),
                         txn.getStatus(),
                         txn.getCreatedAt(),
-                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_MINUTES) : null,
+                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_DAYS) : null,
                         txn.getUser().getId(),
                         txn.getUser().getUsername(),
                         txn.getUser().getEmail()
@@ -306,7 +306,7 @@ public class PaymentService {
 
         LocalDateTime base = currentExpiration != null && currentExpiration.isAfter(now) ? currentExpiration : now;
         //return base.plusDays(PLAN_DURATION_DAYS);
-        return base.plusMinutes(PLAN_DURATION_MINUTES);
+        return base.plusMinutes(PLAN_DURATION_DAYS);
     }
 
     @Scheduled(fixedRate = 60000) // Run every 60 seconds

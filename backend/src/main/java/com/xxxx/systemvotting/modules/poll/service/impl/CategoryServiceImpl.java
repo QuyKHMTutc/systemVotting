@@ -25,12 +25,30 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public List<CategoryDTO> getAllCategories() {
-        // Fetch poll counts
-        java.util.Map<Long, Long> pollCounts = pollRepository.countPollsByCategory().stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (Long) row[1]
-                ));
+        return getAllCategories("ACTIVE");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryDTO> getAllCategories(String status) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.util.Map<Long, Long> pollCounts;
+
+        if ("ENDED".equalsIgnoreCase(status)) {
+            // Đếm poll đã kết thúc (endTime <= now)
+            pollCounts = pollRepository.countEndedPollsByCategory(now).stream()
+                    .collect(Collectors.toMap(
+                            row -> (Long) row[0],
+                            row -> (Long) row[1]
+                    ));
+        } else {
+            // Mặc định: đếm poll đang diễn ra (ACTIVE, endTime > now)
+            pollCounts = pollRepository.countActivePollsByCategory(now).stream()
+                    .collect(Collectors.toMap(
+                            row -> (Long) row[0],
+                            row -> (Long) row[1]
+                    ));
+        }
 
         return categoryRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder"))
                 .stream()
@@ -49,7 +67,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
         CategoryDTO dto = toDTO(category);
         
-        java.util.Map<Long, Long> pollCounts = pollRepository.countPollsByCategory().stream()
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.util.Map<Long, Long> pollCounts = pollRepository.countActivePollsByCategory(now).stream()
                 .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> (Long) row[1]

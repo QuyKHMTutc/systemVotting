@@ -58,11 +58,16 @@ public class RedisDbSyncJob {
             boolean isUpdated = false;
             for (var option : poll.getOptions()) {
                 String optionIdStr = option.getId().toString();
-                if (!redisVotes.containsKey(optionIdStr)) {
+                // Redis lưu theo format: "{optionId}:AUDIENCE" và "{optionId}:JUDGE"
+                Object rawAudience = redisVotes.get(optionIdStr + ":AUDIENCE");
+                Object rawJudge    = redisVotes.get(optionIdStr + ":JUDGE");
+                // Nếu không có key nào của option này trong Redis → bỏ qua
+                if (rawAudience == null && rawJudge == null) {
                     continue;
                 }
-                Object raw = redisVotes.get(optionIdStr);
-                int trueRedisCount = parseVoteCount(raw);
+                int audienceCount = parseVoteCount(rawAudience);
+                int judgeCount    = parseVoteCount(rawJudge);
+                int trueRedisCount = audienceCount + judgeCount;
                 if (option.getVoteCount() == null || option.getVoteCount() != trueRedisCount) {
                     option.setVoteCount(trueRedisCount);
                     isUpdated = true;

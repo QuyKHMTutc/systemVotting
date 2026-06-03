@@ -124,10 +124,15 @@ public class CommentServiceImpl implements CommentService {
 
             originalParent = parent;
 
-            if (parent.getParent() != null) {
-                commentBuilder.parent(parent.getParent());
+            commentBuilder.parent(parent);
+
+            if (parent.getRoot() != null) {
+                commentBuilder.root(parent.getRoot());
+            } else if (parent.getParent() != null) {
+                // Legacy data compatibility
+                commentBuilder.root(parent.getParent());
             } else {
-                commentBuilder.parent(parent);
+                commentBuilder.root(parent);
             }
         }
 
@@ -142,7 +147,16 @@ public class CommentServiceImpl implements CommentService {
                 ? anonymousDisplayNames.getOrDefault(currentUser.getId(), "Người dùng ẩn danh") 
                 : currentUser.getUsername();
         String actorAvatar = comment.isAnonymous() ? null : currentUser.getAvatarUrl();
-        String shortMessage = request.content().length() > 50 ? request.content().substring(0, 47) + "..." : request.content();
+        
+        // Loại bỏ tiền tố @username nếu có để thông báo trông sạch sẽ hơn (Facebook style)
+        String rawContentForNotification = request.content();
+        if (request.parentId() != null && rawContentForNotification.startsWith("@")) {
+            int spaceIndex = rawContentForNotification.indexOf(' ');
+            if (spaceIndex != -1) {
+                rawContentForNotification = rawContentForNotification.substring(spaceIndex + 1).trim();
+            }
+        }
+        String shortMessage = rawContentForNotification.length() > 50 ? rawContentForNotification.substring(0, 47) + "..." : rawContentForNotification;
 
         if (originalParent != null) {
             User directTarget = originalParent.getUser();
@@ -183,6 +197,21 @@ public class CommentServiceImpl implements CommentService {
         // anonymousDisplayNames was already calculated above
 
         CommentResponseDTO responseDTO = mapToDTO(comment, voteStatus, anonymousDisplayNames, 0L, false, true);
+
+        // Apply max visual depth 3 logic for Realtime and API Response
+        if (responseDTO.getParentId() != null) {
+            Comment ancestor = originalParent;
+            while (ancestor != null && ancestor.getParent() != null) {
+                Comment nextAncestor = ancestor.getParent();
+                if (nextAncestor == null || nextAncestor.getParent() == null) {
+                    break;
+                }
+                ancestor = nextAncestor;
+            }
+            if (ancestor != null) {
+                responseDTO.setParentId(ancestor.getId());
+            }
+        }
 
         realTimeService.broadcast("/topic/polls/" + poll.getId() + "/comments", responseDTO);
 
@@ -262,9 +291,33 @@ public class CommentServiceImpl implements CommentService {
         Map<Long, List<CommentResponseDTO>> repliesByParent = flat.stream()
                 .filter(c -> c.getParentId() != null)
                 .sorted(Comparator.comparing(CommentResponseDTO::getCreatedAt))
-                .collect(Collectors.groupingBy(CommentResponseDTO::getParentId));
+                .collect(Collectors.groupingBy(c -> {
+                    // Max visual depth is 3 (Root = 1, Reply = 2, SubReply = 3).
+                    // If c is Level 2 (parent is Root), visual parent is its true parent.
+                    // If c is Level 3+ (parent is not Root), visual parent is its Level 2 Ancestor.
+                    Long currentParentId = c.getParentId();
+                    CommentResponseDTO parentDto = byId.get(currentParentId);
+                    
+                    if (parentDto == null || parentDto.getParentId() == null) {
+                        return currentParentId; // c is Level 2
+                    }
+                    
+                    // Climb up to find Level 2 Ancestor
+                    CommentResponseDTO ancestor = parentDto;
+                    while (ancestor != null && ancestor.getParentId() != null) {
+                        CommentResponseDTO nextAncestor = byId.get(ancestor.getParentId());
+                        if (nextAncestor == null || nextAncestor.getParentId() == null) {
+                            break; // ancestor is Level 2
+                        }
+                        ancestor = nextAncestor;
+                    }
+                    return ancestor != null ? ancestor.getId() : currentParentId;
+                }));
 
-        rootDtos.forEach(root -> root.setReplies(repliesByParent.getOrDefault(root.getId(), List.of())));
+        // Recursively build the tree
+        flat.forEach(c -> c.setReplies(repliesByParent.getOrDefault(c.getId(), List.of())));
+
+        // Only return the root comments (their replies are now fully nested)
 
         Page<CommentResponseDTO> dtoPage = new PageImpl<>(rootDtos, pageable, rootPage.getTotalElements());
         return new CommentThreadResponse(PageResponse.from(dtoPage), totalAll);
@@ -352,11 +405,18 @@ public class CommentServiceImpl implements CommentService {
 
         // If it's a root comment, delete all its replies first
         if (comment.getParent() == null) {
-            List<Long> replyIds = commentRepository.findReplyIdsByParentId(commentId);
+            List<Long> replyIds = commentRepository.findReplyIdsByRootOrParentId(commentId);
             if (!replyIds.isEmpty()) {
                 commentLikeRepository.deleteByCommentIdIn(replyIds);
             }
-            commentRepository.deleteByParentId(commentId);
+            commentRepository.deleteByRootOrParentId(commentId);
+        } else {
+            // If it's a reply, maybe it has sub-replies (although UI flattens it, DB tracks them)
+            List<Long> subReplyIds = commentRepository.findReplyIdsByRootOrParentId(commentId);
+            if (!subReplyIds.isEmpty()) {
+                commentLikeRepository.deleteByCommentIdIn(subReplyIds);
+                commentRepository.deleteByRootOrParentId(commentId);
+            }
         }
 
         commentLikeRepository.deleteByCommentId(commentId);

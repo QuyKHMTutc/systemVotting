@@ -83,10 +83,17 @@ public class Comment {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // The parent comment (if this is a reply)
+    // The immediate parent comment (if this is a reply, exactly who is being replied to)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Comment parent;
+
+    // The top-level root comment (for grouping all descendants into a flat 2-level UI)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "root_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Comment root;
 }

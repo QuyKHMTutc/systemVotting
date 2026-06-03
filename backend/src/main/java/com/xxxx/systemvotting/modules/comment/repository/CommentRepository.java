@@ -33,11 +33,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     Page<Comment> findRootCommentsByPollId(@Param("pollId") Long pollId, Pageable pageable);
 
     /**
-     * Direct replies for the given root comment ids (flat under root — see createComment logic).
+     * Direct and deep replies for the given root comment ids (uses root_id or fallback to parent_id for legacy data).
      */
-    @EntityGraph(attributePaths = {"user", "poll", "parent"})
-    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND c.parent.id IN :parentIds AND c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt ASC")
-    List<Comment> findRepliesForRoots(@Param("pollId") Long pollId, @Param("parentIds") Collection<Long> parentIds);
+    @EntityGraph(attributePaths = {"user", "poll", "parent", "root"})
+    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND (c.root.id IN :rootIds OR (c.root IS NULL AND c.parent.id IN :rootIds)) AND c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt ASC")
+    List<Comment> findRepliesForRoots(@Param("pollId") Long pollId, @Param("rootIds") Collection<Long> rootIds);
 
     /**
      * Global anonymous label order for a poll (one row per anonymous user, chronological).
@@ -68,11 +68,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     void deleteByPoll_Id(Long pollId);
 
     @org.springframework.data.jpa.repository.Modifying
-    @Query("DELETE FROM Comment c WHERE c.parent.id = :parentId")
-    void deleteByParentId(@Param("parentId") Long parentId);
+    @Query("DELETE FROM Comment c WHERE c.root.id = :id OR (c.root IS NULL AND c.parent.id = :id) OR c.parent.id = :id")
+    void deleteByRootOrParentId(@Param("id") Long id);
 
-    @Query("SELECT c.id FROM Comment c WHERE c.parent.id = :parentId")
-    List<Long> findReplyIdsByParentId(@Param("parentId") Long parentId);
+    @Query("SELECT c.id FROM Comment c WHERE c.root.id = :id OR (c.root IS NULL AND c.parent.id = :id) OR c.parent.id = :id")
+    List<Long> findReplyIdsByRootOrParentId(@Param("id") Long id);
 
     long countByPollId(Long pollId);
 

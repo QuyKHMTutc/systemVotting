@@ -12,6 +12,12 @@ public interface CategoryService {
     List<CategoryDTO> getAllCategories();
 
     /**
+     * Returns all categories with pollCount filtered by poll status.
+     * @param status "ACTIVE" = chỉ đếm poll đang diễn ra, "ENDED" = đã kết thúc, other = ACTIVE
+     */
+    List<CategoryDTO> getAllCategories(String status);
+
+    /**
      * Finds a category by its slug.
      */
     CategoryDTO getCategoryBySlug(String slug);

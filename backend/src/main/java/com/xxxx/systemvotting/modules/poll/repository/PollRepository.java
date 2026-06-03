@@ -160,8 +160,33 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     @Query("SELECT COUNT(p) FROM Poll p WHERE p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS")
     long countSuspiciousPolls();
 
-    @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL AND (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) GROUP BY p.category.id")
+    @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL " +
+           "AND (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
+           "GROUP BY p.category.id")
     List<Object[]> countPollsByCategory();
 
     List<Poll> findByCategory_Id(Long categoryId);
+
+    /**
+     * Đếm số poll ACTIVE (chưa kết thúc) công khai, đã được duyệt (SAFE) theo category.
+     * Dùng cho badge "Số lượng" trong danh mục sidebar — khớp với chế độ "Mới nhất" (chỉ hiện ACTIVE polls).
+     */
+    @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL " +
+           "AND (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
+           "AND p.endTime > :now " +
+           "GROUP BY p.category.id")
+    List<Object[]> countActivePollsByCategory(@Param("now") java.time.LocalDateTime now);
+
+    /**
+     * Đếm số poll ĐÃ KẾT THÚC (endTime <= now) công khai, đã được duyệt (SAFE) theo category.
+     * Dùng cho badge danh mục sidebar khi user chọn bộ lọc "Đã kết thúc".
+     */
+    @Query("SELECT p.category.id, COUNT(p) FROM Poll p WHERE p.category IS NOT NULL " +
+           "AND (p.visibility IS NULL OR p.visibility <> com.xxxx.systemvotting.modules.poll.enums.PollVisibility.PRIVATE) " +
+           "AND (p.moderationStatus IS NULL OR p.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SAFE) " +
+           "AND p.endTime <= :now " +
+           "GROUP BY p.category.id")
+    List<Object[]> countEndedPollsByCategory(@Param("now") java.time.LocalDateTime now);
 }

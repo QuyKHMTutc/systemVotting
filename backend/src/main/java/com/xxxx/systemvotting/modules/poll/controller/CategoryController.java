@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,10 +29,11 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @Operation(summary = "Lấy tất cả danh mục", description = "Trả về danh sách danh mục sắp xếp theo sortOrder tăng dần")
+    @Operation(summary = "Lấy tất cả danh mục", description = "Trả về danh sách danh mục sắp xếp theo sortOrder tăng dần. Tham số status=ACTIVE|ENDED quyết định pollCount được đếm theo loại poll nào.")
     @GetMapping
-    public ApiResponse<List<CategoryDTO>> getAllCategories() {
-        List<CategoryDTO> categories = categoryService.getAllCategories();
+    public ApiResponse<List<CategoryDTO>> getAllCategories(
+            @RequestParam(defaultValue = "ACTIVE") String status) {
+        List<CategoryDTO> categories = categoryService.getAllCategories(status);
         return ApiResponse.<List<CategoryDTO>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Success")
