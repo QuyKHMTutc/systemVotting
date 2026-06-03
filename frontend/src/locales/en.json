@@ -469,5 +469,18 @@
     "audience": "Audience",
     "weightDesc": "weight {{weight}}%",
     "votesLower": "votes"
+  },
+  "passwordStrength": {
+    "ruleMinLength": "At least 8 characters",
+    "ruleUppercase": "Uppercase letter (A-Z)",
+    "ruleLowercase": "Lowercase letter (a-z)",
+    "ruleNumber": "Number (0-9)",
+    "ruleSpecial": "Special character (!@#$\u2026)",
+    "levelVeryWeak": "Very weak",
+    "levelWeak": "Weak",
+    "levelMedium": "Medium",
+    "levelStrong": "Strong",
+    "levelVeryStrong": "Very strong",
+    "errorInvalid": "Password must have at least 8 characters, including uppercase, lowercase, number and special character."
   }
 }

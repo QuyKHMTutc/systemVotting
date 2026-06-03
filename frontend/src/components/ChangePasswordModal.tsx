@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { userService } from '../services/user.service';
 import { KeyRound, Eye, EyeOff } from 'lucide-react';
+import PasswordStrength, { isPasswordValid } from './PasswordStrength';
 
 interface ChangePasswordModalProps {
     isOpen: boolean;
@@ -22,6 +23,8 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordFocused, setPasswordFocused] = useState(false);
 
     if (!isOpen) return null;
 
@@ -29,14 +32,15 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
         e.preventDefault();
         setError('');
         setSuccess('');
+        setPasswordError('');
 
-        if (newPassword !== confirmPassword) {
-            setError(t('changePassword.errorMismatch'));
+        if (!isPasswordValid(newPassword)) {
+            setPasswordError(t('passwordStrength.errorInvalid'));
             return;
         }
 
-        if (newPassword.length < 6) {
-            setError(t('changePassword.errorMinLength'));
+        if (newPassword !== confirmPassword) {
+            setError(t('changePassword.errorMismatch'));
             return;
         }
 
@@ -61,6 +65,7 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
         setConfirmPassword('');
         setError('');
         setSuccess('');
+        setPasswordError('');
         onClose();
     };
 
@@ -130,7 +135,9 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
                                 id="newPassword"
                                 type={showNew ? 'text' : 'password'}
                                 value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
+                                onChange={(e) => { setNewPassword(e.target.value); if (passwordError) setPasswordError(''); }}
+                                onFocus={() => setPasswordFocused(true)}
+                                onBlur={() => setPasswordFocused(false)}
                                 className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:border-transparent focus:ring-2 focus:ring-rose-500 transition-all pr-12"
                                 placeholder={t('changePassword.newPasswordPlaceholder')}
                                 required
@@ -138,6 +145,10 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
                             <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
                                 {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
+                            {passwordError && (
+                                <p className="text-red-500 dark:text-red-400 text-xs font-medium mt-1">{passwordError}</p>
+                            )}
+                            <PasswordStrength password={newPassword} show={passwordFocused} />
                         </div>
 
                         {/* Confirm Password */}

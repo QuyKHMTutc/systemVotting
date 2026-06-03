@@ -470,5 +470,18 @@
     "audience": "Khán giả",
     "weightDesc": "trọng số {{weight}}%",
     "votesLower": "phiếu"
+  },
+  "passwordStrength": {
+    "ruleMinLength": "Ít nhất 8 ký tự",
+    "ruleUppercase": "Có chữ hoa (A-Z)",
+    "ruleLowercase": "Có chữ thường (a-z)",
+    "ruleNumber": "Có chữ số (0-9)",
+    "ruleSpecial": "Có ký tự đặc biệt (!@#$…)",
+    "levelVeryWeak": "Rất yếu",
+    "levelWeak": "Yếu",
+    "levelMedium": "Trung bình",
+    "levelStrong": "Khá mạnh",
+    "levelVeryStrong": "Mạnh",
+    "errorInvalid": "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt."
   }
 }

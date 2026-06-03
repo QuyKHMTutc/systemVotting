@@ -3,7 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import { useTranslation } from 'react-i18next';
 import OtpInput from '../components/OtpInput';
-import PasswordStrength from '../components/PasswordStrength';
+import PasswordStrength, { isPasswordValid } from '../components/PasswordStrength';
 import LegalModal from '../components/LegalModal';
 import type { LegalModalType } from '../components/LegalModal';
 import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, MailCheck, Check, Fingerprint, Activity, Zap } from 'lucide-react';
@@ -26,6 +26,8 @@ const Register = () => {
 
     // Form logic state
     const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordFocused, setPasswordFocused] = useState(false);
 
     // OTP form state
     const [otp, setOtp] = useState('');
@@ -85,8 +87,15 @@ const Register = () => {
         e.preventDefault();
         setError('');
         setSuccess('');
+        setPasswordError('');
 
         if (!validateEmail(email)) {
+            triggerShake();
+            return;
+        }
+
+        if (!isPasswordValid(password)) {
+            setPasswordError(t('passwordStrength.errorInvalid'));
             triggerShake();
             return;
         }
@@ -276,11 +285,13 @@ const Register = () => {
                                             id="password"
                                             type={showPassword ? "text" : "password"}
                                             value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/20 hover:border-slate-400 dark:hover:border-white/30 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white dark:focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium shadow-sm"
+                                            onChange={(e) => { setPassword(e.target.value); if (passwordError) setPasswordError(''); }}
+                                            onFocus={() => setPasswordFocused(true)}
+                                            onBlur={() => setPasswordFocused(false)}
+                                            className={`w-full pl-11 pr-12 py-3.5 rounded-xl bg-white dark:bg-white/5 border text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:bg-white dark:focus:bg-white/10 transition-all font-medium shadow-sm ${passwordError ? 'border-red-500/50 focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-slate-300 dark:border-white/20 hover:border-slate-400 dark:hover:border-white/30 focus:border-pink-500 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)]'}`}
                                             placeholder={t('auth.passwordPlaceholder')}
                                             required
-                                            minLength={6}
+                                            minLength={8}
                                         />
                                         <button
                                             type="button"
@@ -292,7 +303,10 @@ const Register = () => {
                                             {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                                         </button>
                                     </div>
-                                    <PasswordStrength password={password} />
+                                    <div className={`transition-all duration-300 overflow-hidden ${passwordError ? 'max-h-10 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                        <p className="text-red-500 dark:text-red-400 text-xs font-medium ml-1 mt-1">{passwordError}</p>
+                                    </div>
+                                    <PasswordStrength password={password} show={passwordFocused} />
                                 </div>
 
                                 <div className="space-y-1.5">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import OtpInput from '../components/OtpInput';
-import PasswordStrength from '../components/PasswordStrength';
+import PasswordStrength, { isPasswordValid } from '../components/PasswordStrength';
 import { ShieldCheck, Lock, Eye, EyeOff, Loader2, ArrowLeft, Activity, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,6 +18,8 @@ const ResetPassword = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordFocused, setPasswordFocused] = useState(false);
     const [success, setSuccess] = useState((location.state as any)?.message || '');
     const [loading, setLoading] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
@@ -62,14 +64,16 @@ const ResetPassword = () => {
         e.preventDefault();
         setError('');
         setSuccess('');
+        setPasswordError('');
 
-        if (newPassword !== confirmPassword) {
-            setError(t('resetPassword.passwordsNotMatch'));
+        if (!isPasswordValid(newPassword)) {
+            setPasswordError(t('passwordStrength.errorInvalid'));
             triggerShake();
             return;
         }
-        if (newPassword.length < 6) {
-            setError(t('resetPassword.passwordMinLength'));
+
+        if (newPassword !== confirmPassword) {
+            setError(t('resetPassword.passwordsNotMatch'));
             triggerShake();
             return;
         }
@@ -92,7 +96,7 @@ const ResetPassword = () => {
         }
     };
 
-    const isFormValid = email.length > 0 && otp.length === 6 && newPassword.length >= 6 && confirmPassword.length >= 6;
+    const isFormValid = email.length > 0 && otp.length === 6 && isPasswordValid(newPassword) && newPassword === confirmPassword;
 
     return (
         <div className="min-h-screen flex w-full">
@@ -155,10 +159,12 @@ const ResetPassword = () => {
                                         type={showPassword ? "text" : "password"}
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
+                                        onFocus={() => setPasswordFocused(true)}
+                                        onBlur={() => setPasswordFocused(false)}
                                         className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/20 hover:border-slate-400 dark:hover:border-white/30 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 focus:outline-none focus:border-pink-500 focus:bg-white dark:focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all font-medium shadow-sm"
                                         placeholder={t('resetPassword.passwordPlaceholder')}
                                         required
-                                        minLength={6}
+                                        minLength={8}
                                         disabled={loading}
                                     />
                                     <button
@@ -172,7 +178,10 @@ const ResetPassword = () => {
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
                                 </div>
-                                <PasswordStrength password={newPassword} />
+                                <div className={`transition-all duration-300 overflow-hidden ${passwordError ? 'max-h-10 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                    <p className="text-red-500 dark:text-red-400 text-xs font-medium ml-1 mt-1">{passwordError}</p>
+                                </div>
+                                <PasswordStrength password={newPassword} show={passwordFocused} />
                             </div>
 
                             <div className="space-y-1.5">

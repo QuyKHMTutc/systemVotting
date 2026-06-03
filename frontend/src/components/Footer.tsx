@@ -50,7 +50,7 @@ const Footer = () => {
             <div className="-mt-[21px] w-full h-44 sm:h-52 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-[0_0_15px_rgba(255,255,255,0.05)] bg-slate-100 dark:bg-white/5 relative group">
               <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800 animate-pulse -z-10"></div>
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.096814183571!2d105.80262101533203!3d21.028811893153835!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab424a50fff9%3A0xbe3a7f3670c0a45f!2sUniversity%20of%20Transport%20and%20Communications!5e0!3m2!1sen!2s!4v1683884841124!5m2!1sen!2s" 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3725.268!2d105.8075731!3d21.0176142!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab6724737fe3%3A0x8dd2bf50c254d201!2s99%20%C4%90.%20Nguy%E1%BB%85n%20Ch%C3%AD%20Thanh%2C%20L%C3%A1ng%2C%20H%C3%A0%20N%E1%BB%99i%20100000%2C%20Vi%E1%BB%87t%20Nam!5e0!3m2!1svi!2svn!4v1717310000000!5m2!1svi!2svn" 
                 width="100%" 
                 height="100%" 
                 style={{ border: 0 }} 

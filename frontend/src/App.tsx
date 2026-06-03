@@ -60,6 +60,13 @@ const ConditionalFooter = () => {
   return <Footer />;
 };
 
+const ConditionalChatbot = () => {
+  const location = useLocation();
+  // Chatbot không hiện ở trang admin
+  if (location.pathname.startsWith('/admin')) return null;
+  return <ChatbotWidget />;
+};
+
 function App() {
   return (
     <Router>
@@ -102,7 +109,7 @@ function App() {
             </Routes>
             </div>
             <ScrollToTop />
-            <ChatbotWidget />
+            <ConditionalChatbot />
             <ConditionalFooter />
           </div>
           </WebSocketProvider>
