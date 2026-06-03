@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { judgeService } from '../services/judge.service';
 import type { JudgeCandidate } from '../services/judge.service';
+import { useAuth } from '../contexts/AuthContext';
 
 interface InviteUserSelectorProps {
     invitedUsers: JudgeCandidate[];
@@ -9,6 +10,7 @@ interface InviteUserSelectorProps {
 }
 
 const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSelectorProps) => {
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<JudgeCandidate[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -30,7 +32,7 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
             setIsSearching(true);
             try {
                 const results = await judgeService.searchUsers(q);
-                setSearchResults(results.filter(r => !addedIds.has(r.id)));
+                setSearchResults(results.filter(r => !addedIds.has(r.id) && r.id !== user?.id));
             } catch { setSearchResults([]); }
             finally { setIsSearching(false); }
         }, 350);
@@ -75,11 +77,11 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
         const toAdd: JudgeCandidate[] = [];
         for (const c of importPreview) {
             if (c.found) {
-                if (!addedIds.has(c.id)) toAdd.push(c);
+                if (!addedIds.has(c.id) && c.id !== user?.id) toAdd.push(c);
             } else {
-                // Still allow inviting by email even if not in system
+                // Still allow inviting by email even if not in system, but prevent self-invite
                 const emailLower = c.matchedValue?.toLowerCase();
-                if (emailLower && emailLower.includes('@') && !addedEmails.has(emailLower)) {
+                if (emailLower && emailLower.includes('@') && !addedEmails.has(emailLower) && emailLower !== user?.email?.toLowerCase()) {
                     toAdd.push({
                         id: null,
                         username: null,
@@ -206,7 +208,7 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
             {importError && <p className="text-xs text-red-500">{importError}</p>}
 
             {/* Hint */}
-            <p className="text-xs text-slate-400 dark:text-white/30">
+            <p className="text-xs text-slate-400 dark:text-white/50">
                 💡 Gõ tên hoặc email để tìm người dùng. File CSV: mỗi dòng một username hoặc email.
             </p>
 

@@ -179,7 +179,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
                       : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
                     alt=""
                     className="w-full h-full object-cover"
-                    onError={e => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}`; }}
+                    onError={e => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${creatorName}`; }}
                   />
                 ) : (
                   <span className="flex items-center justify-center w-full h-full text-white text-[8px] font-bold">
@@ -192,13 +192,13 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
               </span>
             </div>
 
-            <span className="text-slate-300 dark:text-white/15 text-[11px]">·</span>
-            <span className="text-[11px] text-slate-400 dark:text-white/30">{timeAgo(poll.createdAt)}</span>
+            <span className="text-slate-300 dark:text-white/50 text-[11px]">·</span>
+            <span className="text-[11px] text-slate-400 dark:text-white/50">{timeAgo(poll.createdAt)}</span>
 
             {/* Category */}
             {poll.category && (
               <>
-                <span className="text-slate-300 dark:text-white/15 text-[11px]">·</span>
+                <span className="text-slate-300 dark:text-white/50 text-[11px]">·</span>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${categoryStyle.bg} ${categoryStyle.text}`}>
                   {poll.category.icon && <span className="text-[10px]">{poll.category.icon}</span>}
                   {poll.category.name}
@@ -215,7 +215,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
               </span>
             )}
             {poll.visibility === 'PRIVATE' && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/35">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/50">
                 <Lock className="w-3 h-3" />{t('pollDetail.privateLabel')}
               </span>
             )}
@@ -242,7 +242,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
               <div className="relative">
                 <button
                   onClick={e => { e.preventDefault(); e.stopPropagation(); setMenuOpen(v => !v); }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 dark:text-white/20 hover:text-slate-500 dark:hover:text-white/50 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 dark:text-white/40 hover:text-slate-500 dark:hover:text-white/50 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                 >
                   <MoreVertical className="w-4 h-4" />
                 </button>
@@ -282,12 +282,12 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
           {poll.tags && poll.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-3">
               {poll.tags.slice(0, 5).map(tag => (
-                <span key={tag} className="text-[11px] text-slate-400 dark:text-white/35 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full font-medium border border-slate-200/70 dark:border-white/[0.06]">
+                <span key={tag} className="text-[11px] text-slate-400 dark:text-white/50 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full font-medium border border-slate-200/70 dark:border-white/[0.06]">
                   #{tag}
                 </span>
               ))}
               {poll.tags.length > 5 && (
-                <span className="text-[11px] text-slate-400 dark:text-white/25 px-1">+{poll.tags.length - 5}</span>
+                <span className="text-[11px] text-slate-400 dark:text-white/45 px-1">+{poll.tags.length - 5}</span>
               )}
             </div>
           )}
@@ -350,7 +350,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
                         {pct}%
                       </span>
                       {/* Vote count small */}
-                      <span className="shrink-0 text-[11px] text-slate-300 dark:text-white/20 relative z-10 w-10 text-right tabular-nums">
+                      <span className="shrink-0 text-[11px] text-slate-300 dark:text-white/40 relative z-10 w-10 text-right tabular-nums">
                         {formatCompact(option.voteCount ?? 0)}
                       </span>
                     </div>
@@ -368,12 +368,12 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
 
           {/* ── Row 6: Footer stats ──────────────────────────── */}
           <div className="flex items-center gap-3 pt-2 border-t border-slate-100 dark:border-white/[0.05] flex-wrap">
-            <span className="flex items-center gap-1.5 text-[12px] text-slate-400 dark:text-white/30">
+            <span className="flex items-center gap-1.5 text-[12px] text-slate-400 dark:text-white/50">
               <Users className="w-3.5 h-3.5 text-violet-400" />
               <span className="font-semibold text-slate-600 dark:text-white/55">{formatCompact(totalVotes)}</span>
               <span>{t('pollDetail.votesLabel')}</span>
             </span>
-            <span className="flex items-center gap-1.5 text-[12px] text-slate-400 dark:text-white/30">
+            <span className="flex items-center gap-1.5 text-[12px] text-slate-400 dark:text-white/50">
               <MessageCircle className="w-3.5 h-3.5 text-fuchsia-400" />
               <span className="font-semibold text-slate-600 dark:text-white/55">{formatCompact(resolvedCommentCount)}</span>
               <span>{t('pollDetail.commentsLabel')}</span>
@@ -414,7 +414,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
                   </span>
                 );
               })() : !isActive ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-white/25">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-white/45">
                   {t('pollDetail.ended')}
                 </span>
               ) : null}

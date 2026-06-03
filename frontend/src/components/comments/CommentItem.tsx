@@ -17,6 +17,7 @@ interface CommentItemProps {
   highlightCommentId?: number | null;
   judgeIds?: number[];
   onDelete?: (commentId: number) => void;
+  isActive?: boolean;
 }
 
 function getRelativeTime(dateString: string, t: TFunction): string {
@@ -44,6 +45,7 @@ export default function CommentItem({
   highlightCommentId,
   judgeIds = [],
   onDelete,
+  isActive = true,
 }: CommentItemProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -132,7 +134,7 @@ export default function CommentItem({
     >
       {/* Branch curve for this specific reply */}
       {isReply && (
-        <div className="absolute top-[-16px] left-[-22px] w-[30px] h-[36px] border-l-2 border-b-2 border-slate-200 dark:border-white/10 rounded-bl-xl pointer-events-none" />
+        <div className="absolute top-[-16px] left-[-56px] w-[56px] h-[36px] border-l-2 border-b-2 border-slate-200 dark:border-white/10 rounded-bl-xl pointer-events-none" />
       )}
 
       {/* Avatar column */}
@@ -146,7 +148,7 @@ export default function CommentItem({
             src={comment.avatarUrl.startsWith('http') || comment.avatarUrl.startsWith('blob') ? comment.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${comment.avatarUrl}`}
             alt={comment.username}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-200 dark:ring-white/10 shadow-lg shadow-black/5 dark:shadow-black/20"
-            onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${comment.username}` }}
+            onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${comment.username}` }}
           />
         ) : (
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-slate-200 dark:ring-white/10 shadow-lg shadow-indigo-500/20">
@@ -197,15 +199,25 @@ export default function CommentItem({
 
         {/* Content */}
         <p className="text-slate-800 dark:text-white/90 text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-          {comment.content.split(' ').map((word, i) =>
-            word.startsWith('@') ? (
-              <span key={i} className="text-indigo-600 dark:text-indigo-400 font-medium">
-                {word}{' '}
-              </span>
-            ) : (
-              <span key={i}>{word} </span>
-            )
-          )}
+          {(() => {
+            const tokens = comment.content.split(' ');
+            const firstWord = tokens[0];
+            const isTargetedReply = comment.parentId != null && firstWord?.startsWith('@');
+            
+            if (isTargetedReply) {
+              const targetUsername = firstWord.substring(1).replace(/_/g, ' '); // Replace all underscores back to spaces
+              const actualContent = tokens.slice(1).join(' ');
+              return (
+                <>
+                  <span className="font-bold text-slate-900 dark:text-white mr-1.5 cursor-pointer hover:underline">
+                    {targetUsername}
+                  </span>
+                  {actualContent}
+                </>
+              );
+            }
+            return comment.content;
+          })()}
         </p>
 
         {/* Actions */}
@@ -214,7 +226,7 @@ export default function CommentItem({
             onClick={handleLikeClick}
             disabled={!user || liking}
             className={`flex items-center gap-1.5 text-xs font-medium transition-all ${
-              !user ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-white/30' :
+              !user ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-white/50' :
               liked
                 ? 'text-indigo-600 dark:text-indigo-400 scale-105'
                 : 'text-slate-500 dark:text-white/50 hover:text-indigo-500 dark:hover:text-indigo-400'
@@ -223,16 +235,18 @@ export default function CommentItem({
             <ThumbsUp className={`w-4 h-4 transition-transform ${liked ? 'fill-current' : ''} ${liking ? 'animate-pulse' : liked ? 'scale-110' : ''}`} />
             {likeCount > 0 ? likeCount : t('pollDetail.like')}
           </button>
-          <button
-            onClick={handleReplyClick}
-            className={`text-xs font-medium transition-colors ${
-              !user
-                ? 'text-slate-400 dark:text-white/30 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer'
-                : 'text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80'
-            }`}
-          >
-            {t('pollDetail.reply')}
-          </button>
+          {isActive && (
+            <button
+              onClick={handleReplyClick}
+              className={`text-xs font-medium transition-colors ${
+                !user
+                  ? 'text-slate-400 dark:text-white/50 hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer'
+                  : 'text-slate-500 dark:text-white/50 hover:text-slate-700 dark:hover:text-white/80'
+              }`}
+            >
+              {t('pollDetail.reply')}
+            </button>
+          )}
           {comment.voteStatus && (
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600/90 dark:text-indigo-300/90 font-medium border border-indigo-100 dark:border-indigo-500/20 shadow-sm shadow-indigo-100/20 dark:shadow-none flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400"></span>
@@ -245,9 +259,10 @@ export default function CommentItem({
         {isReplying && user && (
           <div className="mt-3">
             <CommentInput
-              onSubmit={(content, isAnonymous) => {
-                const final = isReply && !content.startsWith(`@${comment.username}`)
-                  ? `@${comment.username} ${content}`
+              onSubmit={(content, isAnonymous, targetDeleted) => {
+                // Silently prepend username for backend DB reference ONLY if user didn't delete the pill
+                const final = (isReply && !targetDeleted && !content.startsWith(`@${comment.username.replace(/ /g, '_')}`))
+                  ? `@${comment.username.replace(/ /g, '_')} ${content}`
                   : content;
                 onReplySubmit(comment.id, final, isAnonymous);
                 setIsReplying(false);
@@ -257,6 +272,7 @@ export default function CommentItem({
               username={user?.username || "You"}
               avatarUrl={user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? ((user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob')) ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`) : undefined}
               isReply
+              replyTargetName={comment.username}
               autoFocus
               identityLocked={identityLocked}
               lockedIsAnonymous={lockedIsAnonymous}
@@ -269,7 +285,7 @@ export default function CommentItem({
           <div className="mt-2 relative">
             {/* The main vertical stem for all replies, left-aligned to the parent avatar's center */}
             {(showReplies || comment.replies.length > 0) && (
-              <div className="absolute top-[-26px] bottom-[20px] left-[-34px] w-[2px] bg-slate-200 dark:bg-white/10 pointer-events-none" />
+              <div className="absolute top-[-26px] bottom-[20px] left-[-32px] w-[2px] bg-slate-200 dark:bg-white/10 pointer-events-none" />
             )}
 
             <div className="pl-8 space-y-0 relative">
@@ -287,6 +303,7 @@ export default function CommentItem({
                       highlightCommentId={highlightCommentId}
                       judgeIds={judgeIds}
                       onDelete={onDelete}
+                      isActive={isActive}
                     />
                   ))}
                   <button

@@ -435,7 +435,7 @@ const Dashboard = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure?')) return;
+    if (!window.confirm(t('profile.deleteConfirm'))) return;
     try {
       await pollService.deletePoll(id);
       setTrendingPolls((tp) => tp.filter((p) => p.id !== id));
@@ -571,6 +571,7 @@ const Dashboard = () => {
                 filterCategory={filterCategory}
                 filterStatus={filterStatus}
                 trendingCount={trendingPolls.length}
+                trendingPolls={trendingPolls}
                 pollListVersion={pollListVersion}
                 onResetExplore={resetExplore}
                 onScrollToTrending={scrollToTrending}
@@ -618,7 +619,7 @@ const Dashboard = () => {
                 <div className="flex items-center gap-2">
                   <Flame className="w-5 h-5 text-orange-400" />
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('dashboard.exploreSectionTitle')}</h2>
-                  <span className="text-slate-400 dark:text-white/35 text-sm ml-1">{totalPolls > 0 ? `(${totalPolls})` : ''}</span>
+                  <span className="text-slate-400 dark:text-white/50 text-sm ml-1">{totalPolls > 0 ? `(${totalPolls})` : ''}</span>
                 </div>
                 <button type="button" onClick={resetExplore} className="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
                   {t('dashboard.seeAll')}
@@ -668,7 +669,7 @@ const Dashboard = () => {
                 </div>
                 <p className="text-slate-500 dark:text-white/50 text-base mb-1">{t('dashboard.noPolls')}</p>
                 {filterCategory && (
-                  <p className="text-xs text-slate-400 dark:text-white/30 mb-3">
+                  <p className="text-xs text-slate-400 dark:text-white/50 mb-3">
                     {t('dashboard.noPollsInCategory')}
                   </p>
                 )}
@@ -700,11 +701,11 @@ const Dashboard = () => {
                   {loadingMore && (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-8 h-8 rounded-full border-4 border-violet-500/20 border-t-violet-500 animate-spin" />
-                      <p className="text-xs text-slate-400 dark:text-white/30 font-medium">Đang tải thêm bình chọn...</p>
+                      <p className="text-xs text-slate-400 dark:text-white/50 font-medium">Đang tải thêm bình chọn...</p>
                     </div>
                   )}
                   {!hasMore && polls.length > 0 && (
-                    <p className="text-xs text-slate-400 dark:text-white/20 font-medium mt-4">
+                    <p className="text-xs text-slate-400 dark:text-white/40 font-medium mt-4">
                       Bạn đã xem hết tất cả bình chọn 🎉
                     </p>
                   )}

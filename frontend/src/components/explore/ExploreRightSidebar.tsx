@@ -15,7 +15,7 @@ function creatorAvatarUrl(avatarUrl: string | undefined, username: string): stri
     const base = import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080';
     return `${base}${avatarUrl}`;
   }
-  return `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username)}`;
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(username)}`;
 }
 
 interface TopCreator {
@@ -80,7 +80,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('dashboard.communityStats')}</h3>
           <span className="ml-auto flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] text-slate-400 dark:text-white/30">{t('dashboard.statsLive')}</span>
+            <span className="text-[10px] text-slate-400 dark:text-white/50">{t('dashboard.statsLive')}</span>
           </span>
         </div>
 
@@ -91,7 +91,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
               <div className="min-w-0">
                 <p className="text-base font-black text-slate-900 dark:text-white leading-none">
                   {formatCompact(value)}
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-white/30 ml-0.5">+</span>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-white/50 ml-0.5">+</span>
                 </p>
                 <p className="text-[10px] text-slate-500 dark:text-white/40 mt-0.5 truncate">{label}</p>
               </div>
@@ -119,11 +119,11 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
 
         <div className="space-y-3">
           {topCreators.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-white/35 text-center py-4">{t('dashboard.topCreatorsEmpty')}</p>
+            <p className="text-sm text-slate-400 dark:text-white/50 text-center py-4">{t('dashboard.topCreatorsEmpty')}</p>
           ) : (
             (showAllCreators ? topCreators : topCreators.slice(0, 3)).map((c, i) => (
               <div key={c.id} className="flex items-center gap-3 group">
-                <span className={`text-sm font-bold w-5 text-center shrink-0 ${RANK_COLORS[i] ?? 'text-slate-400 dark:text-white/30'}`}>
+                <span className={`text-sm font-bold w-5 text-center shrink-0 ${RANK_COLORS[i] ?? 'text-slate-400 dark:text-white/50'}`}>
                   {RANK_ICONS[i] ?? i + 1}
                 </span>
                 <div className="relative">
@@ -132,7 +132,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
                       src={creatorAvatarUrl(c.avatarUrl, c.username)}
                       alt=""
                       className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${c.username}`; }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${c.username}`; }}
                     />
                   </div>
                   {i === 0 && <span className="absolute -top-1 -right-1 text-[10px]">👑</span>}
@@ -141,7 +141,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
                   <p className="font-semibold text-slate-900 dark:text-white text-sm truncate group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
                     {c.username}
                   </p>
-                  <p className="text-xs text-slate-400 dark:text-white/35">
+                  <p className="text-xs text-slate-400 dark:text-white/50">
                     {formatCompact(c.votes)} {t('dashboard.votesLabel')}
                   </p>
                 </div>
@@ -159,7 +159,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
 
         {/* Custom Tag Search */}
         <form onSubmit={handleTagSubmit} className="relative mb-4 group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-white/50 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
           <input
             type="text"
             placeholder={t('dashboard.filterTags') || "Tìm kiếm thẻ..."}
@@ -171,7 +171,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
 
         <div className="space-y-1">
           {popularTags.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-white/35 text-center py-4">{t('dashboard.popularTagsEmpty')}</p>
+            <p className="text-sm text-slate-400 dark:text-white/50 text-center py-4">{t('dashboard.popularTagsEmpty')}</p>
           ) : (
             (showAllTags ? popularTags : popularTags.slice(0, 5)).map((tg) => (
               <button
@@ -183,7 +183,7 @@ export function ExploreRightSidebar({ topCreators, popularTags, onTagClick, comm
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-white/75 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
                   #{tg.display}
                 </span>
-                <span className="text-xs text-slate-400 dark:text-white/35 font-medium">
+                <span className="text-xs text-slate-400 dark:text-white/50 font-medium">
                   {formatCompact(tg.count)} {t('dashboard.statsPolls')}
                 </span>
               </button>

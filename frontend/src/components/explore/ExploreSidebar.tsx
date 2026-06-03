@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Compass, TrendingUp, Sparkles, Clock, Crown as CrownIcon, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { categoryService, type Category } from '../../services/category.service';
-import { pollService } from '../../services/poll.service';
+import { pollService, type Poll } from '../../services/poll.service';
 
 interface ExploreSidebarProps {
     filterTag: string;
     filterCategory: string;
     filterStatus: string;
     trendingCount: number;
+    trendingPolls?: Poll[];
     pollListVersion: number;
     onResetExplore: () => void;
     onScrollToTrending: () => void;
@@ -24,6 +25,7 @@ export function ExploreSidebar({
     filterCategory,
     filterStatus,
     trendingCount,
+    trendingPolls,
     pollListVersion,
     onScrollToTrending,
     onScrollToPollGrid,
@@ -52,7 +54,28 @@ export function ExploreSidebar({
     }, [filterStatus]);
 
     useEffect(() => {
-        categoryService.getAllCategories().then(setCategories).catch(() => {});
+        // Xác định status cần đếm cho danh mục dựa trên filter hiện tại (Trending lấy ACTIVE làm base)
+        const categoryStatus = filterStatus === 'ENDED' ? 'ENDED' : 'ACTIVE';
+        categoryService.getAllCategories(categoryStatus).then(cats => {
+            if (filterStatus === 'TRENDING' && trendingPolls) {
+                // Nếu đang ở chế độ Trending, tính số lượng cục bộ dựa trên danh sách trendingPolls
+                const trendingCounts: Record<string, number> = {};
+                trendingPolls.forEach(p => {
+                    if (p.category) {
+                        trendingCounts[p.category.slug] = (trendingCounts[p.category.slug] || 0) + 1;
+                    }
+                });
+                setCategories(cats.map(c => ({
+                    ...c,
+                    pollCount: trendingCounts[c.slug] || 0
+                })));
+            } else {
+                setCategories(cats);
+            }
+        }).catch(() => {});
+    }, [filterStatus, trendingPolls]);
+
+    useEffect(() => {
         Promise.all([
             pollService.getAllPolls(0, 1, '', 'ALL', 'ALL'),
             pollService.getAllPolls(0, 1, '', 'ALL', 'ACTIVE'),
@@ -62,18 +85,20 @@ export function ExploreSidebar({
                 total: totalRes.totalElements || 0,
                 active: activeRes.totalElements || 0,
                 ended: endedRes.totalElements || 0,
-                trending: activeRes.totalElements || 0,  // Trending = subset of active polls
+                trending: 0, // Dùng trendingCount prop từ parent (số poll trending thực tế)
             });
         }).catch(() => {});
     }, [pollListVersion]);
 
     const navItems = [
         { label: t('dashboard.sidebarTrending') || 'Trending', Icon: TrendingUp, count: trendingCount, onClick: () => { setActiveTab('TRENDING'); onSetFilterStatus('TRENDING'); onScrollToTrending(); }, isActiveStatus: activeTab === 'TRENDING' },
-        { label: t('dashboard.sidebarNewest') || 'Mới nhất', Icon: Sparkles, count: stats.total, onClick: () => { setActiveTab('NEWEST'); onSetFilterStatus('NEWEST'); setTimeout(onScrollToPollGrid, 100); }, isActiveStatus: activeTab === 'NEWEST' },
+        // "Mới nhất" dùng stats.active vì backend nhận status=ACTIVE khi frontend gửi NEWEST
+        { label: t('dashboard.sidebarNewest') || 'Mới nhất', Icon: Sparkles, count: stats.active, onClick: () => { setActiveTab('NEWEST'); onSetFilterStatus('NEWEST'); setTimeout(onScrollToPollGrid, 100); }, isActiveStatus: activeTab === 'NEWEST' },
         { label: t('dashboard.sidebarOngoing') || 'Đang diễn ra', Icon: Clock, count: stats.active, onClick: () => { setActiveTab('ACTIVE'); onSetFilterStatus('ACTIVE'); }, isActiveStatus: activeTab === 'ACTIVE' },
         { label: t('dashboard.sidebarEnded') || 'Đã kết thúc', Icon: CheckCircle2, count: stats.ended, onClick: () => { setActiveTab('ENDED'); onSetFilterStatus('ENDED'); }, isActiveStatus: activeTab === 'ENDED' },
     ];
-
+    // Số hiển thị trên badge "Tất cả" của danh mục — khớp với filter hiện tại
+    const categoryAllCount = filterStatus === 'ENDED' ? stats.ended : stats.active;
 
     const isAllActive = !filterCategory && filterTag === 'ALL';
 
@@ -142,11 +167,11 @@ export function ExploreSidebar({
                             className={`cursor-pointer w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all mb-0.5 ${isAllActive
                                 ? 'bg-violet-500/10 border border-violet-500/20 text-violet-700 dark:text-violet-300 font-semibold'
                                 : 'text-slate-600 dark:text-white/55 hover:text-slate-900 dark:hover:text-white/90 hover:bg-slate-100 dark:hover:bg-white/5 font-medium'}`}>
-                            <Compass className={`w-4 h-4 shrink-0 ${isAllActive ? 'text-violet-500' : 'text-slate-400 dark:text-white/35'}`} />
+                            <Compass className={`w-4 h-4 shrink-0 ${isAllActive ? 'text-violet-500' : 'text-slate-400 dark:text-white/50'}`} />
                             <span className="flex-1 text-left">{t('dashboard.catAll')}</span>
-                            {stats.total > 0 && (
+                            {categoryAllCount > 0 && (
                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isAllActive ? 'bg-violet-200 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/40'}`}>
-                                    {stats.total}
+                                    {categoryAllCount}
                                 </span>
                             )}
                         </button>

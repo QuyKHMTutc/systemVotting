@@ -132,7 +132,7 @@ export const PollCard = ({
             <div className="absolute top-4 right-4 z-30 flex items-center gap-1">
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(v => !v); }}
-                className="p-1.5 text-slate-400 dark:text-white/30 hover:text-slate-600 dark:hover:text-white/60 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors focus:outline-none"
+                className="p-1.5 text-slate-400 dark:text-white/50 hover:text-slate-600 dark:hover:text-white/60 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors focus:outline-none"
               >
                 <MoreVertical className="w-4 h-4" />
               </button>
@@ -227,7 +227,7 @@ export const PollCard = ({
                   src={creatorAvatar.startsWith('http') || creatorAvatar.startsWith('blob') ? creatorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
                   alt={creatorName}
                   className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}` }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${creatorName}` }}
                 />
               ) : (
                 creatorName.charAt(0).toUpperCase()

@@ -64,6 +64,7 @@ const PollDetail = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [similarPolls, setSimilarPolls] = useState<Poll[]>([]);
+  const [trendingCount, setTrendingCount] = useState(0);
 
   const [identityLocked, setIdentityLocked] = useState(false);
   const [lockedIsAnonymous, setLockedIsAnonymous] = useState(false);
@@ -157,23 +158,37 @@ const PollDetail = () => {
 
   const handleWsNewComment = useCallback((newComment: Comment) => {
     let wasInserted = false;
+
+    const insertRecursively = (commentsList: Comment[]): Comment[] => {
+      // If root comment, it doesn't have parentId, so it shouldn't be handled by recursion
+      if (!newComment.parentId) return commentsList;
+
+      return commentsList.map((c) => {
+        if (c.id === newComment.parentId) {
+          if (c.replies?.some((r) => r.id === newComment.id)) return c;
+          wasInserted = true;
+          return { ...c, replies: [...(c.replies || []), newComment] };
+        }
+        if (c.replies && c.replies.length > 0) {
+          const updatedReplies = insertRecursively(c.replies);
+          if (updatedReplies !== c.replies) {
+            return { ...c, replies: updatedReplies };
+          }
+        }
+        return c;
+      });
+    };
+
     setComments((prev) => {
       if (newComment.parentId) {
-        // It's a reply — find the parent root comment
-        let newPrev = prev.map((root) => {
-          if (root.id !== newComment.parentId) return root;
-          if (root.replies?.some((r) => r.id === newComment.id)) return root; // already present
-          wasInserted = true;
-          return { ...root, replies: [...(root.replies || []), newComment] };
-        });
-        return newPrev;
+        return insertRecursively(prev);
       }
       // Root comment
       if (prev.some((c) => c.id === newComment.id)) return prev; // already present
       wasInserted = true;
       return [{ ...newComment, replies: newComment.replies || [] }, ...prev];
     });
-    // Increment count only if the comment was genuinely new (not a duplicate from our own HTTP insert)
+
     if (wasInserted) {
       setTotalAllComments((t) => t + 1);
     }
@@ -235,14 +250,24 @@ const PollDetail = () => {
     if (!poll) return;
     try {
       const newReply = await commentService.createComment({ pollId: poll.id, parentId, content, isAnonymous });
-      // Insert reply immediately; WS broadcast will also arrive (guard against duplicate in handleWsNewComment)
-      setComments((prev) =>
-        prev.map((root) => {
-          if (root.id !== parentId) return root;
-          if (root.replies?.some((r) => r.id === newReply.id)) return root;
-          return { ...root, replies: [...(root.replies || []), newReply] };
-        })
-      );
+      
+      const insertRecursively = (commentsList: Comment[]): Comment[] => {
+        return commentsList.map((c) => {
+          if (c.id === newReply.parentId) {
+            if (c.replies?.some((r) => r.id === newReply.id)) return c;
+            return { ...c, replies: [...(c.replies || []), newReply] };
+          }
+          if (c.replies && c.replies.length > 0) {
+            const updatedReplies = insertRecursively(c.replies);
+            if (updatedReplies !== c.replies) {
+              return { ...c, replies: updatedReplies };
+            }
+          }
+          return c;
+        });
+      };
+
+      setComments((prev) => insertRecursively(prev));
       setTotalAllComments((t) => t + 1);
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post reply');
@@ -395,6 +420,12 @@ const PollDetail = () => {
     if (id) fetchSimilar();
   }, [id]);
 
+  useEffect(() => {
+    pollService.getTrendingPolls(8)
+      .then(list => setTrendingCount(list.length))
+      .catch(() => {});
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen pb-12">
@@ -502,7 +533,7 @@ const PollDetail = () => {
                 onSetFilterStatus={handleSetFilterStatus}
                 onSetFilterTag={handleSetFilterTag}
                 onSetFilterCategory={handleSetFilterCategory}
-                trendingCount={0}
+                trendingCount={trendingCount}
                 pollListVersion={0}
               />
             </div>
@@ -607,7 +638,7 @@ const PollDetail = () => {
                                 src={creatorAvatar.startsWith('http') || creatorAvatar.startsWith('blob') ? creatorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
                                 alt={creatorName}
                                 className="w-full h-full object-cover"
-                                onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}` }}
+                                onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${creatorName}` }}
                               />
                             ) : (
                               <span>{creatorName.charAt(0).toUpperCase()}</span>
@@ -650,7 +681,7 @@ const PollDetail = () => {
                             style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(234,88,12,0.1))', border: '1px solid rgba(245,158,11,0.35)' }}>
                             <span style={{ fontSize: '13px' }}>⚖️</span>
                             <span className="text-amber-600 dark:text-amber-400">GK {judgeWeight}%</span>
-                            <span className="text-slate-400 dark:text-white/30 mx-0.5">vs</span>
+                            <span className="text-slate-400 dark:text-white/50 mx-0.5">vs</span>
                             <span className="text-indigo-600 dark:text-indigo-400">KG {audienceWeight}%</span>
                           </div>
                         )}
@@ -714,12 +745,12 @@ const PollDetail = () => {
                                         style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                                         {displayPct}%
                                       </span>
-                                      <span className="text-[10px] text-slate-400 dark:text-white/30 mt-0.5">trọng số</span>
+                                      <span className="text-[10px] text-slate-400 dark:text-white/50 mt-0.5">trọng số</span>
                                     </div>
                                   ) : (
                                     <div className="flex flex-col items-end">
                                       <span className="text-lg font-bold text-slate-800 dark:text-white">{rawPercentage}%</span>
-                                      <span className="text-[10px] text-slate-400 dark:text-white/30">{option.voteCount} phiếu</span>
+                                      <span className="text-[10px] text-slate-400 dark:text-white/50">{option.voteCount} phiếu</span>
                                     </div>
                                   )}
                                 </div>
@@ -769,7 +800,7 @@ const PollDetail = () => {
                                       <span className="text-slate-500 dark:text-white/40">{audienceVotesPct}% trong nhóm</span>
                                     </span>
                                   </div>
-                                  <span className="text-slate-400 dark:text-white/25">
+                                  <span className="text-slate-400 dark:text-white/45">
                                     {option.judgeCount ?? 0} + {option.audienceCount ?? 0} phiếu
                                   </span>
                                 </div>
@@ -840,6 +871,7 @@ const PollDetail = () => {
                                 highlightCommentId={highlightCommentId}
                                 judgeIds={poll.judgeIds || []}
                                 onDelete={handleDeleteComment}
+                                isActive={isActive}
                               />
                               {hasMoreComments && (
                                 <div className="flex justify-center pt-4">
@@ -858,7 +890,11 @@ const PollDetail = () => {
                         </div>
                         <div className="shrink-0 p-4 sm:p-6 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-transparent">
                           {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
-                          {!user ? (
+                          {!isActive ? (
+                            <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+                              <span className="text-slate-500 dark:text-white/50 font-medium">Bình chọn đã kết thúc. Bạn không thể bình luận thêm.</span>
+                            </div>
+                          ) : !user ? (
                             <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
                               <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
                                 {t('pollDetail.loginToComment')}
@@ -899,7 +935,7 @@ const PollDetail = () => {
                           src={creatorAvatar.startsWith('http') || creatorAvatar.startsWith('blob') ? creatorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${creatorAvatar}`}
                           alt={creatorName}
                           className="w-full h-full object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${creatorName}` }}
+                          onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${creatorName}` }}
                         />
                       ) : (
                         <span>{creatorName.charAt(0).toUpperCase()}</span>

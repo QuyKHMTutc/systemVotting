@@ -114,7 +114,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password = '', show
                                 className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center transition-all duration-300 ${
                                     rule.met
                                         ? 'bg-emerald-500/20 text-emerald-500 dark:text-emerald-400'
-                                        : 'bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-white/30'
+                                        : 'bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-white/50'
                                 }`}
                             >
                                 {rule.met ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}

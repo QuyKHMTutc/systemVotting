@@ -1,45 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+
 
 const Footer = () => {
-  const { isAuthenticated } = useAuth();
   const { t } = useTranslation();
 
   return (
     <div className="mt-auto w-full flex flex-col">
-      {/* Pre-Footer CTA Banner — chỉ hiện khi chưa đăng nhập */}
-      {!isAuthenticated && (
-      <div className="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 dark:from-indigo-900 dark:via-violet-900 dark:to-purple-900 py-10 px-6 relative overflow-hidden">
-        {/* Subtle decorative circles */}
-        <div className="absolute -top-12 -left-12 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-          <div className="text-center md:text-left flex flex-col">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 tracking-tight">
-              {t('footer.ctaTitle')}
-            </h2>
-            <p className="text-2xl md:text-3xl font-bold text-indigo-200 tracking-tight">
-              {t('footer.ctaSubtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link 
-              to="/login" 
-              className="px-6 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-bold rounded-lg hover:bg-white/20 transition-all duration-200 shadow-sm"
-            >
-              {t('footer.ctaLogin')}
-            </Link>
-            <Link 
-              to="/register" 
-              className="px-6 py-2.5 bg-white text-indigo-600 text-sm font-bold rounded-lg hover:bg-indigo-50 transition-all duration-200 shadow-md hover:shadow-indigo-500/25"
-            >
-              {t('footer.ctaRegister')}
-            </Link>
-          </div>
-        </div>
-      </div>
-      )}
+
 
       <footer className="border-t border-purple-200/50 dark:border-white/10 bg-gradient-to-br from-indigo-100/60 via-purple-100/50 to-pink-100/60 dark:bg-none dark:bg-black/20 backdrop-blur-xl transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-16">

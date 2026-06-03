@@ -11,18 +11,39 @@ interface CommentListProps {
   highlightCommentId?: number | null;
   judgeIds?: number[];
   onDelete?: (commentId: number) => void;
+  isActive?: boolean;
 }
 
-export default function CommentList({ comments, onReplySubmit, identityLocked, lockedIsAnonymous, highlightCommentId, judgeIds, onDelete }: CommentListProps) {
+export default function CommentList({ comments, onReplySubmit, identityLocked, lockedIsAnonymous, highlightCommentId, judgeIds, onDelete, isActive = true }: CommentListProps) {
   const { t } = useTranslation();
   const [expandedReplies, setExpandedReplies] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (highlightCommentId && comments.length > 0) {
-      // Find if this comment is a reply, and if so, expand its parent
-      const parent = comments.find(c => c.replies && c.replies.some(r => r.id === highlightCommentId));
-      if (parent) {
-        setExpandedReplies(prev => ({ ...prev, [parent.id]: true }));
+      const pathToTarget: number[] = [];
+      
+      const findPath = (list: Comment[], targetId: number, currentPath: number[]): boolean => {
+        for (const c of list) {
+          if (c.id === targetId) return true;
+          if (c.replies && c.replies.length > 0) {
+            currentPath.push(c.id);
+            if (findPath(c.replies, targetId, currentPath)) {
+              return true;
+            }
+            currentPath.pop();
+          }
+        }
+        return false;
+      };
+
+      if (findPath(comments, highlightCommentId, pathToTarget)) {
+        setExpandedReplies(prev => {
+          const newExpanded = { ...prev };
+          pathToTarget.forEach(id => {
+            newExpanded[id] = true;
+          });
+          return newExpanded;
+        });
       }
     }
   }, [highlightCommentId, comments]);
@@ -56,6 +77,7 @@ export default function CommentList({ comments, onReplySubmit, identityLocked, l
           highlightCommentId={highlightCommentId}
           judgeIds={judgeIds}
           onDelete={onDelete}
+          isActive={isActive}
         />
       ))}
     </div>

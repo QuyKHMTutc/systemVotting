@@ -74,7 +74,6 @@ const CreatePoll = () => {
                 description: description.trim() || undefined,
                 tags: tags,
                 isAnonymous: isAnonymous,
-                anonymous: isAnonymous,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime,
                 judgeIds: enableJudges && judges.length > 0 ? judges.filter(j => j.id).map(j => j.id) : [],
@@ -137,7 +136,7 @@ const CreatePoll = () => {
 
                         {/* Description */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-1">Mô tả <span className="text-slate-400 dark:text-white/35 font-normal">(tùy chọn)</span></label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-1">Mô tả <span className="text-slate-400 dark:text-white/50 font-normal">(tùy chọn)</span></label>
                             <p className="text-xs text-slate-400 dark:text-white/40 mb-2">Thêm mô tả ngắn để người tham gia hiểu rõ hơn về cuộc thăm dò.</p>
                             <textarea
                                 value={description}
@@ -147,14 +146,14 @@ const CreatePoll = () => {
                                 className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm resize-none"
                                 placeholder="Chia sẻ thêm bối cảnh hoặc chi tiết về cuộc thăm dò..."
                             />
-                            <p className="text-right text-xs text-slate-400 dark:text-white/30 mt-1">{description.length}/500</p>
+                            <p className="text-right text-xs text-slate-400 dark:text-white/50 mt-1">{description.length}/500</p>
                         </div>
 
                         {/* Cover Image Uploader */}
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-indigo-100 mb-1">
                                 Ảnh bìa{' '}
-                                <span className="text-slate-400 dark:text-white/35 font-normal">(tùy chọn)</span>
+                                <span className="text-slate-400 dark:text-white/50 font-normal">(tùy chọn)</span>
                             </label>
                             <p className="text-xs text-slate-400 dark:text-white/40 mb-3">
                                 Thêm ảnh bìa giúp cuộc bình chọn nổi bật và thu hút người tham gia hơn.

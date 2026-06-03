@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { judgeService } from '../services/judge.service';
 import type { JudgeCandidate } from '../services/judge.service';
+import { useAuth } from '../contexts/AuthContext';
 
 interface JudgeSelectorProps {
     judges: JudgeCandidate[];
@@ -10,6 +11,7 @@ interface JudgeSelectorProps {
 }
 
 const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelectorProps) => {
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<JudgeCandidate[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -30,7 +32,7 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
             setIsSearching(true);
             try {
                 const results = await judgeService.searchUsers(q);
-                setSearchResults(results.filter(r => !addedIds.has(r.id)));
+                setSearchResults(results.filter(r => !addedIds.has(r.id) && r.id !== user?.id));
             } catch { setSearchResults([]); }
             finally { setIsSearching(false); }
         }, 350);
@@ -67,7 +69,7 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
     };
 
     const confirmImport = () => {
-        const found = importPreview.filter(c => c.found && !addedIds.has(c.id));
+        const found = importPreview.filter(c => c.found && !addedIds.has(c.id) && c.id !== user?.id);
         const canAdd = Math.min(found.length, maxJudges - judges.length);
         onChange([...judges, ...found.slice(0, canAdd)]);
         setShowImportModal(false);
@@ -167,7 +169,7 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
             {importError && <p className="text-xs text-red-500">{importError}</p>}
 
             {/* CSV hint */}
-            <p className="text-xs text-slate-400 dark:text-white/30">
+            <p className="text-xs text-slate-400 dark:text-white/50">
                 💡 File CSV: mỗi dòng một username hoặc email. Hỗ trợ cả hai cùng lúc.
             </p>
 

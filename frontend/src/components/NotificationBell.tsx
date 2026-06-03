@@ -226,7 +226,7 @@ function NotificationItem({ notif, onClick, renderBadge, formatTime }: { notif: 
             <div className="shrink-0 mt-0.5 relative">
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center ring-1 ring-slate-200 dark:ring-white/10">
                     {notif.actorAvatar && notif.actorAvatar !== 'null' && notif.actorAvatar.trim() !== '' ? (
-                        <img src={notif.actorAvatar.startsWith('http') || notif.actorAvatar.startsWith('blob') ? notif.actorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${notif.actorAvatar}`} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${notif.actorName}` }} />
+                        <img src={notif.actorAvatar.startsWith('http') || notif.actorAvatar.startsWith('blob') ? notif.actorAvatar : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${notif.actorAvatar}`} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${notif.actorName}` }} />
                     ) : (
                         <span className="text-lg font-bold text-indigo-500 dark:text-indigo-300">{notif.actorName.charAt(0).toUpperCase()}</span>
                     )}

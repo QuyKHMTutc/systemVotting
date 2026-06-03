@@ -77,7 +77,7 @@ export const pollService = {
 
     createPoll: async (pollData: any): Promise<Poll> => {
         const response = await api.post('/polls', pollData);
-        return response.data;
+        return response.data.data;
     },
 
     deletePoll: async (id: number): Promise<void> => {

@@ -241,7 +241,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
           {/* Syncing indicator */}
           {syncingPlan && !targetPlan && (
-            <div className="flex items-center justify-center gap-2 py-2.5 text-slate-400 dark:text-white/30 text-xs">
+            <div className="flex items-center justify-center gap-2 py-2.5 text-slate-400 dark:text-white/50 text-xs">
               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
@@ -396,7 +396,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                           </div>
                           <div>
                             <h3 className="text-sm font-black text-slate-800 dark:text-white leading-tight">{plan.name}</h3>
-                            <p className="text-[11px] text-slate-400 dark:text-white/35 mt-0.5">{plan.tagline}</p>
+                            <p className="text-[11px] text-slate-400 dark:text-white/50 mt-0.5">{plan.tagline}</p>
                           </div>
                         </div>
 
@@ -405,7 +405,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                           {plan.priceDisplay ? (
                             <div className="flex items-baseline gap-0.5">
                               <span className="text-2xl font-black text-slate-800 dark:text-white">{plan.priceDisplay}<span className="text-base">đ</span></span>
-                              <span className="text-xs text-slate-400 dark:text-white/35 font-medium ml-1">/tháng</span>
+                              <span className="text-xs text-slate-400 dark:text-white/50 font-medium ml-1">/tháng</span>
                             </div>
                           ) : (
                             <span className="text-xl font-black text-slate-400 dark:text-white/50">Miễn phí</span>
@@ -414,7 +414,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
 
                         {/* Votes */}
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl mb-4 bg-slate-50 dark:bg-white/[0.04] border border-slate-100 dark:border-white/[0.06]">
-                          <Star className="w-3.5 h-3.5 text-slate-300 dark:text-white/25 shrink-0" />
+                          <Star className="w-3.5 h-3.5 text-slate-300 dark:text-white/45 shrink-0" />
                           <span className="text-xs text-slate-400 dark:text-white/40">Tối đa</span>
                           <span className="text-sm font-black" style={{ background: gradientBg, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             {plan.votes}
@@ -474,11 +474,11 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                               </button>
                             </div>
                           ) : isIncluded ? (
-                            <button disabled className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-white/25">
+                            <button disabled className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-white/45">
                               Đã bao gồm trong gói của bạn
                             </button>
                           ) : plan.key === 'FREE' ? (
-                            <button disabled className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-white/25">
+                            <button disabled className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-white/45">
                               Mặc định
                             </button>
                           ) : (
@@ -506,15 +506,15 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
         {/* ── FOOTER ── */}
         {!targetPlan && (
           <div className="shrink-0 px-6 py-3.5 flex items-center justify-between border-t border-slate-100 dark:border-white/[0.05] bg-slate-50/50 dark:bg-transparent">
-            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/25 font-medium">
+            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/45 font-medium">
               <span>Thanh toán bởi</span>
               <span className="font-black text-sm text-[#005ba6] dark:text-[#005ba6]/60">VN<span className="text-[#ed1c24] dark:text-[#ed1c24]/60">PAY</span></span>
             </div>
-            <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-white/20 font-medium">
+            <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-white/40 font-medium">
               <span>🔒 SSL bảo mật</span>
-              <span className="text-slate-200 dark:text-white/10">·</span>
+              <span className="text-slate-200 dark:text-white/50">·</span>
               <span>⚡ Kích hoạt ngay</span>
-              <span className="text-slate-200 dark:text-white/10">·</span>
+              <span className="text-slate-200 dark:text-white/50">·</span>
               <span>✕ Hủy bất cứ lúc nào</span>
             </div>
           </div>

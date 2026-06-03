@@ -190,7 +190,7 @@ export const Profile = () => {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <span className="text-sm font-semibold text-slate-600 dark:text-white/60">
-          Trang {currentPage + 1} / {totalPages}
+          {t('profile.pagination', { current: currentPage + 1, total: totalPages })}
         </span>
         <button
           disabled={currentPage >= totalPages - 1 || loadingMore === tab}
@@ -355,7 +355,7 @@ export const Profile = () => {
                 <div className="w-28 h-28 sm:w-[140px] sm:h-[140px] rounded-[26px] overflow-hidden bg-slate-50 dark:bg-slate-800">
                   {avatarSrc ? (
                     <img src={avatarSrc} alt={user?.username} className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}`; }} />
+                      onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${user?.username}`; }} />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 flex items-center justify-center">
                       <span className="text-5xl font-black text-white select-none">{user?.username?.charAt(0).toUpperCase()}</span>
@@ -384,7 +384,7 @@ export const Profile = () => {
                   </span>
                 )}
                 {!planMeta && (
-                  <span className="inline-flex items-center px-2.5 py-1 border border-slate-200 dark:border-white/10 rounded-full text-[11px] font-bold text-slate-400 dark:text-white/30 bg-slate-50 dark:bg-white/[0.03]">
+                  <span className="inline-flex items-center px-2.5 py-1 border border-slate-200 dark:border-white/10 rounded-full text-[11px] font-bold text-slate-400 dark:text-white/50 bg-slate-50 dark:bg-white/[0.03]">
                     FREE
                   </span>
                 )}
@@ -399,7 +399,7 @@ export const Profile = () => {
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${expiryUI.dot}`} />
                   <span className={`text-xs font-semibold ${expiryUI.color}`}>{expiryUI.text}</span>
                   {daysLeft !== null && daysLeft > 0 && (
-                    <span className="text-xs text-slate-400 dark:text-white/25">
+                    <span className="text-xs text-slate-400 dark:text-white/45">
                       · {new Date(expDate).toLocaleDateString('vi-VN')}
                     </span>
                   )}
@@ -450,10 +450,10 @@ export const Profile = () => {
                       : 'border-transparent text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white/70 hover:border-slate-300 dark:hover:border-white/20'
                       }`}
                   >
-                    <span className={active ? 'text-indigo-500' : 'text-slate-400 dark:text-white/30'}>{tab.icon}</span>
+                    <span className={active ? 'text-indigo-500' : 'text-slate-400 dark:text-white/50'}>{tab.icon}</span>
                     {tab.label}
                     {tab.count !== null && (
-                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${active ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/30'
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${active ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50'
                         }`}>{tab.count}</span>
                     )}
                   </button>
@@ -530,11 +530,11 @@ export const Profile = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1.5">
                             <span className="font-semibold text-slate-900 dark:text-white text-sm">{c.username}</span>
-                            <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
-                            <span className="text-slate-400 dark:text-white/30 text-xs">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</span>
+                            <span className="text-slate-300 dark:text-white/40 text-xs">·</span>
+                            <span className="text-slate-400 dark:text-white/50 text-xs">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</span>
                             {c.pollTitle && (
                               <>
-                                <span className="text-slate-300 dark:text-white/20 text-xs">·</span>
+                                <span className="text-slate-300 dark:text-white/40 text-xs">·</span>
                                 <button onClick={() => navigate(`/poll/${c.pollId}`)} className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 truncate max-w-[200px]">{c.pollTitle}</button>
                               </>
                             )}
@@ -581,18 +581,18 @@ export const Profile = () => {
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-white/[0.06]">
                         {[t('profile.txnCode'), t('profile.time'), t('profile.plan'), t('profile.amount'), t('profile.status')].map((h, i) => (
-                          <th key={i} className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/30">{h}</th>
+                          <th key={i} className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-white/50">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {payments.map((txn, i) => (
                         <tr key={txn.id} className={`border-b border-slate-50 dark:border-white/[0.03] last:border-0 hover:bg-slate-50/80 dark:hover:bg-white/[0.025] transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40 dark:bg-white/[0.015]'}`}>
-                          <td className="px-6 py-4 font-mono text-[11px] text-slate-400 dark:text-white/25">{txn.txnRef}</td>
+                          <td className="px-6 py-4 font-mono text-[11px] text-slate-400 dark:text-white/45">{txn.txnRef}</td>
                           <td className="px-6 py-4">
                             <span className="text-xs font-medium text-slate-700 dark:text-white/60">{new Date(txn.createdAt).toLocaleDateString('vi-VN')}</span>
                             <br />
-                            <span className="text-[10px] text-slate-400 dark:text-white/25">{new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-white/45">{new Date(txn.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                           </td>
                           <td className="px-6 py-4">
                             <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${txn.targetPlan === 'PLUS' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'}`}>
@@ -643,7 +643,7 @@ function ProfileEmpty({ icon, title, desc, action }: {
 }) {
   return (
     <div className="text-center py-24 animate-fade-in-up">
-      <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] flex items-center justify-center text-slate-300 dark:text-white/20">
+      <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] flex items-center justify-center text-slate-300 dark:text-white/40">
         {icon}
       </div>
       <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{title}</h3>

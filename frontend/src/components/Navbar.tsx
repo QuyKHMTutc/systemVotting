@@ -125,7 +125,7 @@ const Navbar = () => {
                 {/* Search bar inside Navbar */}
                 <div className="hidden md:flex flex-1 ml-4 mr-4 lg:ml-6 lg:mr-8 min-w-[200px]">
                     <form onSubmit={handleSearchSubmit} className="relative w-full group">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/50 group-focus-within:text-violet-500 dark:group-focus-within:text-violet-400 transition-colors" />
                         <input
                             type="text"
                             placeholder={t('dashboard.searchPlaceholder') || "Tìm kiếm..."}
@@ -215,7 +215,7 @@ const Navbar = () => {
                                     >
                                         <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 dark:bg-white/10 flex items-center justify-center border border-slate-200/50 dark:border-white/5">
                                             {user?.avatarUrl && user.avatarUrl !== 'null' && user.avatarUrl.trim() !== '' ? (
-                                                <img src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} alt={user.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}` }} />
+                                                <img src={user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('blob') ? user.avatarUrl : `${import.meta.env.PROD ? 'https://systemvotting.onrender.com' : 'http://localhost:8080'}${user.avatarUrl}`} alt={user.username} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${user?.username}` }} />
                                             ) : (
                                                 <span className="text-[15px] font-bold text-slate-500 dark:text-slate-300">{user?.username?.charAt(0).toUpperCase()}</span>
                                             )}
@@ -284,7 +284,7 @@ const Navbar = () => {
                 <div className="flex flex-col px-4 py-4 gap-3">
                     {/* Search inside mobile menu */}
                     <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileMenuOpen(false); }} className="relative w-full group md:hidden mb-2">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/30" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/50" />
                         <input
                             type="text"
                             placeholder={t('dashboard.searchPlaceholder') || "Tìm kiếm..."}

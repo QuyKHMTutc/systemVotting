@@ -242,7 +242,7 @@ const Login = () => {
 
                         <div className="mt-8 flex items-center justify-center space-x-3">
                             <div className="h-px bg-slate-200 dark:bg-white/10 w-1/4"></div>
-                            <span className="text-xs text-slate-400 dark:text-white/30 font-bold uppercase tracking-widest">{t('auth.orContinueWith')}</span>
+                            <span className="text-xs text-slate-400 dark:text-white/50 font-bold uppercase tracking-widest">{t('auth.orContinueWith')}</span>
                             <div className="h-px bg-slate-200 dark:bg-white/10 w-1/4"></div>
                         </div>
 

@@ -3,11 +3,12 @@ import { VenetianMask, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface CommentInputProps {
-  onSubmit: (content: string, isAnonymous: boolean) => Promise<void> | void;
+  onSubmit: (content: string, isAnonymous: boolean, targetDeleted?: boolean) => Promise<void> | void;
   placeholder?: string;
   avatarUrl?: string | null;
   username?: string;
   isReply?: boolean;
+  replyTargetName?: string;
   autoFocus?: boolean;
   identityLocked?: boolean;
   lockedIsAnonymous?: boolean;
@@ -19,6 +20,7 @@ export default function CommentInput({
   avatarUrl,
   username = 'You',
   isReply = false,
+  replyTargetName,
   autoFocus = false,
   identityLocked = false,
   lockedIsAnonymous = false,
@@ -28,6 +30,11 @@ export default function CommentInput({
   const [commentMode, setCommentMode] = useState<'user' | 'anonymous'>(identityLocked ? (lockedIsAnonymous ? 'anonymous' : 'user') : 'user');
   const [submitting, setSubmitting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [targetName, setTargetName] = useState(replyTargetName);
+
+  useEffect(() => {
+    setTargetName(replyTargetName);
+  }, [replyTargetName]);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -70,15 +77,20 @@ export default function CommentInput({
     if (!content.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await onSubmit(content, isAnonymous);
+      await onSubmit(content, isAnonymous, replyTargetName && !targetName);
       setContent('');
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
+      setTargetName(replyTargetName);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Backspace' && content === '' && targetName) {
+      e.preventDefault();
+      setTargetName(undefined);
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -204,17 +216,26 @@ export default function CommentInput({
                {t('pollDetail.commentingAs')} <strong className="font-semibold">{isAnonymous ? t('pollDetail.anonymous') : username}</strong>
              </div>
           )}
-          <div className="flex items-end gap-2 rounded-2xl bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 focus-within:border-indigo-400 dark:focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white dark:focus-within:bg-white/[0.06] transition-all duration-200 shadow-sm">
+          <div className="flex items-start gap-1 rounded-2xl bg-white dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 focus-within:border-indigo-400 dark:focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white dark:focus-within:bg-white/[0.06] transition-all duration-200 shadow-sm relative pt-3 pb-3 px-4">
+            {targetName && (
+              <span 
+                className="text-[15px] leading-relaxed font-bold text-slate-900 dark:text-white shrink-0 mt-[1px] cursor-pointer hover:bg-slate-200 dark:hover:bg-white/10 px-1 rounded transition-colors"
+                onClick={() => setTargetName(undefined)}
+                title="Nhấn để xóa thẻ tên"
+              >
+                {targetName}
+              </span>
+            )}
             <textarea
               ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isAnonymous ? t('pollDetail.writeCommentAnon') : placeholder}
+              placeholder={isAnonymous ? t('pollDetail.writeCommentAnon') : (targetName ? '' : placeholder)}
               autoFocus={autoFocus}
               disabled={submitting}
               rows={1}
-              className="w-full min-h-[40px] max-h-[200px] py-3 px-4 bg-transparent text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 resize-none focus:outline-none text-[15px] leading-relaxed"
+              className={`flex-1 min-w-0 min-h-[24px] max-h-[200px] bg-transparent text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 resize-none focus:outline-none text-[15px] leading-relaxed m-0 p-0`}
             />
             <button
               type="button"

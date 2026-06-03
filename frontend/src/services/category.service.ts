@@ -10,8 +10,8 @@ export interface Category {
 }
 
 export const categoryService = {
-    getAllCategories: async (): Promise<Category[]> => {
-        const response = await api.get('/categories');
+    getAllCategories: async (status: 'ACTIVE' | 'ENDED' = 'ACTIVE'): Promise<Category[]> => {
+        const response = await api.get('/categories', { params: { status } });
         return response.data.data;
     },
 

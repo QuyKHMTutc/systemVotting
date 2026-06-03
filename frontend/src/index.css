@@ -63,7 +63,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading,
-.text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl, .text-7xl {
+.text-4xl, .text-5xl, .text-6xl, .text-7xl {
   font-family: 'Outfit', system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
