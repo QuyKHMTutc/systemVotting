@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { userService } from '../services/user.service';
+import { userService } from '../../services/user.service';
 import { KeyRound, Eye, EyeOff } from 'lucide-react';
 import PasswordStrength, { isPasswordValid } from './PasswordStrength';
 

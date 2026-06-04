@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import type { Poll } from '../services/poll.service';
+import type { Poll } from '../../services/poll.service';
 import { Share2, Check, Users, MessageCircle, BarChart3, Clock, Lock, MoreVertical, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { timeAgo, endsIn } from '../utils/date';
-import { getTagPillClass } from '../utils/tagPills';
+import { timeAgo, endsIn } from '../../utils/date';
+import { getTagPillClass } from '../../utils/tagPills';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
-import { getAnonymousCreatorName } from '../utils/anonymous';
+import { useAuth } from '../../contexts/AuthContext';
+import { getAnonymousCreatorName } from '../../utils/anonymous';
 
 export interface PollCardProps {
   poll: Poll;

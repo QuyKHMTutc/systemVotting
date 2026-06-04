@@ -9,9 +9,9 @@ import {
   CreditCard, Crown, Zap, ArrowLeft, ChevronLeft, ChevronRight,
   MoreVertical, Trash2, User, CheckCircle2, XCircle,
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import UserProfileModal from '../components/UserProfileModal';
+import Navbar from '../components/layout/Navbar';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import UserProfileModal from '../components/auth/UserProfileModal';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
 import { useModerationWebSocket, type ModerationEvent } from '../hooks/useModerationWebSocket';

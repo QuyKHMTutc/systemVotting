@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import { useTranslation } from 'react-i18next';
-import OtpInput from '../components/OtpInput';
-import PasswordStrength, { isPasswordValid } from '../components/PasswordStrength';
-import LegalModal from '../components/LegalModal';
-import type { LegalModalType } from '../components/LegalModal';
+import OtpInput from '../components/auth/OtpInput';
+import PasswordStrength, { isPasswordValid } from '../components/auth/PasswordStrength';
+import LegalModal from '../components/common/LegalModal';
+import type { LegalModalType } from '../components/common/LegalModal';
 import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, MailCheck, Check, Fingerprint, Activity, Zap } from 'lucide-react';
 import confetti from 'canvas-confetti';
 

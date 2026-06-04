@@ -1,4 +1,4 @@
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 import { Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

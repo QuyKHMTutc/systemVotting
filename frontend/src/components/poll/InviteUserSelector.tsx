@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
-import { judgeService } from '../services/judge.service';
-import type { JudgeCandidate } from '../services/judge.service';
-import { useAuth } from '../contexts/AuthContext';
+import { judgeService } from '../../services/judge.service';
+import type { JudgeCandidate } from '../../services/judge.service';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface InviteUserSelectorProps {
     invitedUsers: JudgeCandidate[];

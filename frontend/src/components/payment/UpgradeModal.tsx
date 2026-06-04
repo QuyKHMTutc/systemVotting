@@ -5,6 +5,7 @@ import { authService } from '../../services/auth.service';
 import { useAuth } from '../../contexts/AuthContext';
 import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTranslation } from 'react-i18next';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -13,16 +14,21 @@ interface UpgradeModalProps {
 }
 
 
-const PLANS = [
+const buildPlans = (t: (k: string) => string) => [
   {
     key: 'FREE' as const,
     name: 'Starter',
-    tagline: 'Dành cho cá nhân',
-    price: 'Miễn phí',
+    tagline: t('upgradeModal.freePlanTagline'),
+    price: t('upgradeModal.freePrice'),
     priceDisplay: null as string | null,
     icon: <Shield className="w-5 h-5" />,
     votes: '100',
-    features: ['Tối đa 5 poll', 'Bình chọn ẩn danh', 'Mời riêng tư tối đa 100 người', 'Tối đa 5 GK'],
+    features: [
+      t('upgradeModal.freeFeature1'),
+      t('upgradeModal.freeFeature2'),
+      t('upgradeModal.freeFeature3'),
+      t('upgradeModal.freeFeature4'),
+    ] as string[],
     colorFrom: '#64748b', colorTo: '#475569',
     glowColor: 'rgba(100,116,139,0)',
     badgeText: null as string | null,
@@ -31,52 +37,71 @@ const PLANS = [
   {
     key: 'GO' as const,
     name: 'Go',
-    tagline: 'Sự kiện vừa & nhỏ',
+    tagline: t('upgradeModal.goPlanTagline'),
     price: '50.000đ',
     priceDisplay: '50.000',
     icon: <Zap className="w-5 h-5" />,
     votes: '300',
-    features: ['Tối đa 20 poll', 'Bình chọn ẩn danh', 'Mời riêng tư tối đa 300 người', 'Tối đa 7 GK'],
+    features: [
+      t('upgradeModal.goFeature1'),
+      t('upgradeModal.goFeature2'),
+      t('upgradeModal.goFeature3'),
+      t('upgradeModal.goFeature4'),
+    ] as string[],
     colorFrom: '#6366f1', colorTo: '#7c3aed',
     glowColor: 'rgba(99,102,241,0.35)',
-    badgeText: 'Phổ biến',
+    badgeText: t('upgradeModal.badgePopular'),
     highlight: false,
   },
   {
     key: 'PLUS' as const,
     name: 'Plus',
-    tagline: 'Người dùng thường xuyên',
+    tagline: t('upgradeModal.plusPlanTagline'),
     price: '200.000đ',
     priceDisplay: '200.000',
     icon: <Crown className="w-5 h-5" />,
     votes: '1,000',
-    features: ['Tối đa 50 poll', 'Bình chọn ẩn danh', 'Mời riêng tư tối đa 1.000 người', 'Tối đa 9 GK'],
+    features: [
+      t('upgradeModal.plusFeature1'),
+      t('upgradeModal.plusFeature2'),
+      t('upgradeModal.plusFeature3'),
+      t('upgradeModal.plusFeature4'),
+    ] as string[],
     colorFrom: '#f59e0b', colorTo: '#f97316',
     glowColor: 'rgba(245,158,11,0.4)',
-    badgeText: '⭐ Nổi bật',
+    badgeText: t('upgradeModal.badgeFeatured'),
     highlight: true,
   },
   {
     key: 'PRO' as const,
     name: 'Pro',
-    tagline: 'Sự kiện lớn, tải cao',
+    tagline: t('upgradeModal.proPlanTagline'),
     price: '500.000đ',
     priceDisplay: '500.000',
     icon: <Rocket className="w-5 h-5" />,
     votes: '2,000',
-    features: ['Không giới hạn poll', 'Bình chọn ẩn danh', 'Mời riêng tư tối đa 2.000 người', 'Tối đa 11 GK'],
+    features: [
+      t('upgradeModal.proFeature1'),
+      t('upgradeModal.proFeature2'),
+      t('upgradeModal.proFeature3'),
+      t('upgradeModal.proFeature4'),
+    ] as string[],
     colorFrom: '#d946ef', colorTo: '#4f46e5',
     glowColor: 'rgba(217,70,239,0.35)',
-    badgeText: 'Cao cấp',
+    badgeText: t('upgradeModal.badgePremium'),
     highlight: false,
   },
-] as const;
+];
 
-type PlanKey = typeof PLANS[number]['key'];
-const PLAN_MAP = Object.fromEntries(PLANS.map(p => [p.key, p])) as Record<PlanKey, typeof PLANS[number]>;
+type PlanItem = ReturnType<typeof buildPlans>[number];
+
+type PlanKey = PlanItem['key'];
 const planRank = (p?: string | null) => ({ FREE: 0, GO: 1, PLUS: 2, PRO: 3 }[(p || 'FREE').toUpperCase()] ?? 0);
 
 export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: UpgradeModalProps) {
+  const { t } = useTranslation();
+  const PLANS = buildPlans(t);
+  const PLAN_MAP = Object.fromEntries(PLANS.map(p => [p.key, p])) as Record<PlanKey, PlanItem>;
 
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [targetPlan, setTargetPlan] = useState<PlanKey | null>(null);
@@ -143,7 +168,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
 
   const handleUpgrade = async (plan: 'GO' | 'PLUS' | 'PRO') => {
     if (planRank(activePlan) >= planRank(plan)) {
-      alert(`Bạn đang dùng gói ${PLAN_MAP[activePlan as PlanKey]?.name || activePlan}. Hãy làm mới trang nếu vừa thanh toán.`);
+      alert(t('upgradeModal.alreadyOnPlan', { plan: PLAN_MAP[activePlan as PlanKey]?.name || activePlan }));
       return;
     }
     setTargetPlan(plan);
@@ -219,11 +244,11 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <Sparkles className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
                     <span className="text-[11px] font-black uppercase tracking-[0.15em] text-violet-500 dark:text-violet-400">
-                      Nâng cấp tài khoản
+                      {t('upgradeModal.title')}
                     </span>
                   </div>
                   <h2 className="text-xl font-black text-slate-800 dark:text-white leading-tight">
-                    Chọn gói phù hợp với bạn
+                    {t('upgradeModal.subtitle')}
                   </h2>
                 </div>
               </div>
@@ -246,7 +271,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              Đang đồng bộ thông tin gói...
+              {t('upgradeModal.syncingPlan')}
             </div>
           )}
 
@@ -264,8 +289,8 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                       <CreditCard className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest font-black text-slate-400 dark:text-white/40 mb-1">Xác nhận thanh toán</p>
-                      <h3 className="font-black text-xl text-slate-800 dark:text-white leading-none">Gói {meta.name}</h3>
+                      <p className="text-[10px] uppercase tracking-widest font-black text-slate-400 dark:text-white/40 mb-1">{t('upgradeModal.confirmPaymentLabel')}</p>
+                      <h3 className="font-black text-xl text-slate-800 dark:text-white leading-none">{t('upgradeModal.planLabel', { name: meta.name })}</h3>
                     </div>
                   </div>
                   <button onClick={() => { setTargetPlan(null); setQrUrl(null); }} className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-white/60 transition-colors">
@@ -281,7 +306,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                     </span>
-                    Chờ thanh toán
+                    {t('upgradeModal.pendingPayment')}
                   </div>
                 </div>
 
@@ -294,7 +319,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                     ) : (
                       <div className="flex flex-col items-center gap-3 text-slate-400">
                         <Loader2 className="w-8 h-8 animate-spin" />
-                        <span className="text-xs font-medium">Đang tạo mã...</span>
+                        <span className="text-xs font-medium">{t('upgradeModal.generatingQr')}</span>
                       </div>
                     )}
                   </div>
@@ -302,7 +327,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
 
                 {/* Order Info */}
                 <div className="w-full flex items-center justify-between text-sm mb-8 px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] rounded-xl border border-slate-100 dark:border-white/[0.05]">
-                  <span className="text-slate-500 dark:text-white/50 font-medium">Mã giao dịch</span>
+                  <span className="text-slate-500 dark:text-white/50 font-medium">{t('upgradeModal.txnCode')}</span>
                   <span className="font-black text-slate-700 dark:text-white tracking-widest">{qrUrl?.match(/[?&]vnp_TxnRef=([^&]+)/)?.[1] || '...'}</span>
                 </div>
 
@@ -314,14 +339,14 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 transition-transform duration-300 group-hover:scale-[1.02]"></div>
                   <span className="relative flex items-center gap-2 tracking-wide">
-                    Tiếp tục thanh toán <ExternalLink className="w-4 h-4" />
+                    {t('upgradeModal.continuePayment')} <ExternalLink className="w-4 h-4" />
                   </span>
                 </button>
 
                 {/* Security Notice */}
                 <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-white/40 font-medium">
                   <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  <p>Bảo mật & mã hóa SSL bởi <b>VNPay</b></p>
+                  <p>{t('upgradeModal.sslNotice')} <b>VNPay</b></p>
                 </div>
               </div>
             </div>
@@ -332,7 +357,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
               {activePlan !== 'FREE' && (
                 <div className="mb-5 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.07] text-sm">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span className="text-slate-500 dark:text-white/50">Gói hiện tại: </span>
+                  <span className="text-slate-500 dark:text-white/50">{t('upgradeModal.currentPlanBanner')} </span>
                   <span className="font-black text-slate-700 dark:text-white">{PLAN_MAP[activePlan as PlanKey]?.name || activePlan}</span>
                 </div>
               )}
@@ -405,38 +430,38 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                           {plan.priceDisplay ? (
                             <div className="flex items-baseline gap-0.5">
                               <span className="text-2xl font-black text-slate-800 dark:text-white">{plan.priceDisplay}<span className="text-base">đ</span></span>
-                              <span className="text-xs text-slate-400 dark:text-white/50 font-medium ml-1">/tháng</span>
+                              <span className="text-xs text-slate-400 dark:text-white/50 font-medium ml-1">{t('upgradeModal.perMonth')}</span>
                             </div>
                           ) : (
-                            <span className="text-xl font-black text-slate-400 dark:text-white/50">Miễn phí</span>
+                            <span className="text-xl font-black text-slate-400 dark:text-white/50">{t('upgradeModal.freePrice')}</span>
                           )}
                         </div>
 
                         {/* Votes */}
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl mb-4 bg-slate-50 dark:bg-white/[0.04] border border-slate-100 dark:border-white/[0.06]">
                           <Star className="w-3.5 h-3.5 text-slate-300 dark:text-white/45 shrink-0" />
-                          <span className="text-xs text-slate-400 dark:text-white/40">Tối đa</span>
+                          <span className="text-xs text-slate-400 dark:text-white/40">{t('upgradeModal.maxVotes')}</span>
                           <span className="text-sm font-black" style={{ background: gradientBg, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             {plan.votes}
                           </span>
-                          <span className="text-xs text-slate-400 dark:text-white/40">vote/poll</span>
+                          <span className="text-xs text-slate-400 dark:text-white/40">{t('upgradeModal.votesPerPoll')}</span>
                         </div>
 
                         {/* Features */}
                         <ul className="space-y-2 mb-5 flex-1">
                           {plan.features.map((f, i) => {
-                            const isJudge = f.includes('GK');
+                            const isJudge = f.toLowerCase().includes('judge') || f.includes('GK');
                             const weight = plan.key === 'GO' ? 50 : plan.key === 'PLUS' ? 60 : plan.key === 'PRO' ? 70 : 0;
-                            const judgeMatch = f.match(/Tối đa (\d+) GK/);
+                            const judgeMatch = f.match(/(\d+)/);
                             const maxJudges = judgeMatch ? judgeMatch[1] : '';
                             return (
                               <li key={i} className="flex items-start gap-2 text-xs text-slate-500 dark:text-white/50">
                                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: `${plan.colorFrom}99` }} />
-                                {isJudge ? (
+                                {isJudge && maxJudges ? (
                                   <div className="group relative w-fit cursor-help">
                                     <span className="border-b border-dashed border-slate-300 dark:border-white/30 pb-0.5">{f}</span>
                                     <div className="absolute bottom-full left-0 -ml-2 mb-2 w-[200px] p-2.5 bg-slate-800 text-white text-[11px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] shadow-xl pointer-events-none text-left">
-                                      {`Mời tối đa ${maxJudges} GK,Ví dụ nếu chọn trọng số GK là ${weight}% thì điểm của Ban giám khảo sẽ chiếm ${weight}% tổng kết quả của toàn bộ cuộc bình chọn.`}
+                                      {t('upgradeModal.judgeTooltip', { maxJudges, weight })}
                                       <div className="absolute top-full left-4 border-4 border-transparent border-t-slate-800"></div>
                                     </div>
                                   </div>
@@ -455,9 +480,9 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                               {myPollsCount !== null && plan.key !== 'PRO' && (
                                 <div className="w-full bg-slate-50 dark:bg-white/[0.02] rounded-lg p-3 border border-slate-100 dark:border-white/[0.05]">
                                   <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-white/40 font-semibold mb-1.5">
-                                    <span>Đã dùng: {myPollsCount} / {plan.key === 'FREE' ? 5 : plan.key === 'GO' ? 20 : 50} Poll</span>
+                                    <span>{t('upgradeModal.usedPolls', { used: myPollsCount, max: plan.key === 'FREE' ? 5 : plan.key === 'GO' ? 20 : 50 })}</span>
                                     {myPollsCount >= (plan.key === 'FREE' ? 5 : plan.key === 'GO' ? 20 : 50) && (
-                                      <span className="text-red-500 dark:text-red-400">Đã hết hạn mức!</span>
+                                      <span className="text-red-500 dark:text-red-400">{t('upgradeModal.limitReached')}</span>
                                     )}
                                   </div>
                                   <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
@@ -470,16 +495,16 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                               )}
                               <button disabled className="w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/25">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                Gói hiện tại của bạn
+                                {t('upgradeModal.currentPlanBtn')}
                               </button>
                             </div>
                           ) : isIncluded ? (
                             <button disabled className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-white/45">
-                              Đã bao gồm trong gói của bạn
+                              {t('upgradeModal.includedBtn')}
                             </button>
                           ) : plan.key === 'FREE' ? (
                             <button disabled className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-white/45">
-                              Mặc định
+                              {t('upgradeModal.defaultBtn')}
                             </button>
                           ) : (
                             <button
@@ -490,7 +515,7 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
                                 boxShadow: `0 4px 20px -5px ${plan.glowColor}`,
                               }}
                             >
-                              {`Nâng cấp lên ${plan.name} →`}
+                              {t('upgradeModal.upgradeBtn', { plan: plan.name })}
                             </button>
                           )}
                         </div>
@@ -507,15 +532,15 @@ export default function UpgradeModal({ isOpen, onClose, currentPlan = 'FREE' }: 
         {!targetPlan && (
           <div className="shrink-0 px-6 py-3.5 flex items-center justify-between border-t border-slate-100 dark:border-white/[0.05] bg-slate-50/50 dark:bg-transparent">
             <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/45 font-medium">
-              <span>Thanh toán bởi</span>
+              <span>{t('upgradeModal.footerPoweredBy')}</span>
               <span className="font-black text-sm text-[#005ba6] dark:text-[#005ba6]/60">VN<span className="text-[#ed1c24] dark:text-[#ed1c24]/60">PAY</span></span>
             </div>
             <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-white/40 font-medium">
-              <span>🔒 SSL bảo mật</span>
+              <span>{t('upgradeModal.footerSsl')}</span>
               <span className="text-slate-200 dark:text-white/50">·</span>
-              <span>⚡ Kích hoạt ngay</span>
+              <span>{t('upgradeModal.footerInstant')}</span>
               <span className="text-slate-200 dark:text-white/50">·</span>
-              <span>✕ Hủy bất cứ lúc nào</span>
+              <span>{t('upgradeModal.footerCancel')}</span>
             </div>
           </div>
         )}

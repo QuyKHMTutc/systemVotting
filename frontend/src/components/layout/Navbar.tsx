@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Link, NavLink, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogOut, ChevronDown, Sun, Moon, Crown, Search, SquarePlus, KeyRound, User, Menu, X } from 'lucide-react';
-import NotificationBell from './NotificationBell';
-import UpgradeModal from './payment/UpgradeModal';
-import ChangePasswordModal from './ChangePasswordModal';
+import NotificationBell from '../NotificationBell';
+import UpgradeModal from '../payment/UpgradeModal';
+import ChangePasswordModal from '../auth/ChangePasswordModal';
 
 const Navbar = () => {
     const { user, logout } = useAuth();

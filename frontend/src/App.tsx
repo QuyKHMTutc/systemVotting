@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
+import { SidebarProvider } from './contexts/SidebarContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
@@ -15,8 +16,8 @@ import { Profile } from './pages/Profile';
 import PaymentResult from './pages/PaymentResult';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
-import Footer from './components/Footer';
-import ScrollToTop from './components/ScrollToTop';
+import Footer from './components/layout/Footer';
+import ScrollToTop from './components/layout/ScrollToTop';
 import { ChatbotWidget } from './components/chat/ChatbotWidget';
 
 // Protected Route Wrapper
@@ -72,6 +73,7 @@ function App() {
     <Router>
       <ThemeProvider>
         <AuthProvider>
+          <SidebarProvider>
           <WebSocketProvider>
           <div className="min-h-screen flex flex-col">
             <div className="flex-grow flex flex-col relative">
@@ -113,6 +115,7 @@ function App() {
             <ConditionalFooter />
           </div>
           </WebSocketProvider>
+          </SidebarProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>

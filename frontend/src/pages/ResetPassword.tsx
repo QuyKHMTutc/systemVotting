@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { authService } from '../services/auth.service';
-import OtpInput from '../components/OtpInput';
-import PasswordStrength, { isPasswordValid } from '../components/PasswordStrength';
+import OtpInput from '../components/auth/OtpInput';
+import PasswordStrength, { isPasswordValid } from '../components/auth/PasswordStrength';
 import { ShieldCheck, Lock, Eye, EyeOff, Loader2, ArrowLeft, Activity, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

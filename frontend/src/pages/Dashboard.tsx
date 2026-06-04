@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } fr
 import { useSearchParams } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import type { Poll, PollPageResponse } from '../services/poll.service';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { usePollEventsWebSocket, type PollEventPayload } from '../hooks/usePollEventsWebSocket';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,8 @@ import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import { ExploreRightSidebar } from '../components/explore/ExploreRightSidebar';
 import { ExplorePollCard } from '../components/explore/ExplorePollCard';
 import { Flame, Menu } from 'lucide-react';
-import { ScrollReveal } from '../components/ScrollReveal';
+import { ScrollReveal } from '../components/layout/ScrollReveal';
+import { useSidebar } from '../contexts/SidebarContext';
 
 
 interface DashboardCache {
@@ -79,7 +80,7 @@ const Dashboard = () => {
   const [votedPollIds, setVotedPollIds] = useState<number[]>(() => {
     try { return JSON.parse(localStorage.getItem('votedPolls') || '[]'); } catch { return []; }
   });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { sidebarOpen, toggleSidebar } = useSidebar();
   const [pollListVersion, setPollListVersion] = useState(0);
 
   const [page, setPage] = useState(() => shouldRestore ? initialCache!.page : 0);
@@ -552,7 +553,7 @@ const Dashboard = () => {
           <div className="absolute -right-4 top-2 z-20 group">
             <button
               type="button"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
+              onClick={() => toggleSidebar()}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border-2 border-slate-300 dark:border-white/30 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-400 dark:hover:border-violet-400/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
             >
               <Menu className="w-4 h-4 transition-transform duration-300" />
@@ -701,12 +702,12 @@ const Dashboard = () => {
                   {loadingMore && (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-8 h-8 rounded-full border-4 border-violet-500/20 border-t-violet-500 animate-spin" />
-                      <p className="text-xs text-slate-400 dark:text-white/50 font-medium">Đang tải thêm bình chọn...</p>
+                      <p className="text-xs text-slate-400 dark:text-white/50 font-medium">{t('dashboard.loadingMore')}</p>
                     </div>
                   )}
                   {!hasMore && polls.length > 0 && (
                     <p className="text-xs text-slate-400 dark:text-white/40 font-medium mt-4">
-                      Bạn đã xem hết tất cả bình chọn 🎉
+                      {t('dashboard.allLoaded')}
                     </p>
                   )}
                 </div>

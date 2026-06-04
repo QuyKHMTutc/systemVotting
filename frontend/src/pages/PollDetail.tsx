@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { pollService } from '../services/poll.service';
 import type { Poll } from '../services/poll.service';
 import api from '../services/api';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 import { Check, Users, MessageCircle, BarChart3, Menu, ArrowLeft } from 'lucide-react';
 import { ExploreSidebar } from '../components/explore/ExploreSidebar';
 import PostActions from '../components/post/PostActions';
@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import PollLiveChartModal from '../components/poll/PollLiveChartModal';
 import PollAnalyticsModal from '../components/poll/PollAnalyticsModal';
 import { getAnonymousCreatorName } from '../utils/anonymous';
+import { useSidebar } from '../contexts/SidebarContext';
 
 const COMMENT_PAGE_SIZE = 20;
 
@@ -62,7 +63,7 @@ const PollDetail = () => {
   const [commentError, setCommentError] = useState('');
   const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { sidebarOpen, toggleSidebar } = useSidebar();
   const [similarPolls, setSimilarPolls] = useState<Poll[]>([]);
   const [trendingCount, setTrendingCount] = useState(0);
 
@@ -509,7 +510,7 @@ const PollDetail = () => {
         >
           <div className="absolute -right-4 top-2 z-20 group">
             <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
+              onClick={() => toggleSidebar()}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#13112a] border-2 border-slate-300 dark:border-white/30 text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-400 dark:hover:border-violet-400/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
             >
               <Menu className="w-4 h-4 transition-transform duration-300" />
@@ -745,12 +746,12 @@ const PollDetail = () => {
                                         style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                                         {displayPct}%
                                       </span>
-                                      <span className="text-[10px] text-slate-400 dark:text-white/50 mt-0.5">trọng số</span>
+                                      <span className="text-[10px] text-slate-400 dark:text-white/50 mt-0.5">{t('pollDetail.weightedLabel')}</span>
                                     </div>
                                   ) : (
                                     <div className="flex flex-col items-end">
                                       <span className="text-lg font-bold text-slate-800 dark:text-white">{rawPercentage}%</span>
-                                      <span className="text-[10px] text-slate-400 dark:text-white/50">{option.voteCount} phiếu</span>
+                                      <span className="text-[10px] text-slate-400 dark:text-white/50">{option.voteCount} {t('pollDetail.votesUnit')}</span>
                                     </div>
                                   )}
                                 </div>
@@ -792,16 +793,16 @@ const PollDetail = () => {
                                     <span className="flex items-center gap-1">
                                       <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#f59e0b,#f97316)' }} />
                                       <span className="text-amber-600 dark:text-amber-400 font-medium">⚖️ GK</span>
-                                      <span className="text-slate-500 dark:text-white/40">{judgeVotesPct}% trong nhóm</span>
+                                      <span className="text-slate-500 dark:text-white/40">{judgeVotesPct}{t('pollDetail.inGroup')}</span>
                                     </span>
                                     <span className="flex items-center gap-1">
                                       <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)' }} />
                                       <span className="text-indigo-600 dark:text-indigo-400 font-medium">👥 KG</span>
-                                      <span className="text-slate-500 dark:text-white/40">{audienceVotesPct}% trong nhóm</span>
+                                      <span className="text-slate-500 dark:text-white/40">{audienceVotesPct}{t('pollDetail.inGroup')}</span>
                                     </span>
                                   </div>
                                   <span className="text-slate-400 dark:text-white/45">
-                                    {option.judgeCount ?? 0} + {option.audienceCount ?? 0} phiếu
+                                    {option.judgeCount ?? 0} + {option.audienceCount ?? 0} {t('pollDetail.votesUnit')}
                                   </span>
                                 </div>
                               </div>
@@ -892,7 +893,7 @@ const PollDetail = () => {
                           {commentError && <p className="text-red-400 text-sm mb-2">{commentError}</p>}
                           {!isActive ? (
                             <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
-                              <span className="text-slate-500 dark:text-white/50 font-medium">Bình chọn đã kết thúc. Bạn không thể bình luận thêm.</span>
+                              <span className="text-slate-500 dark:text-white/50 font-medium">{t('pollDetail.pollEnded')}</span>
                             </div>
                           ) : !user ? (
                             <div className="text-center p-4 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
@@ -986,7 +987,7 @@ const PollDetail = () => {
                       className="w-full mt-4 py-2 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                      Xem phân tích & CSV
+                      {t('pollDetail.viewAnalytics')}
                     </button>
                   )}
                 </div>
@@ -994,7 +995,7 @@ const PollDetail = () => {
                 {similarPolls.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white px-1 mb-2">
-                      Các bình chọn tương tự
+                      {t('pollDetail.similarPolls')}
                     </h3>
                     <div className="space-y-3">
                       {similarPolls.map((tp) => (
@@ -1011,7 +1012,7 @@ const PollDetail = () => {
                               @{tp.isAnonymous ? getAnonymousCreatorName(tp.id) : tp.creator.username}
                             </span>
                             <span>
-                              {tp.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0)} phiếu
+                              {tp.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0)} {t('pollDetail.votesCount')}
                             </span>
                           </div>
                         </div>
@@ -1040,6 +1041,7 @@ const PollDetail = () => {
               pollId={poll.id}
               pollTitle={poll.title}
               options={poll.options}
+              judgeWeight={poll.judgeWeight}
             />
           )}
         </>

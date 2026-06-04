@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pollService } from '../services/poll.service';
 import { categoryService, type Category } from '../services/category.service';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import JudgeSelector from '../components/JudgeSelector';
-import InviteUserSelector from '../components/InviteUserSelector';
+import JudgeSelector from '../components/poll/JudgeSelector';
+import InviteUserSelector from '../components/poll/InviteUserSelector';
 import type { JudgeCandidate } from '../services/judge.service';
 import { PlanPollLimits } from '../utils/planLimits';
-import ImageUploader from '../components/ImageUploader';
+import ImageUploader from '../components/common/ImageUploader';
 
 const CreatePoll = () => {
     const { t } = useTranslation();
@@ -63,6 +63,13 @@ const CreatePoll = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (options.some(opt => opt.trim() === '')) { setError(t('createPoll.errorEmptyOptions')); return; }
+        
+        const trimmedOptions = options.map(opt => opt.trim());
+        if (new Set(trimmedOptions).size !== trimmedOptions.length) {
+            setError('Các lựa chọn không được phép trùng lặp.');
+            return;
+        }
+
         if (!selectedCategoryId) { setError('Vui lòng chọn danh mục cho cuộc bình chọn.'); return; }
         if (tags.length === 0) { setError('Vui lòng thêm ít nhất một thẻ (tag).'); return; }
 
