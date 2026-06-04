@@ -444,8 +444,17 @@ public class PollServiceImpl implements PollService {
     }
 
     private void processAndAttachOptions(PollCreateRequestDTO requestDTO, Poll poll) {
+        java.util.Set<String> uniqueOptions = new java.util.HashSet<>();
         for (OptionRequestDTO optionRequest : requestDTO.options()) {
+            if (optionRequest.text() == null || optionRequest.text().trim().isEmpty()) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            String trimmedText = optionRequest.text().trim();
+            if (!uniqueOptions.add(trimmedText.toLowerCase())) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
             Option option = pollMapper.toOptionEntity(optionRequest);
+            option.setText(trimmedText);
             option.setVoteCount(0);
             poll.addOption(option);
         }
@@ -909,18 +918,30 @@ public class PollServiceImpl implements PollService {
 
         List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollId(id);
 
+        boolean groupByMinute = false;
         boolean groupByHour = false;
+        long hours = 0;
+        
         if (poll.getStartTime() != null && poll.getEndTime() != null) {
-            long days = java.time.Duration.between(poll.getStartTime(), poll.getEndTime()).toDays();
-            if (days <= 3) groupByHour = true;
+            hours = java.time.Duration.between(poll.getStartTime(), poll.getEndTime()).toHours();
         } else if (poll.getCreatedAt() != null) {
-            long days = java.time.Duration.between(poll.getCreatedAt(), java.time.LocalDateTime.now()).toDays();
-            if (days <= 3) groupByHour = true;
+            hours = java.time.Duration.between(poll.getCreatedAt(), java.time.LocalDateTime.now()).toHours();
+        }
+        
+        if (hours <= 24) {
+            groupByMinute = true;
+        } else if (hours <= 72) {
+            groupByHour = true;
         }
 
-        java.time.format.DateTimeFormatter formatter = groupByHour ?
-                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00") :
-                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        java.time.format.DateTimeFormatter formatter;
+        if (groupByMinute) {
+            formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        } else if (groupByHour) {
+            formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00");
+        } else {
+            formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        }
 
         java.util.Map<String, java.util.Map<String, Integer>> analyticsMap = new java.util.TreeMap<>();
 
