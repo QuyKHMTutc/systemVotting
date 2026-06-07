@@ -3,6 +3,10 @@ package com.xxxx.systemvotting.modules.chatbot.service;
 import com.xxxx.systemvotting.modules.chatbot.dto.request.ChatMessageDTO;
 import com.xxxx.systemvotting.modules.chatbot.dto.request.ChatRequestDTO;
 import com.xxxx.systemvotting.modules.chatbot.dto.response.ChatResponseDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xxxx.systemvotting.modules.user.dto.UserResponseDTO;
+import com.xxxx.systemvotting.modules.vote.service.RateLimitService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -12,14 +16,24 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ChatbotService {
+
+    private final RateLimitService rateLimitService;
+    private final ObjectMapper objectMapper;
 
     @Value("${ai.api.key:}")
     private String apiKey;
@@ -253,6 +267,143 @@ public class ChatbotService {
         } catch (Exception e) {
             log.error("Lỗi parse phản hồi Chatbot: {}", e.getMessage());
             return "Lỗi xử lý phản hồi từ AI.";
+        }
+    }
+
+    private String buildDynamicSystemPrompt(UserResponseDTO user) {
+        if (user == null) {
+            return SYSTEM_PROMPT;
+        }
+        return SYSTEM_PROMPT + "\n\n" +
+                "[Context ẩn: Người dùng đang trò chuyện tên là \"" + user.username() + 
+                "\", đang sử dụng gói \"" + (user.plan() != null ? user.plan() : "FREE") + "\". " +
+                "Hãy xưng hô lịch sự với tên này, và nếu họ hỏi về hạn mức bình chọn, hãy dựa vào gói hiện tại của họ.]";
+    }
+
+    public SseEmitter chatStream(ChatRequestDTO request, UserResponseDTO user, String ipAddress) {
+        String identifier = (user != null) ? String.valueOf(user.id()) : ipAddress;
+        rateLimitService.checkAndRecordChatbotAttempt(identifier);
+
+        SseEmitter emitter = new SseEmitter(120000L); // 2 phút timeout
+
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("Chatbot API key is missing");
+            sendSseErrorAndComplete(emitter, "Xin lỗi, hệ thống CSKH đang tạm thời bảo trì (Thiếu cấu hình API Key).");
+            return emitter;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Xây dựng history
+                List<Map<String, Object>> contents = new ArrayList<>();
+                for (ChatMessageDTO msg : request.messages()) {
+                    String role = "model".equalsIgnoreCase(msg.role()) ? "model" : "user";
+                    contents.add(Map.of(
+                            "role", role,
+                            "parts", List.of(Map.of("text", msg.content()))
+                    ));
+                }
+
+                String dynamicPrompt = buildDynamicSystemPrompt(user);
+
+                // Xây dựng request body
+                Map<String, Object> requestBody = Map.of(
+                        "systemInstruction", Map.of(
+                                "parts", List.of(Map.of("text", dynamicPrompt))
+                        ),
+                        "contents", contents,
+                        "generationConfig", Map.of(
+                                "temperature", 0.5,
+                                "maxOutputTokens", 500
+                        )
+                );
+
+                String jsonBody = objectMapper.writeValueAsString(requestBody);
+                String urlWithKey = apiUrl.replace(":generateContent", ":streamGenerateContent?alt=sse&key=") + apiKey;
+
+                HttpClient client = HttpClient.newBuilder()
+                        .connectTimeout(java.time.Duration.ofMillis(connectTimeoutMs))
+                        .build();
+
+                HttpRequest httpRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(urlWithKey))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                        .build();
+
+                client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofLines())
+                        .thenAccept(response -> {
+                            if (response.statusCode() == 429) {
+                                sendSseErrorAndComplete(emitter, "Hệ thống AI của Google hiện đang quá tải do nhu cầu cao. Bạn vui lòng thử lại sau vài phút nhé! 😅");
+                                return;
+                            }
+                            if (response.statusCode() >= 400) {
+                                log.error("Lỗi HTTP {} từ Gemini Streaming", response.statusCode());
+                                sendSseErrorAndComplete(emitter, "Xin lỗi, có lỗi giao tiếp với máy chủ AI.");
+                                return;
+                            }
+
+                            response.body().forEach(line -> {
+                                if (line.startsWith("data:")) {
+                                    String json = line.substring(5).trim();
+                                    String chunkText = parseGeminiStreamChunk(json);
+                                    if (chunkText != null && !chunkText.isEmpty()) {
+                                        try {
+                                            emitter.send(SseEmitter.event().data(Map.of("text", chunkText)));
+                                        } catch (Exception e) {
+                                            // Client disconnected
+                                            emitter.completeWithError(e);
+                                        }
+                                    }
+                                }
+                            });
+                            emitter.complete();
+                        })
+                        .exceptionally(ex -> {
+                            log.error("Lỗi kết nối Streaming AI: {}", ex.getMessage());
+                            sendSseErrorAndComplete(emitter, "Xin lỗi, đã có lỗi kết nối đến máy chủ AI.");
+                            return null;
+                        });
+
+            } catch (Exception e) {
+                log.error("Lỗi khởi tạo Streaming AI: {}", e.getMessage());
+                sendSseErrorAndComplete(emitter, "Lỗi nội bộ hệ thống.");
+            }
+        });
+
+        return emitter;
+    }
+
+    private void sendSseErrorAndComplete(SseEmitter emitter, String errorMessage) {
+        try {
+            emitter.send(SseEmitter.event().name("error").data(errorMessage));
+            emitter.complete();
+        } catch (Exception ignored) {
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String parseGeminiStreamChunk(String json) {
+        try {
+            if ("{}".equals(json.trim())) return null; // SSE ping from Google sometimes
+            Map<String, Object> body = objectMapper.readValue(json, Map.class);
+            var candidates = (List<Map<String, Object>>) body.get("candidates");
+            if (candidates == null || candidates.isEmpty()) return null;
+
+            var content = (Map<String, Object>) candidates.get(0).get("content");
+            if (content == null) return null;
+            var parts = (List<Map<String, Object>>) content.get("parts");
+            if (parts == null) return null;
+
+            for (Map<String, Object> part : parts) {
+                Boolean isThought = (Boolean) part.get("thought");
+                if (isThought == null || !isThought) {
+                    return (String) part.get("text");
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
         }
     }
 }

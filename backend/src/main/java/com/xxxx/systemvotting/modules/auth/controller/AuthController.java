@@ -44,12 +44,15 @@ public class AuthController {
         private final PasswordResetService passwordResetService;
         private final GoogleAuthService googleAuthService;
 
+        @org.springframework.beans.factory.annotation.Value("${app.security.jwt.refresh-token.expiration}")
+        private long refreshTokenExpiration;
+
         private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
                 ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                         .httpOnly(true)
                         .secure(true) // Required for SameSite=None
                         .path("/")
-                        .maxAge(14 * 24 * 60 * 60) // 14 days — matches JWT refresh token TTL
+                        .maxAge(refreshTokenExpiration / 1000)
                         .sameSite("None")
                         .build();
                 response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

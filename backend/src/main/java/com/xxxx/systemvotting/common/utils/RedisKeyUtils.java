@@ -34,6 +34,11 @@ public final class RedisKeyUtils {
         return "rate_limit:comment:user:" + userId;
     }
 
+    /** String: sliding-window INCR counter for rate limiting chatbot submissions. */
+    public static String getChatbotRateLimitKey(String identifier) {
+        return "rate_limit:chatbot:" + identifier;
+    }
+
     /** ZSet: pollId → score. Sorted set backing the "Hot Polls" ranking feature. */
     public static String getPollRankingKey() {
         return "ranking:polls:hot";

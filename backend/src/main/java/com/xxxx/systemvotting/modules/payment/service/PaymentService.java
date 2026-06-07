@@ -249,8 +249,8 @@ public class PaymentService {
                         txn.getTargetPlan(),
                         txn.getStatus(),
                         txn.getCreatedAt(),
-                        //txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(PLAN_DURATION_DAYS) : null
-                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_DAYS) : null
+                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(PLAN_DURATION_DAYS) : null
+                        //txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_DAYS) : null
                 ))
                 .collect(Collectors.toList());
 
@@ -279,7 +279,7 @@ public class PaymentService {
                         txn.getTargetPlan(),
                         txn.getStatus(),
                         txn.getCreatedAt(),
-                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusMinutes(PLAN_DURATION_DAYS) : null,
+                        txn.getCreatedAt() != null ? txn.getCreatedAt().plusDays(PLAN_DURATION_DAYS) : null,
                         txn.getUser().getId(),
                         txn.getUser().getUsername(),
                         txn.getUser().getEmail()
@@ -306,7 +306,7 @@ public class PaymentService {
 
         LocalDateTime base = currentExpiration != null && currentExpiration.isAfter(now) ? currentExpiration : now;
         //return base.plusDays(PLAN_DURATION_DAYS);
-        return base.plusMinutes(PLAN_DURATION_DAYS);
+        return base.plusDays(PLAN_DURATION_DAYS);
     }
 
     @Scheduled(fixedRate = 60000) // Run every 60 seconds

@@ -87,4 +87,27 @@ public class RateLimitService {
             throw new AppException(ErrorCode.RATE_LIMIT_EXCEEDED);
         }
     }
+
+    private static final int MAX_CHATBOT_MESSAGES_PER_WINDOW = 15;
+
+    /**
+     * Increments the chatbot attempt counter and throws if limit is breached.
+     * Limit: {@value MAX_CHATBOT_MESSAGES_PER_WINDOW} messages per minute.
+     *
+     * @param identifier userId or IP address
+     * @throws AppException if the user has exceeded the chatbot rate limit
+     */
+    public void checkAndRecordChatbotAttempt(String identifier) {
+        String key   = RedisKeyUtils.getChatbotRateLimitKey(identifier);
+        Long   count = stringRedisTemplate.execute(
+                rateLimitScript,
+                List.of(key),
+                String.valueOf(WINDOW_DURATION.getSeconds())
+        );
+
+        if (count != null && count > MAX_CHATBOT_MESSAGES_PER_WINDOW) {
+            log.warn("Chatbot rate limit exceeded: identifier={}, count={}/{}", identifier, count, MAX_CHATBOT_MESSAGES_PER_WINDOW);
+            throw new AppException(ErrorCode.RATE_LIMIT_EXCEEDED);
+        }
+    }
 }

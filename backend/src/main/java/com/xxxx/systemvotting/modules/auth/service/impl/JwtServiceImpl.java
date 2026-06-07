@@ -31,6 +31,12 @@ public class JwtServiceImpl implements JwtService {
     @Value("${JWT_SECRET_KEY}")
     private String secretKey;
 
+    @Value("${app.security.jwt.expiration}")
+    private long accessTokenExpiration;
+
+    @Value("${app.security.jwt.refresh-token.expiration}")
+    private long refreshTokenExpiration;
+
     private static final String JWT_ISSUER = "SystemVotting";
     private static final String ROLES = "roles";
     private static final String TOKEN_TYPE = "token_type";
@@ -40,7 +46,7 @@ public class JwtServiceImpl implements JwtService {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         Date issueTime = new Date();
-        Date expiredTime = new Date(Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli());
+        Date expiredTime = new Date(Instant.now().plus(accessTokenExpiration, ChronoUnit.MILLIS).toEpochMilli());
         String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
@@ -72,7 +78,7 @@ public class JwtServiceImpl implements JwtService {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         Date issueTime = new Date();
-        Date expiredTime = new Date(Instant.now().plus(14, ChronoUnit.DAYS).toEpochMilli());
+        Date expiredTime = new Date(Instant.now().plus(refreshTokenExpiration, ChronoUnit.MILLIS).toEpochMilli());
         long ttlSeconds = ChronoUnit.SECONDS.between(Instant.now(), expiredTime.toInstant());
 
         String jwtId = UUID.randomUUID().toString();
