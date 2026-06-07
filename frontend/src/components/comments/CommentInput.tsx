@@ -77,7 +77,7 @@ export default function CommentInput({
     if (!content.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await onSubmit(content, isAnonymous, replyTargetName && !targetName);
+      await onSubmit(content, isAnonymous, !!(replyTargetName && !targetName));
       setContent('');
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
       setTargetName(replyTargetName);

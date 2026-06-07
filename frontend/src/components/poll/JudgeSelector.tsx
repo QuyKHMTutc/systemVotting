@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { judgeService } from '../../services/judge.service';
 import type { JudgeCandidate } from '../../services/judge.service';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface JudgeSelectorProps {
     judges: JudgeCandidate[];
@@ -12,6 +13,7 @@ interface JudgeSelectorProps {
 
 const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelectorProps) => {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<JudgeCandidate[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -61,7 +63,7 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
             setImportPreview(results);
             setShowImportModal(true);
         } catch {
-            setImportError('Không thể đọc file. Vui lòng kiểm tra định dạng.');
+            setImportError(t('judgeSelector.readFileError'));
         } finally {
             setIsParsing(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -85,8 +87,8 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-sm text-slate-500 dark:text-indigo-200/60">
-                        Hội đồng giám khảo chiếm <span className="font-bold text-amber-500">{judgeWeight}%</span> tổng điểm.
-                        Tối đa <span className="font-bold text-indigo-400">{maxJudges}</span> người.
+                        {t('judgeSelector.panelDesc', { weight: judgeWeight, max: maxJudges })
+                            .replace('<1>', '').replace('</1>', '').replace('<2>', '').replace('</2>', '')}
                     </p>
                 </div>
                 <span className="text-sm font-medium text-slate-600 dark:text-indigo-200">
@@ -128,7 +130,9 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
                         type="text"
                         value={searchQuery}
                         onChange={e => handleSearch(e.target.value)}
-                        placeholder={judges.length >= maxJudges ? 'Đã đủ số lượng giám khảo' : 'Tìm theo username hoặc email...'}
+                        placeholder={judges.length >= maxJudges
+                            ? t('judgeSelector.searchDisabledPlaceholder')
+                            : t('judgeSelector.searchPlaceholder')}
                         disabled={judges.length >= maxJudges}
                         className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all disabled:opacity-50 text-sm"
                     />
@@ -170,7 +174,7 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
 
             {/* CSV hint */}
             <p className="text-xs text-slate-400 dark:text-white/50">
-                💡 File CSV: mỗi dòng một username hoặc email. Hỗ trợ cả hai cùng lúc.
+                {t('judgeSelector.csvHint')}
             </p>
 
             {/* Import Preview Modal */}
@@ -178,10 +182,10 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-white/10 overflow-hidden">
                         <div className="p-5 border-b border-slate-200 dark:border-white/10">
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Xem trước danh sách import</h3>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{t('judgeSelector.importPreviewTitle')}</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                Tìm thấy <span className="text-green-500 font-semibold">{foundCount}</span> người,
-                                không tìm thấy <span className="text-red-500 font-semibold">{notFoundCount}</span> người.
+                                {t('judgeSelector.importPreviewDesc', { found: foundCount, notFound: notFoundCount })
+                                    .replace('<1>', '').replace('</1>', '').replace('<2>', '').replace('</2>', '')}
                             </p>
                         </div>
                         <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5">
@@ -203,7 +207,7 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
                                             <span className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-lg">?</span>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm text-slate-500 dark:text-slate-400 truncate italic">"{c.matchedValue}"</p>
-                                                <p className="text-xs text-red-400">Không tìm thấy người dùng</p>
+                                                <p className="text-xs text-red-400">{t('judgeSelector.notFound')}</p>
                                             </div>
                                             <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                                         </>
@@ -214,11 +218,11 @@ const JudgeSelector = ({ judges, onChange, maxJudges, judgeWeight }: JudgeSelect
                         <div className="p-5 flex gap-3 border-t border-slate-200 dark:border-white/10">
                             <button type="button" onClick={() => { setShowImportModal(false); setImportPreview([]); }}
                                 className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-sm">
-                                Huỷ
+                                {t('judgeSelector.cancel')}
                             </button>
                             <button type="button" onClick={confirmImport} disabled={foundCount === 0}
                                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-400 hover:to-orange-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg shadow-amber-500/20">
-                                Thêm {Math.min(foundCount, maxJudges - judges.length)} giám khảo
+                                {t('judgeSelector.addCount', { count: Math.min(foundCount, maxJudges - judges.length) })}
                             </button>
                         </div>
                     </div>

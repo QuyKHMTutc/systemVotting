@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { judgeService } from '../../services/judge.service';
 import type { JudgeCandidate } from '../../services/judge.service';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface InviteUserSelectorProps {
     invitedUsers: JudgeCandidate[];
@@ -11,6 +12,7 @@ interface InviteUserSelectorProps {
 
 const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSelectorProps) => {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<JudgeCandidate[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -65,7 +67,7 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
             setImportPreview(results);
             setShowImportModal(true);
         } catch {
-            setImportError('Không thể đọc file. Vui lòng kiểm tra định dạng.');
+            setImportError(t('inviteSelector.readFileError'));
         } finally {
             setIsParsing(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -108,7 +110,7 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
             <div className="flex items-center justify-between mb-2">
                 <div>
                     <p className="text-sm text-slate-500 dark:text-indigo-200/60">
-                        Chế độ riêng tư: Tối đa <span className="font-bold text-violet-400">{maxInvites}</span> người tham gia.
+                        {t('inviteSelector.privateModeDesc', { max: maxInvites }).replace('<1>', '').replace('</1>', '')}
                     </p>
                 </div>
                 <span className="text-sm font-medium text-slate-600 dark:text-indigo-200">
@@ -161,7 +163,7 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
                         type="text"
                         value={searchQuery}
                         onChange={e => handleSearch(e.target.value)}
-                        placeholder="Tìm theo username hoặc email..."
+                        placeholder={t('inviteSelector.searchPlaceholder')}
                         className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-violet-300 dark:border-violet-500/30 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-sm"
                     />
                     {/* Dropdown */}
@@ -209,7 +211,7 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
 
             {/* Hint */}
             <p className="text-xs text-slate-400 dark:text-white/50">
-                💡 Gõ tên hoặc email để tìm người dùng. File CSV: mỗi dòng một username hoặc email.
+                {t('inviteSelector.csvHint')}
             </p>
 
             {/* Import Preview Modal */}
@@ -217,10 +219,10 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-white/10 overflow-hidden">
                         <div className="p-5 border-b border-slate-200 dark:border-white/10">
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Xem trước danh sách import</h3>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{t('inviteSelector.importPreviewTitle')}</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                Tìm thấy trong hệ thống: <span className="text-green-500 font-semibold">{foundCount}</span>,
-                                chỉ email (ngoài hệ thống): <span className="text-amber-500 font-semibold">{notFoundCount}</span>.
+                                {t('inviteSelector.importPreviewDesc', { found: foundCount, notFound: notFoundCount })
+                                    .replace('<1>', '').replace('</1>', '').replace('<2>', '').replace('</2>', '')}
                             </p>
                         </div>
                         <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5">
@@ -243,7 +245,7 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
                                             <span className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 text-sm font-bold">@</span>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{c.matchedValue}</p>
-                                                <p className="text-xs text-amber-500">Không có trong hệ thống — sẽ mời qua email</p>
+                                                <p className="text-xs text-amber-500">{t('inviteSelector.notInSystem')}</p>
                                             </div>
                                             <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
                                         </>
@@ -257,14 +259,14 @@ const InviteUserSelector = ({ invitedUsers, onChange, maxInvites }: InviteUserSe
                                 onClick={() => { setShowImportModal(false); setImportPreview([]); }}
                                 className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-sm"
                             >
-                                Huỷ
+                                {t('inviteSelector.cancel')}
                             </button>
                             <button
                                 type="button"
                                 onClick={confirmImport}
                                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold hover:from-violet-400 hover:to-purple-500 transition-all text-sm shadow-lg shadow-violet-500/20"
                             >
-                                Thêm {importPreview.length} người
+                                {t('inviteSelector.addCount', { count: importPreview.length })}
                             </button>
                         </div>
                     </div>

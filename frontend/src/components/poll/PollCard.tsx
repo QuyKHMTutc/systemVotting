@@ -167,8 +167,8 @@ export const PollCard = ({
             <div className="flex flex-wrap items-center gap-2 mb-4 pr-6">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${
                 isActive
-                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                  : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                  : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
               }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
                 {isActive ? t('pollDetail.active') : t('pollDetail.ended')}

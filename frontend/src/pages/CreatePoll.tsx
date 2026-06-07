@@ -114,17 +114,17 @@ const CreatePoll = () => {
                     <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">{t('createPoll.title')}</h1>
                     <p className="text-slate-500 dark:text-indigo-200/80 mb-8">{t('createPoll.subtitle')}</p>
 
-                    {error && <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-xl mb-6">{error}</div>}
+                    {error && <div className="bg-red-500/10 border border-red-500/30 dark:border-red-500/50 text-red-600 dark:text-red-200 p-4 rounded-xl mb-6">{error}</div>}
 
                     {/* Moderation pending banner */}
                     {pendingMessage && (
-                        <div className="mb-6 p-4 rounded-xl border border-amber-400/40 bg-amber-400/10 flex items-start gap-3">
+                        <div className="mb-6 p-4 rounded-xl border border-amber-500/30 dark:border-amber-400/40 bg-amber-500/10 dark:bg-amber-400/10 flex items-start gap-3">
                             <span className="text-2xl flex-shrink-0">⏳</span>
                             <div>
-                                <p className="text-amber-300 font-semibold text-sm mb-1">Bài đăng đang chờ kiểm duyệt</p>
-                                <p className="text-amber-200/70 text-xs leading-relaxed">{pendingMessage}</p>
-                                <p className="text-amber-200/50 text-xs mt-2">Bài đăng sẽ tự động xuất hiện sau khi Admin xét duyệt. Bạn có thể xem trạng thái trong hồ sơ của mình.</p>
-                                <button onClick={() => navigate('/explore')} className="mt-3 px-4 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-xs font-semibold transition-all border border-amber-400/30">
+                                <p className="text-amber-600 dark:text-amber-300 font-semibold text-sm mb-1">Bài đăng đang chờ kiểm duyệt</p>
+                                <p className="text-amber-600/80 dark:text-amber-200/70 text-xs leading-relaxed">{pendingMessage}</p>
+                                <p className="text-amber-600/70 dark:text-amber-200/50 text-xs mt-2">Bài đăng sẽ tự động xuất hiện sau khi Admin xét duyệt. Bạn có thể xem trạng thái trong hồ sơ của mình.</p>
+                                <button onClick={() => navigate('/explore')} className="mt-3 px-4 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 dark:bg-amber-400/20 dark:hover:bg-amber-400/30 text-amber-700 dark:text-amber-300 text-xs font-semibold transition-all border border-amber-500/30 dark:border-amber-400/30">
                                     Về trang chủ
                                 </button>
                             </div>

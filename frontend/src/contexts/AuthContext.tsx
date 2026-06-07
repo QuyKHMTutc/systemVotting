@@ -158,10 +158,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             updateUser({ ...user, plan: 'FREE', planExpirationDate: null });
             return;
         }
+        
+        const delay = expiry - now;
+        // Tránh lỗi tràn số nguyên của setTimeout (max 32-bit integer = 2147483647 ms ~ 24.8 ngày)
+        // Nếu còn quá xa, không cần set timeout vì syncUser() (chạy mỗi 5p) sẽ xử lý
+        if (delay > 2147483647) return;
+
         // Set timer tự động reset khi đúng lúc hết hạn
         const timeout = setTimeout(() => {
             updateUser({ ...user, plan: 'FREE', planExpirationDate: null });
-        }, expiry - now);
+        }, delay);
         return () => clearTimeout(timeout);
     }, [user?.planExpirationDate, user?.plan]);
 

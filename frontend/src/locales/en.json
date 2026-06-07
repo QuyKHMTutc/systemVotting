@@ -537,6 +537,18 @@
     "s8Title": "Contact",
     "s8Desc": "For questions about these Terms, please contact us through the support channels provided in the Service."
   },
+  "refundPage": {
+    "title": "Refund & Cancellation Policy",
+    "lastUpdated": "Last updated: June 2026",
+    "s1Title": "Conditions for Refund",
+    "s1Desc": "You are eligible for a full refund within 7 days of your purchase, provided that you have not utilized any of the premium features (e.g., creating a poll with premium limits, receiving votes beyond the free tier).",
+    "s2Title": "Cancellation Policy",
+    "s2Desc": "You may cancel your subscription at any time. Upon cancellation, your premium privileges will remain active until the end of your current billing cycle. We do not issue partial refunds for unused time.",
+    "s3Title": "Non-refundable Cases",
+    "s3Desc": "Refunds will not be granted if your account is suspended or terminated due to a violation of our Terms of Service (e.g., posting malicious content, spamming, vote manipulation).",
+    "s4Title": "Refund Process",
+    "s4Desc": "To request a refund, please contact our support team at support@systemvotting.com with your transaction code (TxnRef) and account email. Approved refunds will be processed and credited back to your original payment method within 5-10 business days."
+  },
   "privacyPage": {
     "title": "Privacy Policy",
     "lastUpdated": "Last updated: March 2025",
@@ -651,5 +663,28 @@
     "footerNote": "Data is updated in real-time",
     "exportBtn": "Export data (.csv)",
     "exporting": "Exporting..."
+  },
+  "inviteSelector": {
+    "privateModeDesc": "Private mode: Max <1>{{max}}</1> participants.",
+    "searchPlaceholder": "Search by username or email...",
+    "csvHint": "💡 Type a name or email to find users. CSV file: one username or email per line.",
+    "importPreviewTitle": "Import Preview",
+    "importPreviewDesc": "Found in system: <1>{{found}}</1>, email-only (outside system): <2>{{notFound}}</2>.",
+    "notInSystem": "Not in system — will be invited by email",
+    "cancel": "Cancel",
+    "addCount": "Add {{count}} people",
+    "readFileError": "Cannot read file. Please check the format."
+  },
+  "judgeSelector": {
+    "panelDesc": "The judging panel accounts for <1>{{weight}}%</1> of the total score. Max <2>{{max}}</2> judges.",
+    "searchPlaceholder": "Search by username or email...",
+    "searchDisabledPlaceholder": "Max judges reached",
+    "csvHint": "💡 CSV file: one username or email per line. Both are supported simultaneously.",
+    "importPreviewTitle": "Import Preview",
+    "importPreviewDesc": "Found <1>{{found}}</1> people, not found <2>{{notFound}}</2> people.",
+    "notFound": "User not found",
+    "cancel": "Cancel",
+    "addCount": "Add {{count}} judges",
+    "readFileError": "Cannot read file. Please check the format."
   }
 }

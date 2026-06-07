@@ -48,7 +48,7 @@ const Footer = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/" className="text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-3 font-medium">
+                  <Link to="/refund" className="text-slate-600 dark:text-white/70 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-3 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-white/30"></span>
                     {t('footer.cancellationPolicy')}
                   </Link>

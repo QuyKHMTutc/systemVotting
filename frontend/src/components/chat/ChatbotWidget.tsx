@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, RotateCcw, Sparkles, Bot } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Send, RotateCcw, Sparkles, Bot } from 'lucide-react';
 import { chatbotService, type ChatMessage } from '../../services/chatbot.service';
 import ReactMarkdown from 'react-markdown';
 
@@ -57,11 +57,35 @@ export const ChatbotWidget = () => {
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content: msg }];
     setMessages(newMessages);
     setIsLoading(true);
+
     try {
-      const reply = await chatbotService.sendMessage(newMessages.slice(-10));
-      setMessages(prev => [...prev, { role: 'model', content: reply.content }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'model', content: 'Xin lỗi, đã có lỗi kết nối. Vui lòng thử lại sau.' }]);
+      // Add an initial empty model message that we will append chunks to
+      setMessages(prev => [...prev, { role: 'model', content: '' }]);
+      
+      await chatbotService.sendMessageStream(newMessages.slice(-10), (chunkText) => {
+        setIsLoading(false); // Stop typing indicator as soon as first chunk arrives
+        setMessages(prev => {
+          const updated = [...prev];
+          const lastIndex = updated.length - 1;
+          if (updated[lastIndex].role === 'model') {
+            updated[lastIndex] = { ...updated[lastIndex], content: updated[lastIndex].content + chunkText };
+          }
+          return updated;
+        });
+      });
+    } catch (err: any) {
+      const errMsg = err?.message || 'Xin lỗi, đã có lỗi kết nối. Vui lòng thử lại sau.';
+      setMessages(prev => {
+        const updated = [...prev];
+        const lastIndex = updated.length - 1;
+        // If the empty model message is still empty, replace it with the error
+        if (updated[lastIndex].role === 'model' && updated[lastIndex].content === '') {
+          updated[lastIndex] = { role: 'model', content: errMsg };
+        } else {
+          updated.push({ role: 'model', content: errMsg });
+        }
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }

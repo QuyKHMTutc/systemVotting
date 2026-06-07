@@ -135,8 +135,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId, voteTrigger = 0
             {toast && (
                 <div className={`mb-4 p-3 rounded-xl text-sm font-medium flex items-start gap-2 border ${
                     toast.type === 'error'
-                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                        : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                        ? 'bg-rose-500/10 border-rose-500/30 dark:border-rose-500/50 text-rose-600 dark:text-rose-300'
+                        : 'bg-amber-500/10 border-amber-500/30 dark:border-amber-500/50 text-amber-600 dark:text-amber-300'
                 }`}>
                     <span className="flex-shrink-0">{toast.type === 'error' ? '🚫' : '⚠️'}</span>
                     <span>{toast.msg}</span>

@@ -16,6 +16,7 @@ import { Profile } from './pages/Profile';
 import PaymentResult from './pages/PaymentResult';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
 import Footer from './components/layout/Footer';
 import ScrollToTop from './components/layout/ScrollToTop';
 import { ChatbotWidget } from './components/chat/ChatbotWidget';
@@ -75,8 +76,8 @@ function App() {
         <AuthProvider>
           <SidebarProvider>
           <WebSocketProvider>
-          <div className="min-h-screen flex flex-col">
-            <div className="flex-grow flex flex-col relative">
+          <div className="min-h-screen flex flex-col overflow-x-hidden w-full">
+            <div className="flex-grow flex flex-col relative w-full max-w-[100vw]">
               <Routes>
               <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
@@ -84,6 +85,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/refund" element={<RefundPolicy />} />
 
             <Route path="/" element={<Home />} />
             <Route path="/explore" element={<Dashboard />} />

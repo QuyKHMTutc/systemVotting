@@ -538,6 +538,18 @@
     "s8Title": "Liên hệ",
     "s8Desc": "Nếu có câu hỏi về Điều khoản này, vui lòng liên hệ với chúng tôi qua các kênh hỗ trợ được cung cấp trong Dịch vụ."
   },
+  "refundPage": {
+    "title": "Chính sách Hoàn Tiền & Hủy Dịch Vụ",
+    "lastUpdated": "Cập nhật lần cuối: Tháng 06/2026",
+    "s1Title": "Điều kiện hoàn tiền",
+    "s1Desc": "Bạn có quyền yêu cầu hoàn tiền toàn bộ trong vòng 7 ngày kể từ ngày thanh toán, với điều kiện bạn chưa sử dụng bất kỳ tính năng nâng cao nào (ví dụ: tạo bình chọn vượt giới hạn miễn phí, nhận số lượng vote quá mức miễn phí).",
+    "s2Title": "Chính sách hủy gói",
+    "s2Desc": "Bạn có thể hủy gói đăng ký nâng cấp bất kỳ lúc nào. Sau khi hủy, quyền lợi tài khoản VIP của bạn vẫn sẽ có hiệu lực cho đến hết chu kỳ thanh toán hiện tại. Chúng tôi không hoàn lại tiền đối với những ngày bạn chưa sử dụng.",
+    "s3Title": "Trường hợp không được hoàn tiền",
+    "s3Desc": "Yêu cầu hoàn tiền sẽ bị từ chối nếu tài khoản của bạn bị khóa hoặc chấm dứt dịch vụ do vi phạm các Điều khoản dịch vụ của chúng tôi (như đăng nội dung độc hại, lừa đảo, spam, hay gian lận lượt bình chọn).",
+    "s4Title": "Quy trình xử lý hoàn tiền",
+    "s4Desc": "Để yêu cầu hoàn tiền, vui lòng liên hệ bộ phận hỗ trợ của chúng tôi tại support@systemvotting.com kèm theo mã giao dịch (TxnRef) và email tài khoản. Yêu cầu hợp lệ sẽ được xử lý và hoàn trả tiền vào thẻ/tài khoản ban đầu của bạn trong vòng 5-10 ngày làm việc."
+  },
   "privacyPage": {
     "title": "Chính sách bảo mật",
     "lastUpdated": "Cập nhật lần cuối: Tháng 3 năm 2025",
@@ -652,5 +664,28 @@
     "footerNote": "Dữ liệu được cập nhật theo thời gian thực",
     "exportBtn": "Xuất dữ liệu (.csv)",
     "exporting": "Đang xuất..."
+  },
+  "inviteSelector": {
+    "privateModeDesc": "Chế độ riêng tư: Tối đa <1>{{max}}</1> người tham gia.",
+    "searchPlaceholder": "Tìm theo username hoặc email...",
+    "csvHint": "💡 Gõ tên hoặc email để tìm người dùng. File CSV: mỗi dòng một username hoặc email.",
+    "importPreviewTitle": "Xem trước danh sách import",
+    "importPreviewDesc": "Tìm thấy trong hệ thống: <1>{{found}}</1>, chỉ email (ngoài hệ thống): <2>{{notFound}}</2>.",
+    "notInSystem": "Không có trong hệ thống — sẽ mời qua email",
+    "cancel": "Huỷ",
+    "addCount": "Thêm {{count}} người",
+    "readFileError": "Không thể đọc file. Vui lòng kiểm tra định dạng."
+  },
+  "judgeSelector": {
+    "panelDesc": "Hội đồng giám khảo chiếm <1>{{weight}}%</1> tổng điểm. Tối đa <2>{{max}}</2> người.",
+    "searchPlaceholder": "Tìm theo username hoặc email...",
+    "searchDisabledPlaceholder": "Đã đủ số lượng giám khảo",
+    "csvHint": "💡 File CSV: mỗi dòng một username hoặc email. Hỗ trợ cả hai cùng lúc.",
+    "importPreviewTitle": "Xem trước danh sách import",
+    "importPreviewDesc": "Tìm thấy <1>{{found}}</1> người, không tìm thấy <2>{{notFound}}</2> người.",
+    "notFound": "Không tìm thấy người dùng",
+    "cancel": "Huỷ",
+    "addCount": "Thêm {{count}} giám khảo",
+    "readFileError": "Không thể đọc file. Vui lòng kiểm tra định dạng."
   }
 }
