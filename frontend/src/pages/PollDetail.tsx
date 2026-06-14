@@ -23,6 +23,8 @@ import PollLiveChartModal from '../components/poll/PollLiveChartModal';
 import PollAnalyticsModal from '../components/poll/PollAnalyticsModal';
 import { getAnonymousCreatorName } from '../utils/anonymous';
 import { useSidebar } from '../contexts/SidebarContext';
+import { ReportModal } from '../components/report/ReportModal';
+import { ReportTargetType } from '../services/report.service';
 
 const COMMENT_PAGE_SIZE = 20;
 
@@ -49,7 +51,9 @@ const PollDetail = () => {
         filterTag: saved.filterTag || 'ALL',
         filterCategory: saved.filterCategory || ''
       });
-    } catch (e) { }
+    } catch {
+      // Ignore malformed cached state and keep defaults.
+    }
   }, []);
 
   const [showComments, setShowComments] = useState(false);
@@ -69,6 +73,7 @@ const PollDetail = () => {
 
   const [identityLocked, setIdentityLocked] = useState(false);
   const [lockedIsAnonymous, setLockedIsAnonymous] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const [searchParams] = useSearchParams();
   const highlightCommentId = searchParams.get('commentId') ? Number(searchParams.get('commentId')) : null;
@@ -850,6 +855,7 @@ const PollDetail = () => {
                       commentsCount={totalAllComments || poll?.commentCount || 0}
                       onCommentClick={() => setShowComments(!showComments)}
                       onShareClick={handleShare}
+                      onReportClick={user ? () => setIsReportModalOpen(true) : undefined}
                       hasCopied={copied}
                     />
 
@@ -1044,6 +1050,12 @@ const PollDetail = () => {
               judgeWeight={poll.judgeWeight}
             />
           )}
+          <ReportModal
+            isOpen={isReportModalOpen}
+            onClose={() => setIsReportModalOpen(false)}
+            targetType={ReportTargetType.POLL}
+            targetId={poll.id}
+          />
         </>
       )}
     </div>

@@ -65,6 +65,33 @@ export const pollService = {
         return response.data.data;
     },
 
+    getAllAdminPolls: async (
+        page = 0,
+        size = 10,
+        title = '',
+        tag = 'ALL',
+        status = 'ALL',
+        sortBy?: string,
+        direction?: string,
+        category?: string
+    ): Promise<PollPageResponse> => {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            size: size.toString(),
+            tag: tag,
+            status: status
+        });
+        if (title) params.append('title', title);
+        if (sortBy) {
+            params.append('sortBy', sortBy);
+            params.append('direction', direction || 'desc');
+        }
+        if (category) params.append('categorySlug', category);
+
+        const response = await api.get(`/admin/moderation/polls/all?${params.toString()}`);
+        return response.data.data;
+    },
+
     getTrendingPolls: async (limit = 5): Promise<Poll[]> => {
         const response = await api.get(`/polls/trending`, { params: { limit } });
         return response.data.data;

@@ -1,7 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 import { uploadService } from '../../services/upload.service';
-import { UploadCloud, Image as ImageIcon, X, AlertCircle } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 interface ImageUploaderProps {
     onImageUploaded: (url: string) => void;

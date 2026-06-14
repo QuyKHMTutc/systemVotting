@@ -1,4 +1,4 @@
-import { MessageSquare, Share2 } from 'lucide-react';
+import { MessageSquare, Share2, Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface PostActionsProps {
@@ -6,6 +6,7 @@ interface PostActionsProps {
   sharesCount?: number;
   onCommentClick: () => void;
   onShareClick: () => void;
+  onReportClick?: () => void;
   hasCopied?: boolean;
 }
 
@@ -13,6 +14,7 @@ export default function PostActions({
   commentsCount,
   onCommentClick,
   onShareClick,
+  onReportClick,
   hasCopied = false,
 }: PostActionsProps) {
   const { t } = useTranslation();
@@ -39,6 +41,15 @@ export default function PostActions({
             </span>
           )}
         </button>
+        {onReportClick && (
+          <button
+            onClick={onReportClick}
+            className="flex-1 flex items-center justify-center gap-2 py-4 px-4 text-slate-600 dark:text-white/60 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-medium text-sm"
+          >
+            <Flag className="w-5 h-5" />
+            {t('pollDetail.report', 'Báo cáo')}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -3,13 +3,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import FloatingSocial from '../../components/layout/FloatingSocial';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import bannerImg from '../../assets/banner.png';
 import {
-    ShieldCheck, Activity, Settings, MessageSquare, BarChart3, Lock,
     PieChart, MousePointerClick, MessageCircle,
     CheckCircle2, Zap, Users, ArrowRight,
     Star, Check, Rocket, Crown, Sparkles,
-    ClipboardList, Vote, TrendingUp
 } from 'lucide-react';
 import createMockup from '../../assets/mockups/create.png';
 import voteMockup from '../../assets/mockups/vote.png';
@@ -70,9 +67,10 @@ interface StatCardProps {
     icon: React.ReactNode;
     border?: boolean;
 }
-function StatCard({ valueKey: _vk, labelKey, numericTarget, suffix, prefix = '', gradient, icon, border }: StatCardProps) {
+function StatCard({ valueKey, labelKey, numericTarget, suffix, prefix = '', gradient, icon, border }: StatCardProps) {
     const { t } = useTranslation();
     const { count, ref } = useCountUp(numericTarget, 2200, true);
+    void valueKey;
 
     const displayValue = numericTarget >= 1_000_000
         ? `${prefix}${(count / 1_000_000).toFixed(1)} triệu`
@@ -150,7 +148,7 @@ const Home = () => {
     const currentPlan = (user?.plan || 'FREE').toUpperCase();
 
 
-    const getPlanStyles = (theme: string, popular: boolean) => {
+    const getPlanStyles = (theme: string) => {
         switch (theme) {
             case 'slate': return {
                 bg: 'bg-white dark:bg-[#0f111a]',
@@ -455,7 +453,7 @@ const Home = () => {
                                 ['PLUS'].includes(currentPlan) && ['FREE', 'GO', 'PLUS'].includes(plan.planId) ||
                                 ['PRO'].includes(currentPlan) && ['FREE', 'GO', 'PLUS', 'PRO'].includes(plan.planId)
                             );
-                            const styles = getPlanStyles(plan.theme, plan.popular);
+                            const styles = getPlanStyles(plan.theme);
                             
                             return (
                                 <ScrollReveal key={i} direction="up" delay={i * 100} className="h-full">

@@ -1,7 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
-import { Camera, X, User, Save, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface UserProfileModalProps {
@@ -181,4 +180,3 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
 };
 
 export default UserProfileModal;
-

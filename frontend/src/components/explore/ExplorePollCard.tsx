@@ -2,13 +2,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { Poll } from '../../services/poll.service';
 import {
   Users, MessageCircle, Share2, Check, Lock,
-  Trash2, MoreVertical, Scale, Clock, AlertTriangle,
+  Trash2, MoreVertical, Scale, Clock, AlertTriangle, Flag
 } from 'lucide-react';
 import { useState } from 'react';
 import { timeAgo } from '../../utils/date';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAnonymousCreatorName } from '../../utils/anonymous';
+import { ReportModal } from '../report/ReportModal';
+import { ReportTargetType } from '../../services/report.service';
 
 function formatCompact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -77,6 +79,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
 
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const getWeightedScore = (option: typeof poll.options[0]) => {
     if (!hasWeightedVoting) return option.voteCount ?? 0;
@@ -260,6 +263,11 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
                         <Trash2 className="w-3.5 h-3.5" />{t('pollDetail.delete')}
                       </button>
                     )}
+                    {user && !isCreator && (
+                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsReportModalOpen(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors">
+                        <Flag className="w-3.5 h-3.5" />{t('pollDetail.report', 'Báo cáo')}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -423,6 +431,12 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
 
         </div>
       </article>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetType={ReportTargetType.POLL}
+        targetId={poll.id}
+      />
     </Wrapper>
   );
 }

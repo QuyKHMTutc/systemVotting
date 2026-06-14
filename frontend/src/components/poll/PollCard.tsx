@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
 import type { Poll } from '../../services/poll.service';
-import { Share2, Check, Users, MessageCircle, BarChart3, Clock, Lock, MoreVertical, Trash2 } from 'lucide-react';
+import { Share2, Check, Users, MessageCircle, BarChart3, Clock, Lock, MoreVertical, Trash2, Flag } from 'lucide-react';
 import { useState } from 'react';
 import { timeAgo, endsIn } from '../../utils/date';
 import { getTagPillClass } from '../../utils/tagPills';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAnonymousCreatorName } from '../../utils/anonymous';
+import { ReportModal } from '../report/ReportModal';
+import { ReportTargetType } from '../../services/report.service';
 
 export interface PollCardProps {
   poll: Poll;
@@ -33,6 +35,7 @@ export const PollCard = ({
   const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const hasCoverImage = !!poll.imageUrl;
 
   const handleShare = (e: React.MouseEvent) => {
@@ -118,6 +121,13 @@ export const PollCard = ({
                       Xóa
                     </button>
                   )}
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsReportModalOpen(true); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <Flag className="w-3.5 h-3.5" />
+                    {t('pollDetail.report', 'Báo cáo')}
+                  </button>
                 </div>
               )}
             </div>
@@ -157,6 +167,13 @@ export const PollCard = ({
                       Xóa
                     </button>
                   )}
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsReportModalOpen(true); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <Flag className="w-3.5 h-3.5" />
+                    {t('pollDetail.report', 'Báo cáo')}
+                  </button>
                 </div>
               )}
             </div>
@@ -283,6 +300,12 @@ export const PollCard = ({
           </div>
         </div>
       </div>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetType={ReportTargetType.POLL}
+        targetId={poll.id}
+      />
     </Link>
   );
 };

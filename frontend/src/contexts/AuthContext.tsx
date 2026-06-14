@@ -68,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setMemoryToken(null);
         setToken(null);
         localStorage.removeItem('accessToken'); // Remove token so reload won't restore a blacklisted session
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         localStorage.removeItem('votedPolls');
         setUser(null);
@@ -178,7 +179,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {

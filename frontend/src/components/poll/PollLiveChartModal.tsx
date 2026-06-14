@@ -100,7 +100,6 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
       };
     } else {
       document.body.style.overflow = 'auto';
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEnableChartAnim(false);
     }
   }, [isOpen]);
@@ -146,7 +145,6 @@ export default function PollLiveChartModal({ isOpen, onClose, options, pollTitle
       judgeVotesPct,
       audienceVotesPct,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [options, totalVotes, totalJudgeVotes, totalAudienceVotes, hasWeightedVoting, judgeWeight, audienceWeight]);
 
   if (!isOpen) return null;

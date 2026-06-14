@@ -64,6 +64,7 @@ export const forceRefreshToken = (): Promise<string> => {
             .catch(err => {
                 setMemoryToken(null);
                 localStorage.removeItem('accessToken'); // Clear stale token on refresh failure
+                localStorage.removeItem('refreshToken');
                 window.dispatchEvent(new Event('auth-logout'));
                 throw err;
             })

@@ -263,7 +263,8 @@
     "pollEnded": "This poll has ended. You can no longer comment.",
     "deleteConfirm": "Are you sure you want to delete this comment?",
     "back": "Back",
-    "anonymousCreator": "Anonymous author"
+    "anonymousCreator": "Anonymous author",
+    "report": "Report"
   },
   "forgotPassword": {
     "invalidEmail": "Please enter a valid email (e.g., name@gmail.com)",
@@ -686,5 +687,25 @@
     "cancel": "Cancel",
     "addCount": "Add {{count}} judges",
     "readFileError": "Cannot read file. Please check the format."
+  },
+  "reportModal": {
+    "title": "Report Violation",
+    "desc": "Why are you reporting this content? Your report will be reviewed by an admin to ensure a safe environment.",
+    "reasonSpam": "Spam or advertising",
+    "reasonHarassment": "Harassment or bullying",
+    "reasonHateSpeech": "Hate speech",
+    "reasonFalseInfo": "False information",
+    "reasonInappropriate": "Inappropriate content",
+    "reasonOther": "Other reason",
+    "detailsLabel": "Additional details (optional)",
+    "detailsPlaceholder": "Provide more details if necessary...",
+    "cancelBtn": "Cancel",
+    "submitBtn": "Submit Report",
+    "submittingBtn": "Submitting...",
+    "errorNoReason": "Please select a reason for reporting",
+    "errorDuplicate": "You have already reported this content!",
+    "errorGeneric": "An error occurred while submitting the report. Please try again later.",
+    "success": "Thank you for reporting. We will review it as soon as possible.",
+    "close": "Close"
   }
 }

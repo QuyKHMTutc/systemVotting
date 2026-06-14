@@ -57,7 +57,6 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
                         const decoded = JSON.parse(decodedJson);
                         // Refresh if token is expired or expiring in the next 10 seconds
                         if (Date.now() >= (decoded.exp * 1000 - 10000)) {
-                            console.log('[WS] Token is expired or expiring soon, refreshing before connect...');
                             currentToken = await forceRefreshToken();
                         }
                     } catch (e) {
@@ -74,12 +73,9 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
                 }
             },
             onConnect: () => {
-                console.log('[WS] Connected successfully');
-
                 // Subscribe to personal notification queue only when authenticated
                 if (isAuthenticated) {
                     newClient.subscribe('/user/queue/notifications', (message: IMessage) => {
-                        console.log('[WS] Received notification:', message.body);
                         if (message.body) {
                             try {
                                 const newNotif: Notification = JSON.parse(message.body);
@@ -98,7 +94,6 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
                 setClient(newClient);
             },
             onDisconnect: () => {
-                console.log('[WS] Disconnected');
                 setClient(null);
             },
             onStompError: (frame) => {
@@ -140,7 +135,6 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalWebSocket = () => {
     const context = useContext(WebSocketContext);
     if (!context) {
@@ -149,7 +143,6 @@ export const useGlobalWebSocket = () => {
     return context.client;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalNotifications = () => {
     const context = useContext(WebSocketContext);
     if (!context) {

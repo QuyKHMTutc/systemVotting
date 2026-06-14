@@ -36,7 +36,9 @@ export const chatbotService = {
       try {
         const errObj = JSON.parse(errText);
         if (errObj.message) errMsg = errObj.message;
-      } catch (e) { }
+      } catch {
+        // Keep the generic error message when the server response is not JSON.
+      }
       throw new Error(errMsg);
     }
 
@@ -70,7 +72,7 @@ export const chatbotService = {
                 if (jsonObj.text) {
                   onChunk(jsonObj.text);
                 }
-              } catch (e) {
+              } catch {
                 // Ignore parse errors for incomplete JSON or keep appending
               }
             }

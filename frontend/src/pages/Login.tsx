@@ -72,7 +72,6 @@ const Login = () => {
             if (response.code === 200 && response.data) {
                 // Store tokens immediately so api.interceptors can pick them up for the .me() call
                 localStorage.setItem('accessToken', response.data.accessToken);
-                localStorage.setItem('refreshToken', response.data.refreshToken);
                 setMemoryToken(response.data.accessToken);
 
                 let actualUsername = email.split('@')[0];
@@ -257,7 +256,6 @@ const Login = () => {
                                                 const res = await authService.loginWithGoogle(credentialResponse.credential);
                                                 if (res.code === 200 && res.data) {
                                                     localStorage.setItem('accessToken', res.data.accessToken);
-                                                    localStorage.setItem('refreshToken', res.data.refreshToken);
                                                     setMemoryToken(res.data.accessToken);
 
                                                     const tokenPayload = decodeJwtPayload(res.data.accessToken);

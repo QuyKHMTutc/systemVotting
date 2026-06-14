@@ -43,7 +43,9 @@ function loadDashboardCache(): DashboardCache | null {
   try {
     const cached = sessionStorage.getItem(CACHE_KEY);
     if (cached) return JSON.parse(cached);
-  } catch (e) { }
+  } catch {
+    return null;
+  }
   return null;
 }
 

@@ -12,7 +12,7 @@ import type { Category } from '../../services/category.service';
 import { moderationService } from '../../services/moderation.service';
 import type { PendingPoll, FlaggedComment, ModerationCount } from '../../services/moderation.service';
 import { useAdminModerationWebSocket } from '../../hooks/useAdminModerationWebSocket';
-import { LayoutDashboard, Users, BarChart3, CreditCard, Tag, Shield, Calendar, Search, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, CreditCard, Tag, Shield, Calendar, Search, Bell, Flag } from 'lucide-react';
 import type { Tab, Timeframe } from './types';
 import AdminSidebar from './components/AdminSidebar';
 import AdminToast from './components/AdminToast';
@@ -25,6 +25,9 @@ import PollsTab from './tabs/PollsTab';
 import PaymentsTab from './tabs/PaymentsTab';
 import CategoriesTab from './tabs/CategoriesTab';
 import ModerationTab from './tabs/ModerationTab';
+import ReportsTab from './tabs/ReportsTab';
+import { reportService, ReportStatus } from '../../services/report.service';
+import type { ReportResponse } from '../../services/report.service';
 
 const AdminPanel = () => {
   const { user, logout } = useAuth();
@@ -71,6 +74,11 @@ const AdminPanel = () => {
   const [moderationSubTab, setModerationSubTab] = useState<'POLLS' | 'COMMENTS'>('POLLS');
   const [expandedPollId, setExpandedPollId] = useState<number | null>(null);
 
+  // Reports States
+  const [reports, setReports] = useState<ReportResponse[]>([]);
+  const [pageReports, setPageReports] = useState(0);
+  const [totalPagesReports, setTotalPagesReports] = useState(0);
+
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
@@ -81,7 +89,7 @@ const AdminPanel = () => {
     try {
       const [u, p, pay] = await Promise.all([
         userService.getAllUsers(0, 1000, ''),
-        pollService.getAllPolls(0, 1000, '', 'ALL', 'ALL', 'createdAt', 'desc'),
+        pollService.getAllAdminPolls(0, 1000, '', 'ALL', 'ALL', 'createdAt', 'desc'),
         paymentService.getAllPayments(0, 1000, '')
       ]);
       setAllUsers(u.content);
@@ -100,7 +108,7 @@ const AdminPanel = () => {
 
   const fetchPolls = useCallback(async (page = 0, q = search) => {
     try {
-      const pd = await pollService.getAllPolls(page, 15, q, 'ALL', 'ALL', 'createdAt', 'desc');
+      const pd = await pollService.getAllAdminPolls(page, 15, q, 'ALL', 'ALL', 'createdAt', 'desc');
       setPolls(pd.content);
       setTotalPagesPolls(pd.totalPages);
     } catch (err) { console.error(err); }
@@ -141,6 +149,14 @@ const AdminPanel = () => {
     } catch (err) { console.error(err); }
   }, []);
 
+  const fetchReports = useCallback(async (page = 0, status?: ReportStatus) => {
+    try {
+      const data = await reportService.getAllReports({ page, size: 20, status });
+      setReports(data.content);
+      setTotalPagesReports(data.totalPages);
+    } catch (err) { console.error(err); }
+  }, []);
+
   const fetchAll = useCallback(() => {
     if (user?.role !== 'ADMIN') { navigate('/'); return; }
     if (tab === 'OVERVIEW') { fetchOverviewData(); }
@@ -149,11 +165,12 @@ const AdminPanel = () => {
     if (tab === 'PAYMENTS') fetchPayments(pagePayments);
     if (tab === 'CATEGORIES') fetchCategories();
     if (tab === 'MODERATION') { fetchPendingPolls(0); fetchFlaggedComments(0); }
+    if (tab === 'REPORTS') { fetchReports(pageReports); }
     // Always keep count refreshed for badge
     fetchModerationCount();
-  }, [user, navigate, tab, fetchOverviewData, fetchUsers, pageUsers, fetchPolls, pagePolls, fetchPayments, pagePayments, fetchCategories, fetchPendingPolls, fetchFlaggedComments, fetchModerationCount]);
+  }, [user, navigate, tab, fetchOverviewData, fetchUsers, pageUsers, fetchPolls, pagePolls, fetchPayments, pagePayments, fetchCategories, fetchPendingPolls, fetchFlaggedComments, fetchReports, pageReports, fetchModerationCount]);
 
-  useEffect(() => { fetchAll(); }, [tab]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // Real-time: nhận COUNT_UPDATED từ AdminPanel WebSocket khi có admin khác hoạt động
   const handleAdminModerationEvent = useCallback((event: import('../../hooks/useAdminModerationWebSocket').AdminModerationEvent) => {
@@ -284,6 +301,14 @@ const AdminPanel = () => {
     } catch { showToast('Thao tác thất bại', 'error'); }
   };
 
+  const handleUpdateReportStatus = async (id: number, status: ReportStatus) => {
+    try {
+      await reportService.updateReportStatus(id, status);
+      showToast('Cập nhật trạng thái báo cáo thành công');
+      fetchReports(pageReports);
+    } catch { showToast('Cập nhật thất bại', 'error'); }
+  };
+
   // Data Aggregation & Filtering Logic for Overview
   const getDateRange = useCallback(() => {
     let end = new Date();
@@ -356,7 +381,7 @@ const AdminPanel = () => {
     const { start, end } = getDateRange();
     const map = new Map<string, { date: string, polls: number, votes: number }>();
     
-    let current = new Date(start);
+    const current = new Date(start);
     const limit = timeframe === 'ALL' ? 365 : (end.getTime() - start.getTime()) / 86400000 + 1;
     let count = 0;
     while(current <= end && count < limit) {
@@ -381,9 +406,9 @@ const AdminPanel = () => {
   const generateSparkline = (data: any[], key: string) => {
       const { start, end } = getDateRange();
       const map = new Map<string, number>();
-      let current = new Date(start);
+      const current = new Date(start);
       const limit = timeframe === 'ALL' ? 30 : (end.getTime() - start.getTime()) / 86400000 + 1; // max 30 points for sparkline
-      let step = Math.max(1, Math.floor(limit / 10)); // reduce points for smooth sparkline
+      const step = Math.max(1, Math.floor(limit / 10)); // reduce points for smooth sparkline
       
       let i = 0;
       while(current <= end && i < 15) {
@@ -425,6 +450,7 @@ const AdminPanel = () => {
     { id: 'PAYMENTS',    label: 'Payments',    icon: <CreditCard size={18} /> },
     { id: 'CATEGORIES',  label: 'Categories',  icon: <Tag size={18} />,       badge: categories.length },
     { id: 'MODERATION',  label: 'Moderation',  icon: <Shield size={18} />,    badge: moderationCount.total > 0 ? moderationCount.total : undefined },
+    { id: 'REPORTS',     label: 'Reports',     icon: <Flag size={18} /> },
   ];
 
   return (
@@ -442,6 +468,7 @@ const AdminPanel = () => {
                 : tab === 'POLLS'   ? 'Poll Management'
                 : tab === 'CATEGORIES' ? 'Category Management'
                 : tab === 'MODERATION' ? 'Content Moderation'
+                : tab === 'REPORTS'    ? 'Report Management'
                 : 'Payment Transactions'}
             </h1>
             <p className="text-white/40 text-sm mt-1">
@@ -450,6 +477,7 @@ const AdminPanel = () => {
                 : tab === 'POLLS'   ? `Oversee ${allPolls.length} community polls`
                 : tab === 'CATEGORIES' ? `Organize ${categories.length} categories`
                 : tab === 'MODERATION' ? `Review ${moderationCount.total} pending items`
+                : tab === 'REPORTS'    ? `Review community reports`
                 : `Track ${allPayments.length} payment transactions`}
             </p>
           </div>
@@ -559,6 +587,17 @@ const AdminPanel = () => {
                 pageFlaggedComments={pageFlaggedComments}
                 setPageFlaggedComments={setPageFlaggedComments}
                 totalPagesFlaggedComments={totalPagesFlaggedComments}
+              />
+            )}
+
+            {tab === 'REPORTS' && (
+              <ReportsTab
+                reports={reports}
+                pageReports={pageReports}
+                setPageReports={setPageReports}
+                totalPagesReports={totalPagesReports}
+                fetchReports={fetchReports}
+                handleUpdateStatus={handleUpdateReportStatus}
               />
             )}
           </div>

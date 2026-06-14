@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Comment } from '../../services/comment.service';
 import { commentService } from '../../services/comment.service';
-import { CornerDownRight, ThumbsUp, User, MoreVertical, Trash2 } from 'lucide-react';
+import { CornerDownRight, ThumbsUp, User, MoreVertical, Trash2, Flag } from 'lucide-react';
 import CommentInput from './CommentInput';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { ReportModal } from '../report/ReportModal';
+import { ReportTargetType } from '../../services/report.service';
 
 interface CommentItemProps {
   comment: Comment;
@@ -56,6 +58,7 @@ export default function CommentItem({
   const commentRef = useRef<HTMLDivElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(highlightCommentId === comment.id);
   const [showMenu, setShowMenu] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -170,7 +173,7 @@ export default function CommentItem({
           <span className="text-slate-400 dark:text-white/40 text-xs">·</span>
           <span className="text-slate-500 dark:text-white/50 text-xs">{timeAgo}</span>
           
-          {user && (comment.userId === user.id || comment.isOwner) && (
+          {user && (
             <div className="ml-auto relative comment-menu-container">
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -181,16 +184,29 @@ export default function CommentItem({
               
               {showMenu && (
                 <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-white/10 py-1 z-50">
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      onDelete?.(comment.id);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    {t('pollDetail.delete')}
-                  </button>
+                  {(comment.userId === user.id || comment.isOwner) ? (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onDelete?.(comment.id);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {t('pollDetail.delete')}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setIsReportModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <Flag className="w-4 h-4" />
+                      {t('pollDetail.report', 'Báo cáo')}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -327,6 +343,12 @@ export default function CommentItem({
           </div>
         )}
       </div>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetType={ReportTargetType.COMMENT}
+        targetId={comment.id}
+      />
     </div>
   );
 }

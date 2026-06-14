@@ -263,7 +263,8 @@
     "pollEnded": "Bình chọn đã kết thúc. Bạn không thể bình luận thêm.",
     "deleteConfirm": "Bạn có chắc chắn muốn xóa bình luận này không?",
     "back": "Quay lại",
-    "anonymousCreator": "Tác giả ẩn danh"
+    "anonymousCreator": "Tác giả ẩn danh",
+    "report": "Báo cáo"
   },
   "forgotPassword": {
     "invalidEmail": "Vui lòng nhập email hợp lệ (ví dụ: name@example.com)",
@@ -687,5 +688,25 @@
     "cancel": "Huỷ",
     "addCount": "Thêm {{count}} giám khảo",
     "readFileError": "Không thể đọc file. Vui lòng kiểm tra định dạng."
+  },
+  "reportModal": {
+    "title": "Báo cáo nội dung vi phạm",
+    "desc": "Tại sao bạn báo cáo nội dung này? Báo cáo của bạn sẽ được admin xem xét để đảm bảo môi trường trong sạch.",
+    "reasonSpam": "Spam hoặc quảng cáo",
+    "reasonHarassment": "Quấy rối hoặc bắt nạt",
+    "reasonHateSpeech": "Ngôn từ kích động thù địch",
+    "reasonFalseInfo": "Thông tin sai lệch",
+    "reasonInappropriate": "Nội dung không phù hợp",
+    "reasonOther": "Lý do khác",
+    "detailsLabel": "Mô tả thêm (tùy chọn)",
+    "detailsPlaceholder": "Cung cấp thêm chi tiết nếu cần...",
+    "cancelBtn": "Hủy",
+    "submitBtn": "Gửi báo cáo",
+    "submittingBtn": "Đang gửi...",
+    "errorNoReason": "Vui lòng chọn một lý do báo cáo",
+    "errorDuplicate": "Bạn đã gửi báo cáo cho nội dung này rồi!",
+    "errorGeneric": "Có lỗi xảy ra khi gửi báo cáo. Vui lòng thử lại sau.",
+    "success": "Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét trong thời gian sớm nhất.",
+    "close": "Đóng"
   }
 }

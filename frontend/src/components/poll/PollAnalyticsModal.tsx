@@ -108,7 +108,7 @@ export default function PollAnalyticsModal({
         const raw = await pollService.getPollAnalytics(pollId);
         if (mounted) {
           // Khởi tạo biến đếm tích lũy cho từng lựa chọn
-          let cumulativeOptions: Record<string, number> = {};
+          const cumulativeOptions: Record<string, number> = {};
           options.forEach(o => cumulativeOptions[o.text] = 0);
 
           const transformed = raw.map((point: any) => {
