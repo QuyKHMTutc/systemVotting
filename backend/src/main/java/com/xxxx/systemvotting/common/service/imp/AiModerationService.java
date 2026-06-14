@@ -1,6 +1,6 @@
 package com.xxxx.systemvotting.common.service.imp;
 
-import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;

@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
 import org.springframework.cache.CacheManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -34,6 +35,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
     private static final long GO_PRICE_VND = 50_000L;
@@ -140,16 +142,13 @@ public class PaymentService {
                         hashData.append('&');
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.warn("Failed to encode VNPay parameter '{}': {}", fieldName, e.getMessage());
                 }
             }
         }
         
         String secret = vnpHashSecret != null ? vnpHashSecret.trim() : "";
-        System.out.println("[VNPAY CREATE] Secret    : '" + secret + "'");
-        System.out.println("[VNPAY CREATE] HashData  : '" + hashData.toString() + "'");
         String vnp_SecureHash = VnPayConfig.hmacSHA512(secret, hashData.toString());
-        System.out.println("[VNPAY CREATE] Hash      : " + vnp_SecureHash);
         query.append("&vnp_SecureHash=").append(vnp_SecureHash);
         
         return vnpPayUrl + "?" + query.toString();
@@ -180,12 +179,7 @@ public class PaymentService {
         }
 
         String secret = vnpHashSecret != null ? vnpHashSecret.trim() : "";
-        System.out.println("[VNPAY IPN] Secret      : '" + secret + "'");
-        System.out.println("[VNPAY IPN] HashData    : '" + hashData.toString() + "'");
-        System.out.println("[VNPAY IPN] Received    : " + vnp_SecureHash);
         String signValue = VnPayConfig.hmacSHA512(secret, hashData.toString());
-        System.out.println("[VNPAY IPN] Computed    : " + signValue);
-        System.out.println("[VNPAY IPN] Match       : " + signValue.equals(vnp_SecureHash));
         if (vnp_SecureHash == null || !signValue.equals(vnp_SecureHash)) {
             return -1; // Invalid signature
         }
@@ -316,7 +310,6 @@ public class PaymentService {
         LocalDateTime cutoff = LocalDateTime.now().minusMinutes(20);
         int updated = paymentTransactionRepository.updateStatusForOldTransactions(TransactionStatus.PENDING, TransactionStatus.FAILED, cutoff);
         if (updated > 0) {
-            System.out.println("[PaymentService] Cleaned up " + updated + " expired PENDING transactions.");
         }
     }
 }

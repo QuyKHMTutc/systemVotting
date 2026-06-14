@@ -27,7 +27,7 @@ import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentLikeRepository;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
-import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.poll.entity.PollMember;
 import com.xxxx.systemvotting.modules.poll.enums.PollRole;
 import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
@@ -643,6 +643,49 @@ public class PollServiceImpl implements PollService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PageResponse<PollResponseDTO> getAllPollsForAdmin(String title, String tag, String status, String categorySlug, int page, int size, String sortBy, String direction) {
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
+        Sort sort = direction != null && direction.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
+        sort = sort.and(Sort.by("id").descending());
+        
+        int pageNumber = Math.max(0, page);
+        Pageable pageable = PageRequest.of(pageNumber, size, sort);
+
+        Page<Poll> pollPage;
+        boolean hasCategoryFilter = categorySlug != null && !categorySlug.isBlank();
+        if (hasCategoryFilter) {
+            pollPage = pollRepository.findAllForAdminWithCategory(title, tag, status, categorySlug, LocalDateTime.now(), pageable);
+        } else {
+            pollPage = pollRepository.findAllForAdmin(title, tag, status, LocalDateTime.now(), pageable);
+        }
+        
+        List<Long> pollIds = pollPage.getContent().stream().map(Poll::getId).collect(Collectors.toList());
+        Map<Long, Integer> commentCountsMap = getCommentCountsForPolls(pollIds);
+
+        // Map polls to DTOs first, then batch-enrich with Redis in a single pipeline call
+        List<PollResponseDTO> pollDtos = pollPage.getContent().stream()
+                .map(poll -> {
+                    PollResponseDTO dto = pollMapper.toDto(poll);
+                    dto.setCommentCount(commentCountsMap.getOrDefault(poll.getId(), 0));
+                    if (poll.getCategory() != null) {
+                        dto.setCategory(categoryServiceImpl.toDTO(poll.getCategory()));
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        // Single pipeline call for all vote counts (replaces N individual HGETALL calls)
+        enrichPollListWithRedisData(pollDtos);
+
+        org.springframework.data.domain.Page<PollResponseDTO> resultPage =
+                new PageImpl<>(pollDtos, pageable, pollPage.getTotalElements());
+
+        return PageResponse.from(resultPage);
+    }
+
+    @Override
     @Transactional
     @CacheEvict(value = "pollDetails_v2", key = "#pollId")
     public void deletePoll(Long pollId, User authenticatedUser) {
@@ -881,9 +924,7 @@ public class PollServiceImpl implements PollService {
         if (keyword == null || keyword.isBlank() || keyword.length() < 2) return List.of();
         String kw = keyword.trim().toLowerCase();
 
-        return userRepository.findAll().stream()
-                .filter(u -> u.getUsername().toLowerCase().contains(kw)
-                        || u.getEmail().toLowerCase().contains(kw))
+        return userRepository.searchUsers(kw, PageRequest.of(0, 10)).getContent().stream()
                 .limit(10)
                 .map(u -> new JudgeCandidateDTO(
                         u.getId(), u.getUsername(), u.getEmail(), u.getAvatarUrl(), keyword, true))

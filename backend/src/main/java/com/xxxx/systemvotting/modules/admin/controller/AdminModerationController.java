@@ -2,7 +2,7 @@ package com.xxxx.systemvotting.modules.admin.controller;
 
 import com.xxxx.systemvotting.common.dto.ApiResponse;
 import com.xxxx.systemvotting.common.dto.PageResponse;
-import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.comment.dto.response.CommentResponseDTO;
 import com.xxxx.systemvotting.modules.comment.entity.Comment;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
@@ -54,7 +54,30 @@ public class AdminModerationController {
     private final com.xxxx.systemvotting.modules.user.repository.UserRepository userRepository;
     private final com.xxxx.systemvotting.modules.comment.cache.CommentCacheInvalidator commentCacheInvalidator;
 
+    private final com.xxxx.systemvotting.modules.poll.service.PollService pollService;
+
     // ── Polls Moderation ─────────────────────────────────────────────────────
+
+    @Operation(summary = "Danh sách tất cả bài đăng (Admin)",
+               description = "Lấy tất cả poll bao gồm cả PRIVATE và ẩn danh (không lọc status)",
+               security = @SecurityRequirement(name = "Bearer Authentication"))
+    @GetMapping("/polls/all")
+    public ApiResponse<PageResponse<PollResponseDTO>> getAllPollsForAdmin(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false, defaultValue = "ALL") String tag,
+            @RequestParam(required = false, defaultValue = "ALL") String status,
+            @RequestParam(required = false) String categorySlug,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        PageResponse<PollResponseDTO> polls = pollService.getAllPollsForAdmin(title, tag, status, categorySlug, page, size, sortBy, direction);
+        return ApiResponse.<PageResponse<PollResponseDTO>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Success")
+                .data(polls)
+                .build();
+    }
 
     @Operation(summary = "Danh sách bài đăng chờ duyệt",
                description = "Lấy tất cả poll có trạng thái SUSPICIOUS (đang chờ Admin duyệt)",

@@ -22,27 +22,27 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * Without this: 1 poll with 100 comments = 201 SQL queries. With this: 1 JOIN query.
      */
     @EntityGraph(attributePaths = {"user", "poll", "parent"})
-    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt DESC")
+    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND c.moderationStatus <> com.xxxx.systemvotting.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt DESC")
     List<Comment> findByPollIdOrderByCreatedAtDesc(@Param("pollId") Long pollId);
 
     /**
      * Root-level comments only (parent IS NULL), newest first — for pagination.
      */
     @EntityGraph(attributePaths = {"user", "poll"})
-    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND c.parent IS NULL AND c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt DESC")
+    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND c.parent IS NULL AND c.moderationStatus <> com.xxxx.systemvotting.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt DESC")
     Page<Comment> findRootCommentsByPollId(@Param("pollId") Long pollId, Pageable pageable);
 
     /**
      * Direct and deep replies for the given root comment ids (uses root_id or fallback to parent_id for legacy data).
      */
     @EntityGraph(attributePaths = {"user", "poll", "parent", "root"})
-    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND (c.root.id IN :rootIds OR (c.root IS NULL AND c.parent.id IN :rootIds)) AND c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c WHERE c.poll.id = :pollId AND (c.root.id IN :rootIds OR (c.root IS NULL AND c.parent.id IN :rootIds)) AND c.moderationStatus <> com.xxxx.systemvotting.common.enums.ModerationStatus.DANGEROUS ORDER BY c.createdAt ASC")
     List<Comment> findRepliesForRoots(@Param("pollId") Long pollId, @Param("rootIds") Collection<Long> rootIds);
 
     /**
      * Global anonymous label order for a poll (one row per anonymous user, chronological).
      */
-    @Query("SELECT c.user.id, MIN(c.createdAt) FROM Comment c WHERE c.poll.id = :pollId AND c.isAnonymous = true AND c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS GROUP BY c.user.id ORDER BY MIN(c.createdAt)")
+    @Query("SELECT c.user.id, MIN(c.createdAt) FROM Comment c WHERE c.poll.id = :pollId AND c.isAnonymous = true AND c.moderationStatus <> com.xxxx.systemvotting.common.enums.ModerationStatus.DANGEROUS GROUP BY c.user.id ORDER BY MIN(c.createdAt)")
     List<Object[]> findAnonymousParticipantOrder(@Param("pollId") Long pollId);
 
     /**
@@ -56,7 +56,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * Comment SUSPICIOUS (chờ duyệt) vẫn hiển để user biết trạng thái.
      */
     @EntityGraph(attributePaths = {"user", "poll"})
-    @Query("SELECT c FROM Comment c WHERE c.user.id = :userId AND (c.moderationStatus IS NULL OR c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS) ORDER BY c.createdAt DESC")
+    @Query("SELECT c FROM Comment c WHERE c.user.id = :userId AND (c.moderationStatus IS NULL OR c.moderationStatus <> com.xxxx.systemvotting.common.enums.ModerationStatus.DANGEROUS) ORDER BY c.createdAt DESC")
     Page<Comment> findByUserIdExcludingDangerous(@Param("userId") Long userId, Pageable pageable);
 
     /**
@@ -79,20 +79,20 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /**
      * Đếm comment hiển thị công khai (SAFE + SUSPICIOUS): không đếm bình luận bị DANGEROUS.
      */
-    @Query("SELECT COUNT(c) FROM Comment c WHERE c.poll.id = :pollId AND c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS")
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.poll.id = :pollId AND c.moderationStatus <> com.xxxx.systemvotting.common.enums.ModerationStatus.DANGEROUS")
     long countVisibleByPollId(@Param("pollId") Long pollId);
 
     /**
      * Batch count of comments across multiple polls — only visible comments (non-DANGEROUS).
      */
-    @Query("SELECT c.poll.id, COUNT(c) FROM Comment c WHERE c.poll.id IN :pollIds AND (c.moderationStatus IS NULL OR c.moderationStatus <> com.xxxx.systemvotting.modules.common.enums.ModerationStatus.DANGEROUS) GROUP BY c.poll.id")
+    @Query("SELECT c.poll.id, COUNT(c) FROM Comment c WHERE c.poll.id IN :pollIds AND (c.moderationStatus IS NULL OR c.moderationStatus <> com.xxxx.systemvotting.common.enums.ModerationStatus.DANGEROUS) GROUP BY c.poll.id")
     List<Object[]> countCommentsByPollIds(@Param("pollIds") List<Long> pollIds);
 
     /** Admin moderation: Lấy danh sách bình luận bị gắn cờ SUSPICIOUS. */
     @EntityGraph(attributePaths = {"user", "poll"})
-    @Query("SELECT c FROM Comment c WHERE c.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS ORDER BY c.createdAt DESC")
+    @Query("SELECT c FROM Comment c WHERE c.moderationStatus = com.xxxx.systemvotting.common.enums.ModerationStatus.SUSPICIOUS ORDER BY c.createdAt DESC")
     Page<Comment> findSuspiciousComments(Pageable pageable);
 
-    @Query("SELECT COUNT(c) FROM Comment c WHERE c.moderationStatus = com.xxxx.systemvotting.modules.common.enums.ModerationStatus.SUSPICIOUS")
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.moderationStatus = com.xxxx.systemvotting.common.enums.ModerationStatus.SUSPICIOUS")
     long countSuspiciousComments();
 }

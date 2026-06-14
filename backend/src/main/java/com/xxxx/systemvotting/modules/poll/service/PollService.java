@@ -18,6 +18,8 @@ public interface PollService {
 
     PageResponse<PollResponseDTO> getAllPolls(String title, String tag, String status, String categorySlug, int page, int size, String sortBy, String direction);
 
+    PageResponse<PollResponseDTO> getAllPollsForAdmin(String title, String tag, String status, String categorySlug, int page, int size, String sortBy, String direction);
+
     void deletePoll(Long pollId, User authenticatedUser);
 
     PageResponse<PollResponseDTO> getMyPolls(Long userId, int page, int size);

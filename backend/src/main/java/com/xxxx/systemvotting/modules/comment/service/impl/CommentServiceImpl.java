@@ -23,7 +23,7 @@ import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
 import com.xxxx.systemvotting.modules.vote.service.RateLimitService;
 import com.xxxx.systemvotting.common.service.RealTimeService;
 import com.xxxx.systemvotting.common.service.imp.AiModerationService;
-import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;

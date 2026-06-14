@@ -6,13 +6,17 @@ import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.modules.comment.dto.request.CommentRequestDTO;
 import com.xxxx.systemvotting.modules.comment.entity.Comment;
 import com.xxxx.systemvotting.modules.comment.cache.CommentCacheInvalidator;
+import com.xxxx.systemvotting.modules.comment.repository.CommentLikeRepository;
 import com.xxxx.systemvotting.modules.comment.repository.CommentRepository;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.modules.notification.service.AsyncNotificationService;
 import com.xxxx.systemvotting.modules.notification.service.NotificationService;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import com.xxxx.systemvotting.modules.user.repository.UserRepository;
 import com.xxxx.systemvotting.modules.vote.repository.VoteRepository;
+import com.xxxx.systemvotting.modules.vote.service.RateLimitService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -54,6 +58,15 @@ class CommentServiceImplTest {
     @Mock
     private CommentCacheInvalidator commentCacheInvalidator;
 
+    @Mock
+    private CommentLikeRepository commentLikeRepository;
+
+    @Mock
+    private AsyncNotificationService asyncNotificationService;
+
+    @Mock
+    private RateLimitService rateLimitService;
+
     @InjectMocks
     private CommentServiceImpl commentService;
 
@@ -69,7 +82,8 @@ class CommentServiceImplTest {
         when(pollRepository.findById(10L)).thenReturn(Optional.of(requestedPoll));
         when(userRepository.findById(2L)).thenReturn(Optional.of(actor));
         when(commentRepository.findFirstByUserIdAndPollIdOrderByCreatedAtAsc(2L, 10L)).thenReturn(Optional.empty());
-       // when(aiModerationService .isToxicContent("reply")).thenReturn(false);
+        when(aiModerationService.moderateContent("reply", 2L))
+                .thenReturn(new AiModerationService.ModerationResult(ModerationStatus.SAFE, "ok"));
         when(commentRepository.findById(50L)).thenReturn(Optional.of(parentInOtherPoll));
 
         assertThrows(AppException.class, () -> commentService.createComment(request, 2L));

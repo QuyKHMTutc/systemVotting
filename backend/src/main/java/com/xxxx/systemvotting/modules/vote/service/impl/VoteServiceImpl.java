@@ -5,8 +5,10 @@ import com.xxxx.systemvotting.common.utils.RedisKeyUtils;
 import com.xxxx.systemvotting.exception.AppException;
 import com.xxxx.systemvotting.exception.ErrorCode;
 import com.xxxx.systemvotting.modules.notification.service.AsyncNotificationService;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.poll.entity.Option;
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
+import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
 import com.xxxx.systemvotting.modules.poll.repository.OptionRepository;
 import com.xxxx.systemvotting.modules.poll.repository.PollRepository;
 import com.xxxx.systemvotting.modules.user.entity.User;
@@ -162,7 +164,7 @@ public class VoteServiceImpl implements VoteService {
         rateLimitService.checkAndRecordVoteAttempt(userId);
 
         // Step 2 — Validate poll (DB read, connection released immediately)
-        Poll poll = loadAndValidatePoll(pollId);
+        Poll poll = loadAndValidatePoll(userId, pollId);
 
         // Step 2b — Reject creator self-vote
         rejectIfCreator(userId, poll);
@@ -213,9 +215,17 @@ public class VoteServiceImpl implements VoteService {
     // Private helpers — each has a single responsibility
     // ─────────────────────────────────────────────────────────────────────────────
 
-    private Poll loadAndValidatePoll(Long pollId) {
+    private Poll loadAndValidatePoll(Long userId, Long pollId) {
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        if (poll.getModerationStatus() != null && poll.getModerationStatus() != ModerationStatus.SAFE) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        if (poll.getVisibility() == PollVisibility.PRIVATE) {
+            validatePrivatePollVoteAccess(userId, poll);
+        }
 
         LocalDateTime now = LocalDateTime.now();
         if (poll.getStartTime() != null && now.isBefore(poll.getStartTime())) {
@@ -225,6 +235,20 @@ public class VoteServiceImpl implements VoteService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         return poll;
+    }
+
+    private void validatePrivatePollVoteAccess(Long userId, Poll poll) {
+        boolean isMember = pollMemberRepository.findByPollIdAndUserId(poll.getId(), userId).isPresent();
+        if (isMember) {
+            return;
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        String email = user.getEmail();
+        if (email == null || email.isBlank() || !pollRepository.existsInvitedEmail(poll.getId(), email)) {
+            throw new AppException(ErrorCode.POLL_ACCESS_DENIED);
+        }
     }
 
     /** Validates that the voter is not the poll creator. */

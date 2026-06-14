@@ -1,7 +1,7 @@
 package com.xxxx.systemvotting.modules.poll.entity;
 
 import com.xxxx.systemvotting.modules.poll.enums.PollVisibility;
-import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 import com.xxxx.systemvotting.modules.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;

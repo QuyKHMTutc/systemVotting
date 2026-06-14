@@ -52,6 +52,7 @@ public class VoteEventConsumer {
     private final com.xxxx.systemvotting.modules.comment.cache.CommentCacheInvalidator commentCacheInvalidator;
 
     private static final String QUEUE_KEY = RedisKeyUtils.getVoteEventQueueKey();
+    private static final String DLQ_KEY = QUEUE_KEY + ":dlq";
 
     /**
      * Drains the vote event queue every 2 seconds.
@@ -68,6 +69,7 @@ public class VoteEventConsumer {
                 persistEvent(event);
             } catch (Exception e) {
                 // Skip malformed events — log raw JSON for manual recovery / DLQ in production
+                stringRedisTemplate.opsForList().leftPush(DLQ_KEY, eventJson);
                 log.error("Failed to process vote event (skipping): json='{}', error='{}'", eventJson, e.getMessage());
             }
         }

@@ -1,6 +1,6 @@
 package com.xxxx.systemvotting.modules.comment.entity;
 
-import com.xxxx.systemvotting.modules.common.enums.ModerationStatus;
+import com.xxxx.systemvotting.common.enums.ModerationStatus;
 
 import com.xxxx.systemvotting.modules.poll.entity.Poll;
 import com.xxxx.systemvotting.modules.user.entity.User;
