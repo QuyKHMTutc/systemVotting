@@ -73,4 +73,10 @@ public class PollResponseDTO implements Serializable {
 
     @Schema(description = "Lý do kiểm duyệt từ AI (dành cho Admin)")
     private String moderationReason;
+
+    @Schema(description = "Ẩn kết quả bình chọn đến khi poll kết thúc. true = ẩn, false = hiện real-time")
+    private boolean showResultsAfterEnd;
+
+    @Schema(description = "Tổng số lượt bình chọn (tính tổng từ tất cả các option)")
+    private Integer totalVotes;
 }

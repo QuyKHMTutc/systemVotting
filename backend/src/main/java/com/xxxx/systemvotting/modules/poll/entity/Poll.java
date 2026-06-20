@@ -85,6 +85,15 @@ public class Poll {
     @Column(name = "is_anonymous", nullable = false)
     private boolean isAnonymous;
 
+    /**
+     * Nếu true, kết quả bình chọn sẽ bị ẩn cho đến khi poll kết thúc (now > endTime).
+     * Creator và Admin luôn xem được kết quả dù cài đặt này là gì.
+     * Mặc định false để đảm bảo tương thích ngược với dữ liệu cũ.
+     */
+    @Column(name = "show_results_after_end", nullable = false)
+    @Builder.Default
+    private boolean showResultsAfterEnd = false;
+
     // NEW: Time constraints
     private LocalDateTime startTime;
     private LocalDateTime endTime;

@@ -65,6 +65,9 @@ public record PollCreateRequestDTO(
     @Schema(description = "URL ảnh bìa của Poll từ Cloudinary (tùy chọn)", example = "https://res.cloudinary.com/demo/image/upload/v1/polls/img.jpg")
     String imageUrl,
 
+    @Schema(description = "Ẩn kết quả bình chọn cho đến khi poll kết thúc. Nếu true, người dùng chỉ xem được kết quả sau khi endTime đã qua", example = "false")
+    Boolean showResultsAfterEnd,
+
     /**
      * Injected by the controller from the JWT — never from the client request body.
      * Hidden from Swagger to avoid confusion.

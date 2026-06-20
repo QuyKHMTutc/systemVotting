@@ -224,6 +224,10 @@ public class PollServiceImpl implements PollService {
 
         dto.getOptions().clear();
         dto.getOptions().addAll(enriched);
+
+        // Tính tổng số vote trước khi bị mask
+        int total = enriched.stream().mapToInt(OptionResponseDTO::voteCount).sum();
+        dto.setTotalVotes(total);
     }
 
     /**
@@ -301,6 +305,46 @@ public class PollServiceImpl implements PollService {
                     .collect(Collectors.toList());
             dto.getOptions().clear();
             dto.getOptions().addAll(enriched);
+            
+            // Tính tổng số vote trước khi bị mask
+            int total = enriched.stream().mapToInt(OptionResponseDTO::voteCount).sum();
+            dto.setTotalVotes(total);
+        }
+    }
+
+    /**
+     * Masks vote counts to 0 for polls with showResultsAfterEnd=true while the poll is still active.
+     * Creator (identified by email) always sees real counts.
+     * This method operates in-place on the provided DTOs.
+     *
+     * @param dtos        list of poll DTOs to process
+     * @param callerEmail email of the authenticated user, or null if anonymous
+     */
+    private void applyResultVisibilityMask(List<PollResponseDTO> dtos, String callerEmail) {
+        if (callerEmail == null) {
+            var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt) {
+                callerEmail = jwt.getClaimAsString("email");
+            }
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        for (PollResponseDTO dto : dtos) {
+            if (!dto.isShowResultsAfterEnd()) continue;  // normal mode — nothing to hide
+            boolean pollEnded = dto.getEndTime() != null && now.isAfter(dto.getEndTime());
+            if (pollEnded) continue;  // poll ended — reveal results to everyone
+            // Poll still active — check if caller is creator
+            boolean isCreator = callerEmail != null
+                    && dto.getCreator() != null
+                    && dto.getCreator().email() != null
+                    && callerEmail.equalsIgnoreCase(dto.getCreator().email());
+            if (isCreator) continue;  // creator always sees real counts
+            // Mask: replace all vote counts with 0
+            if (dto.getOptions() != null) {
+                dto.getOptions().replaceAll(opt -> new OptionResponseDTO(
+                        opt.id(), opt.text(), 0, 0, 0
+                ));
+            }
         }
     }
 
@@ -336,7 +380,12 @@ public class PollServiceImpl implements PollService {
         PollVisibility visibility = requestDTO.visibility() != null ? requestDTO.visibility() : PollVisibility.PUBLIC;
         poll.setVisibility(visibility);
         processInvitedEmailsSetup(requestDTO, poll, creator, visibility);
-        
+
+        // Set showResultsAfterEnd — defaults to false if not provided
+        poll.setShowResultsAfterEnd(
+                requestDTO.showResultsAfterEnd() != null && requestDTO.showResultsAfterEnd()
+        );
+
         Poll savedPoll = pollRepository.save(poll);
         boolean isSafe = modResult.status() == ModerationStatus.SAFE;
 
@@ -596,6 +645,8 @@ public class PollServiceImpl implements PollService {
 
         PollResponseDTO dto = pollDetailsCacheLoader.loadDbSnapshot(id);
         enrichPollWithRedisData(dto);
+        // Apply result visibility mask: if showResultsAfterEnd=true and poll still active, hide counts for non-creators
+        applyResultVisibilityMask(List.of(dto), callerEmail);
         return dto;
     }
 
@@ -635,6 +686,9 @@ public class PollServiceImpl implements PollService {
 
         // Single pipeline call for all vote counts (replaces N individual HGETALL calls)
         enrichPollListWithRedisData(pollDtos);
+        // Apply result visibility mask for polls with showResultsAfterEnd=true
+        // Public listing: caller is anonymous (null) — non-creators won't see counts for hidden polls
+        applyResultVisibilityMask(pollDtos, null);
 
         org.springframework.data.domain.Page<PollResponseDTO> resultPage =
                 new PageImpl<>(pollDtos, pageable, pollPage.getTotalElements());
@@ -678,6 +732,7 @@ public class PollServiceImpl implements PollService {
 
         // Single pipeline call for all vote counts (replaces N individual HGETALL calls)
         enrichPollListWithRedisData(pollDtos);
+        // Admin panel: Admin always sees real counts — no mask applied for admin listing
 
         org.springframework.data.domain.Page<PollResponseDTO> resultPage =
                 new PageImpl<>(pollDtos, pageable, pollPage.getTotalElements());
@@ -740,6 +795,7 @@ public class PollServiceImpl implements PollService {
                 })
                 .collect(Collectors.toList());
         enrichPollListWithRedisData(myPollDtos);
+        // My Polls page: creator views their own polls — they always see real counts (no mask)
         Page<PollResponseDTO> resultPage = new PageImpl<>(myPollDtos, pageable, pollPage.getTotalElements());
         return PageResponse.from(resultPage);
     }
@@ -770,6 +826,8 @@ public class PollServiceImpl implements PollService {
                 .collect(Collectors.toList());
 
         enrichPollListWithRedisData(dtos);
+        // Trending list on public dashboard: anonymous caller — mask hidden polls
+        applyResultVisibilityMask(dtos, null);
 
         // Compute trending score using Gravity Decay Formula
         return dtos.stream()
@@ -854,6 +912,10 @@ public class PollServiceImpl implements PollService {
         }
 
         enrichPollListWithRedisData(votedPollDtos);
+        // Voted Polls page: user has voted, but in A1 mode results are still hidden until poll ends
+        // Use null as callerEmail here since we don't have it in this method signature
+        // (the voted-polls list is personal and user is authenticated, but they are not necessarily the creator)
+        applyResultVisibilityMask(votedPollDtos, null);
         // Use DB page for pagination metadata; Redis extras are bonus entries on first page only
         Page<PollResponseDTO> resultPage = new PageImpl<>(votedPollDtos, pageable, pollPage.getTotalElements() + extraCount);
         return PageResponse.from(resultPage);
@@ -957,7 +1019,7 @@ public class PollServiceImpl implements PollService {
             throw new AppException(ErrorCode.POLL_ACCESS_DENIED);
         }
 
-        List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollId(id);
+        List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollIdWithUserAndOption(id);
 
         boolean groupByMinute = false;
         boolean groupByHour = false;
@@ -1011,7 +1073,7 @@ public class PollServiceImpl implements PollService {
             throw new AppException(ErrorCode.POLL_ACCESS_DENIED);
         }
 
-        List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollId(id);
+        List<com.xxxx.systemvotting.modules.vote.entity.Vote> votes = voteRepository.findByPollIdWithUserAndOption(id);
 
         StringBuilder csv = new StringBuilder();
         csv.append("Username,Email,Option,Role,Time\n");

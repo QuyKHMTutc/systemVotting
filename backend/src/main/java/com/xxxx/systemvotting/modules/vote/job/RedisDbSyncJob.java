@@ -33,7 +33,9 @@ public class RedisDbSyncJob {
      * have vote state in Redis. Avoids loading the entire {@code polls} table (important on dev laptops
      * and as data grows).
      */
-    @Scheduled(cron = "0 0 3 * * ?")
+   // @Scheduled(cron = "0 0 3 * * ?")
+    @Scheduled(cron = "0 0/10 * * * ?")
+
     @Transactional
     public void syncRedisVotesToDatabase() {
         log.info("Starting nightly Redis → DB vote sync (keys matching {})...", POLL_VOTES_KEY_GLOB);

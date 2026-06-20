@@ -23,6 +23,10 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
 
     List<Vote> findByPollId(Long pollId);
 
+    @Query("SELECT v FROM Vote v LEFT JOIN FETCH v.user LEFT JOIN FETCH v.option WHERE v.poll.id = :pollId")
+    List<Vote> findByPollIdWithUserAndOption(@Param("pollId") Long pollId);
+
+
     /**
      * Projection for comment threads — avoids loading full {@link Vote} graphs (user/option/poll)
      * when only (userId → option label) is needed.
@@ -31,4 +35,7 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     List<Object[]> findUserIdAndOptionTextByPollId(@Param("pollId") Long pollId);
 
     List<Vote> findByUserIdAndPollIdIn(Long userId, List<Long> pollIds);
+
+    @Query("SELECT COUNT(v) FROM Vote v WHERE v.poll.id = :pollId AND v.user.id NOT IN (SELECT pm.user.id FROM PollMember pm WHERE pm.poll.id = :pollId)")
+    long countAudienceVotesByPollId(@Param("pollId") Long pollId);
 }

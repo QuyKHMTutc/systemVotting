@@ -112,13 +112,18 @@ public class VoteServiceImpl implements VoteService {
             -- Reject: user already voted in this poll (no changes allowed)
             if existingOptionId then return '-1' end
 
-            -- Enforce plan-based vote limit
-            if maxLimitStr ~= '0' then
+            -- Enforce plan-based vote limit ONLY for AUDIENCE
+            if maxLimitStr ~= '0' and roleSuffix == 'AUDIENCE' then
                 local currentTotal = tonumber(baselineTotalStr or '0')
                 if redis.call('EXISTS', pollVotesKey) == 1 then
                     local redisDelta = 0
-                    for _, v in ipairs(redis.call('HVALS', pollVotesKey)) do
-                        redisDelta = redisDelta + tonumber(v or '0')
+                    local hashData = redis.call('HGETALL', pollVotesKey)
+                    for i = 1, #hashData, 2 do
+                        local k = hashData[i]
+                        local v = hashData[i+1]
+                        if string.sub(k, -8) == 'AUDIENCE' then
+                            redisDelta = redisDelta + tonumber(v or '0')
+                        end
                     end
                     if redisDelta > currentTotal then currentTotal = redisDelta end
                 end
@@ -314,9 +319,9 @@ public class VoteServiceImpl implements VoteService {
      */
     private int computeBaselineTotal(Poll poll, String maxLimit) {
         if ("0".equals(maxLimit)) return 0;
-        return poll.getOptions().stream()
-                .mapToInt(Option::getVoteCount)
-                .sum();
+        // Hướng 2: Giới hạn chỉ áp dụng cho người dùng thường (AUDIENCE)
+        // Do đó, baselineTotal cũng chỉ đếm số lượng vote của nhóm AUDIENCE.
+        return (int) voteRepository.countAudienceVotesByPollId(poll.getId());
     }
 
     private String buildEventJson(Long userId, Long pollId, Long optionId, Integer weight) {
@@ -403,16 +408,20 @@ public class VoteServiceImpl implements VoteService {
                 })
                 .collect(Collectors.toList());
 
+        int totalPollVotes = optionUpdates.stream()
+                .mapToInt(map -> (Integer) map.get("voteCount"))
+                .sum();
+
         // Per-poll channel (detail page)
         realTimeService.broadcast(
                 "/topic/polls/" + poll.getId() + "/votes",
-                Map.of("pollId", poll.getId(), "options", optionUpdates)
+                Map.of("pollId", poll.getId(), "options", optionUpdates, "totalVotes", totalPollVotes)
         );
 
         // Global channel (explore/dashboard page)
         realTimeService.broadcast(
                 WebSocketTopics.GLOBAL_POLL_EVENTS,
-                Map.of("type", WebSocketTopics.EVENT_TYPE_VOTED, "pollId", poll.getId(), "userId", userId, "options", optionUpdates)
+                Map.of("type", WebSocketTopics.EVENT_TYPE_VOTED, "pollId", poll.getId(), "userId", userId, "options", optionUpdates, "totalVotes", totalPollVotes)
         );
     }
 
