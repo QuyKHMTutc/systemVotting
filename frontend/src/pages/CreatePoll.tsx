@@ -28,6 +28,7 @@ const CreatePoll = () => {
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
     const [isAnonymous, setIsAnonymous] = useState(false);
+    const [showResultsAfterEnd, setShowResultsAfterEnd] = useState(false);
     const [options, setOptions] = useState<string[]>(['', '']);
     const [endTime, setEndTime] = useState('');
     const [error, setError] = useState('');
@@ -81,6 +82,7 @@ const CreatePoll = () => {
                 description: description.trim() || undefined,
                 tags: tags,
                 isAnonymous: isAnonymous,
+                showResultsAfterEnd: showResultsAfterEnd,
                 options: options.map(opt => ({ text: opt })),
                 endTime: formattedEndTime,
                 judgeIds: enableJudges && judges.length > 0 ? judges.filter(j => j.id).map(j => j.id) : [],
@@ -314,6 +316,21 @@ const CreatePoll = () => {
                                                 <input type="checkbox" className="sr-only" checked={isAnonymous} onChange={() => setIsAnonymous(!isAnonymous)} />
                                                 <div className={`block w-12 h-7 rounded-full transition-colors ${isAnonymous ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
                                                 <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${isAnonymous ? 'transform translate-x-5' : ''}`}></div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    {/* Hide Results Until End */}
+                                    <div className="pt-2">
+                                        <label className="flex items-center justify-between cursor-pointer group">
+                                            <div>
+                                                <span className="block text-slate-800 dark:text-white font-medium">{t('createPoll.showResultsAfterEnd')}</span>
+                                                <span className="block text-xs text-slate-500 dark:text-indigo-200/60 mt-0.5">{t('createPoll.showResultsAfterEndDesc')}</span>
+                                            </div>
+                                            <div className="relative ml-4 flex-shrink-0">
+                                                <input type="checkbox" className="sr-only" checked={showResultsAfterEnd} onChange={() => setShowResultsAfterEnd(!showResultsAfterEnd)} />
+                                                <div className={`block w-12 h-7 rounded-full transition-colors ${showResultsAfterEnd ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-white/10'}`}></div>
+                                                <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform shadow-sm ${showResultsAfterEnd ? 'transform translate-x-5' : ''}`}></div>
                                             </div>
                                         </label>
                                     </div>

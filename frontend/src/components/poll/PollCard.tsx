@@ -32,7 +32,7 @@ export const PollCard = ({
   const creatorAvatar = poll.isAnonymous ? null : poll.creator.avatarUrl;
   const resolvedCommentCount = commentCount ?? poll.commentCount ?? 0;
   const isActive = new Date(poll.endTime) > new Date();
-  const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
+  const totalVotes = poll.totalVotes ?? poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);

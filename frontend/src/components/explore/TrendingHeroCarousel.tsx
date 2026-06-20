@@ -69,7 +69,7 @@ export function TrendingHeroCarousel({ polls, loading, votedPollIds = [] }: Tren
 
   const totalVotes = useMemo(() => {
     if (!featured) return 0;
-    return featured.options.reduce((s, o) => s + (o.voteCount ?? 0), 0);
+    return featured.totalVotes ?? featured.options.reduce((s, o) => s + (o.voteCount ?? 0), 0);
   }, [featured]);
 
   if (loading) {

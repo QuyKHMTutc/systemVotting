@@ -27,6 +27,8 @@ export interface Poll {
     category?: Category;
     moderationStatus?: 'SAFE' | 'SUSPICIOUS' | 'DANGEROUS'; // Moderation state
     moderationReason?: string;
+    showResultsAfterEnd?: boolean;
+    totalVotes?: number;
 }
 
 export interface PollOption {

@@ -143,7 +143,7 @@ export default function PollAnalyticsModal({
     };
     load();
     return () => { mounted = false; document.body.style.overflow = 'auto'; };
-  }, [isOpen, pollId, t, totalVotes]);
+  }, [isOpen, pollId, t]);
 
   const handleExport = async () => {
     setIsExporting(true);

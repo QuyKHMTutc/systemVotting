@@ -137,14 +137,18 @@ const PollDetail = () => {
       voteCount?: number;
       audienceCount?: number;
       judgeCount?: number;
+      judgeCount?: number;
       judgeWeight?: number;
-    }[]
+    }[];
+    totalVotes?: number;
+    totalPollVotes?: number;
   }) => {
 
     setPoll(prev => {
       if (!prev) return prev;
       return {
         ...prev,
+        totalVotes: payload.totalVotes ?? payload.totalPollVotes ?? prev.totalVotes,
         // Update judgeWeight at poll level if it comes in the WS update
         judgeWeight: payload.options[0]?.judgeWeight ?? prev.judgeWeight,
         options: prev.options.map(opt => {
@@ -195,9 +199,6 @@ const PollDetail = () => {
       return [{ ...newComment, replies: newComment.replies || [] }, ...prev];
     });
 
-    if (wasInserted) {
-      setTotalAllComments((t) => t + 1);
-    }
   }, []);
 
   usePollWebSocket({
@@ -229,6 +230,10 @@ const PollDetail = () => {
       if (payload.commentCount !== undefined) {
         setTotalAllComments(payload.commentCount);
       }
+    } else if (payload.type === 'COMMENT_ADDED') {
+      if (payload.commentCount !== undefined) {
+        setTotalAllComments(payload.commentCount);
+      }
     }
   }, [id, navigate]);
 
@@ -246,7 +251,6 @@ const PollDetail = () => {
         if (prev.some((c) => c.id === newComment.id)) return prev;
         return [{ ...newComment, replies: newComment.replies || [] }, ...prev];
       });
-      setTotalAllComments((t) => t + 1);
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post comment');
     }
@@ -274,7 +278,6 @@ const PollDetail = () => {
       };
 
       setComments((prev) => insertRecursively(prev));
-      setTotalAllComments((t) => t + 1);
     } catch (err: any) {
       setCommentError(err.response?.data?.message || 'Failed to post reply');
       console.error('Failed to post reply:', err);
@@ -364,9 +367,16 @@ const PollDetail = () => {
       setHasVoted(true);
       fireworkEffect();
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to submit vote. You might have already voted.';
+      let msg = err.response?.data?.message || 'Failed to submit vote. You might have already voted.';
+      
+      if (err.response?.status === 403 && msg.toLowerCase().includes('limit')) {
+        msg = t('pollDetail.limitExceeded', 'Cuộc bình chọn đã đạt giới hạn số phiếu tối đa.');
+      } else if (err.response?.status === 409) {
+        msg = t('pollDetail.youVoted', 'Bạn đã bình chọn rồi.');
+      }
+
       setError(msg);
-      if (err.response?.status === 400) {
+      if (err.response?.status === 409) {
         // Already voted (e.g. stale localStorage miss) — mark as voted, WS has live counts
         setHasVoted(true);
       }
@@ -469,7 +479,7 @@ const PollDetail = () => {
   const hasWeightedVoting = judgeWeight > 0;
 
   // Raw vote totals — use ?? 0 to prevent NaN when voteCount is undefined (weighted polls)
-  const totalVotes = poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
+  const totalVotes = poll.totalVotes ?? poll.options.reduce((sum, opt) => sum + (opt.voteCount ?? 0), 0);
   const totalJudgeVotes = poll.options.reduce((sum, opt) => sum + (opt.judgeCount ?? 0), 0);
   const totalAudienceVotes = poll.options.reduce((sum, opt) => sum + (opt.audienceCount ?? 0), 0);
 
@@ -491,10 +501,10 @@ const PollDetail = () => {
     return judgeScore + audienceScore;
   };
 
-  // Show results only if: user has already voted OR the poll has ended.
-  // liveVoteReceived intentionally excluded — WS updates refresh counts silently
-  // but must NOT reveal results to users who haven't voted yet.
-  const showResults = hasVoted || !isActive || isCreator;
+  const resultsHiddenUntilEnd = poll.showResultsAfterEnd === true;
+  const showResults = !resultsHiddenUntilEnd 
+    ? (hasVoted || !isActive || isCreator)
+    : (!isActive || isCreator);
 
   const handleSetFilterStatus = (status: string) => navigate(`/explore?filter=${status}`);
   const handleSetFilterTag = (tag: string) => navigate(`/explore?tag=${tag}`);
@@ -506,7 +516,6 @@ const PollDetail = () => {
       <Navbar />
 
       <div className="flex-1 w-full max-w-[1700px] mx-auto px-4 xl:px-8 pb-4 relative">
-        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-sm shrink-0 mt-2">{error}</div>}
 
         {/* LEFT SIDEBAR */}
         <aside
@@ -655,15 +664,17 @@ const PollDetail = () => {
                             <span className="text-slate-500 dark:text-white/50 text-sm">{timeAgo(poll.createdAt)} · {endsIn(poll.endTime)}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setIsLiveChartOpen(true)}
-                            className="flex items-center gap-2 group px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-semibold rounded-xl border border-red-500/30 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] shrink-0"
-                          >
-                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                            <span className="text-sm">{t('pollDetail.viewLive')}</span>
-                          </button>
-                        </div>
+                        {showResults && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setIsLiveChartOpen(true)}
+                              className="flex items-center gap-2 group px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-semibold rounded-xl border border-red-500/30 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] shrink-0"
+                            >
+                              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                              <span className="text-sm">{t('pollDetail.viewLive')}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-white/60 mt-5 pt-4 border-t border-slate-200 dark:border-white/5">
@@ -701,6 +712,17 @@ const PollDetail = () => {
                     )}
 
                     <div className="px-6 sm:px-8 py-6 space-y-3">
+                      {!showResults && poll.showResultsAfterEnd && isActive && (
+                        <div className="mb-4 p-4 rounded-xl border border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10 flex items-start gap-3">
+                          <span className="text-2xl flex-shrink-0">🔒</span>
+                          <div>
+                            <p className="text-indigo-800 dark:text-indigo-300 font-semibold text-sm mb-1">{t('pollDetail.resultsHidden')}</p>
+                            <p className="text-indigo-600/80 dark:text-indigo-200/70 text-xs leading-relaxed">{t('pollDetail.resultsHiddenSubtitle')}</p>
+                            <p className="text-indigo-600/80 dark:text-indigo-200/70 text-xs mt-1 font-medium">{endsIn(poll.endTime)}</p>
+                          </div>
+                        </div>
+                      )}
+
                       {poll.options.map((option) => {
                         const weightedScore = getWeightedScore(option);
                         const rawPercentage = totalVotes > 0 ? Math.round((option.voteCount / totalVotes) * 100) : 0;

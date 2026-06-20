@@ -317,6 +317,7 @@ const Dashboard = () => {
       if (payload.type === 'DELETED') return prev.filter((p) => p.id !== payload.pollId);
       if (payload.type === 'VOTED') return patchPoll(prev, payload.pollId, (p) => ({
         ...p,
+        totalVotes: payload.totalVotes ?? payload.totalPollVotes ?? p.totalVotes,
         judgeWeight: payload.options[0]?.judgeWeight ?? p.judgeWeight,
         options: p.options.map((o) => {
           const u = payload.options.find((x) => x.optionId === o.id);
@@ -347,6 +348,7 @@ const Dashboard = () => {
       } else if (payload.type === 'VOTED') {
         list = patchPoll(list, payload.pollId, (p) => ({
           ...p,
+          totalVotes: payload.totalVotes ?? payload.totalPollVotes ?? p.totalVotes,
           judgeWeight: payload.options[0]?.judgeWeight ?? p.judgeWeight,
           options: p.options.map((o) => {
             const u = payload.options.find((x) => x.optionId === o.id);
@@ -380,6 +382,7 @@ const Dashboard = () => {
       } else if (payload.type === 'VOTED') {
         content = patchPoll(content, payload.pollId, (p) => ({
           ...p,
+          totalVotes: payload.totalVotes ?? payload.totalPollVotes ?? p.totalVotes,
           judgeWeight: payload.options[0]?.judgeWeight ?? p.judgeWeight,
           options: p.options.map((o) => {
             const u = payload.options.find((x) => x.optionId === o.id);

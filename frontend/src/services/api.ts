@@ -31,13 +31,9 @@ api.interceptors.request.use((config) => {
     // khi user đã đăng nhập — backend cần userId để hiện badge "Đã vote: [đáp án]"
     // Backend xử lý jwt=null tốt nên guest vẫn đọc được bình luận bình thường
     const isPublicGet = config.method?.toLowerCase() === 'get' && (
-        /^\/polls(\?|$)/.test(config.url ?? '') ||          // GET /polls (danh sách)
-        /^\/polls\/trending/.test(config.url ?? '') ||       // GET /polls/trending
         /^\/categories/.test(config.url ?? '')               // GET /categories/**
-        // LƯU Ý: GET /polls/{id} KHÔNG được liệt kê ở đây:
-        // 1. Backend cần userId để check quyền xem PRIVATE poll (callerEmail từ JWT)
-        // 2. Backend cần userId để hiện badge "Đã vote: [đáp án]" trong comments
-        // Backend xử lý jwt=null tốt nên guest vẫn đọc được poll public bình thường
+        // LƯU Ý: GET /polls (danh sách) và /polls/trending KHÔNG được liệt kê ở đây:
+        // Backend cần userId để check quyền xem số vote thực của Creator đối với các poll ẩn kết quả.
     );
 
     // Gửi token nếu có và không phải auth endpoint — isPublicGet chỉ skip token khi thực sự public

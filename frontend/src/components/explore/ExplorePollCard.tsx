@@ -73,7 +73,7 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
   const judgeWeight = poll.judgeWeight ?? 0;
   const audienceWeight = 100 - judgeWeight;
 
-  const totalVotes = poll.options.reduce((s, o) => s + (o.voteCount ?? 0), 0);
+  const totalVotes = poll.totalVotes ?? poll.options.reduce((s, o) => s + (o.voteCount ?? 0), 0);
   const totalJudgeVotes = poll.options.reduce((s, o) => s + (o.judgeCount ?? 0), 0);
   const totalAudienceVotes = poll.options.reduce((s, o) => s + (o.audienceCount ?? 0), 0);
 
@@ -105,7 +105,10 @@ export function ExplorePollCard({ poll, hasVoted = false, commentCount, onDelete
     hasWeightedVoting ? getWeightedScore(b) - getWeightedScore(a) : (b.voteCount ?? 0) - (a.voteCount ?? 0)
   );
 
-  const showResults = hasVoted || isCreator;
+  const resultsHiddenUntilEnd = poll.showResultsAfterEnd === true;
+  const showResults = !resultsHiddenUntilEnd 
+    ? (hasVoted || !isActive || isCreator)
+    : (!isActive || isCreator);
 
   // Poll đang chờ Admin duyệt — chỉ creator thấy, không thể click
   const isPendingReview = poll.moderationStatus === 'SUSPICIOUS';

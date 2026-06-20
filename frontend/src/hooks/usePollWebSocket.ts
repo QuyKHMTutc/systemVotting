@@ -11,6 +11,7 @@ interface VoteUpdatePayload {
     judgeCount?: number;     // weighted poll
     judgeWeight?: number;    // weighted poll
   }[];
+  totalPollVotes?: number;
 }
 
 interface PollWebSocketOptions {

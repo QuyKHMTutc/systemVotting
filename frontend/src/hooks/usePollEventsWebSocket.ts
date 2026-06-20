@@ -4,7 +4,7 @@ import { useGlobalWebSocket } from '../contexts/WebSocketContext';
 export type PollEventPayload =
   | { type: 'CREATED'; poll: any }
   | { type: 'DELETED'; pollId: number }
-  | { type: 'VOTED'; pollId: number; userId?: number; options: { optionId: number; text: string; voteCount: number; audienceCount?: number; judgeCount?: number; judgeWeight?: number }[] }
+  | { type: 'VOTED'; pollId: number; userId?: number; totalVotes?: number; totalPollVotes?: number; options: { optionId: number; text: string; voteCount: number; audienceCount?: number; judgeCount?: number; judgeWeight?: number }[] }
   | { type: 'COMMENT_ADDED'; pollId: number; commentCount?: number }
   | { type: 'COMMENT_DELETED'; pollId: number; commentId: number; commentCount?: number };
 

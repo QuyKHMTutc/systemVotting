@@ -264,7 +264,9 @@
     "deleteConfirm": "Bạn có chắc chắn muốn xóa bình luận này không?",
     "back": "Quay lại",
     "anonymousCreator": "Tác giả ẩn danh",
-    "report": "Báo cáo"
+    "report": "Báo cáo",
+    "resultsHidden": "Kết quả sẽ được công bố khi cuộc bình chọn kết thúc",
+    "resultsHiddenSubtitle": "Người tạo đã chọn ẩn kết quả cho đến khi hết thời gian bỏ phiếu."
   },
   "forgotPassword": {
     "invalidEmail": "Vui lòng nhập email hợp lệ (ví dụ: name@example.com)",
@@ -385,6 +387,8 @@
     "cancel": "Hủy",
     "creating": "Đang tạo...",
     "submitBtn": "Xác nhận",
+    "showResultsAfterEnd": "🔒 Ẩn kết quả đến khi kết thúc",
+    "showResultsAfterEndDesc": "Kết quả sẽ chỉ hiển thị sau khi thời gian bỏ phiếu kết thúc",
     "privacyPrivate": "🔒 Riêng tư",
     "privacyPrivateDesc": "Chỉ những người được mời qua email mới có thể xem và bình chọn",
     "invitedUsersList": "Danh sách người được mời",
